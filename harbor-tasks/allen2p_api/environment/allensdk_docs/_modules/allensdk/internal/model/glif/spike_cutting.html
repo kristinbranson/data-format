@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.spike_cutting &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.spike_cutting</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">stats</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_spikes</span><span class="w"> </span><span class="kn">import</span> <span class="n">align_and_cut_spikes</span><span class="p">,</span> <span class="n">ALIGN_CUT_WINDOW</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span> 
+
+<div class="viewcode-block" id="calc_spike_cut_and_v_reset_via_expvar_residuals">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.spike_cutting.html#allensdk.internal.model.glif.spike_cutting.calc_spike_cut_and_v_reset_via_expvar_residuals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_spike_cut_and_v_reset_via_expvar_residuals</span><span class="p">(</span><span class="n">all_current_list</span><span class="p">,</span> 
+                                                    <span class="n">all_voltage_list</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">El_reference</span><span class="p">,</span> <span class="n">deltaV</span><span class="p">,</span> 
+                                                    <span class="n">max_spike_cut_time</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                    <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PUBLICATION_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''This function calculates where the spike should be cut based on explained variance.  </span>
+<span class="sd">        The goal is to find a model where the voltage after a spike maximally explains the</span>
+<span class="sd">        voltage before a spike.  This will also specify the voltage reset rule</span>
+<span class="sd">        inputs: </span>
+<span class="sd">            spike_determination_method:  string specifing the method used to find threshold</span>
+<span class="sd">            all_current_list: list of current (list of current traces injected into neuron)</span>
+<span class="sd">            all_voltage_list: list of voltages (list of voltage trace)</span>
+<span class="sd">       The change is that if the slope is greater than one or intercept is greater than zero it forces it.  </span>
+<span class="sd">       Regardless of required force the residuals are used.                 </span>
+<span class="sd">    '''</span>
+   
+    <span class="c1">#--find the region of the spike needed for calculation of explained variance</span>
+    <span class="p">(</span><span class="n">temp_v_spike_shape_list</span><span class="p">,</span> <span class="n">all_i_spike_shape_list</span><span class="p">,</span> <span class="n">all_thresholdInd</span><span class="p">,</span> <span class="n">waveIndOfFirstSpikes</span><span class="p">,</span> <span class="n">spikeFromWhichSweep</span><span class="p">)</span> \
+                            <span class="o">=</span> <span class="n">align_and_cut_spikes</span><span class="p">(</span><span class="n">all_voltage_list</span><span class="p">,</span> <span class="n">all_current_list</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    
+    <span class="c1">#--At this point it is unclear how this calculation should be done.  </span>
+    <span class="c1">#--the slope should be fine no matter what, but the intercept dependency</span>
+    <span class="c1">#--will depend on the El, and deltaV    </span>
+    
+    <span class="c1">#--change reference </span>
+    <span class="n">all_v_spike_shape_list</span><span class="o">=</span><span class="p">[</span><span class="n">shape</span><span class="o">-</span><span class="n">El_reference</span><span class="o">-</span><span class="n">deltaV</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">temp_v_spike_shape_list</span><span class="p">]</span>
+
+    <span class="c1"># --setting limits to find explained variance</span>
+    <span class="k">if</span> <span class="n">max_spike_cut_time</span> <span class="ow">and</span> <span class="n">max_spike_cut_time</span> <span class="o">&lt;</span> <span class="mf">.010</span><span class="p">:</span>
+        <span class="n">expVarIndRangeAfterSpike</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mf">.001</span> <span class="o">/</span> <span class="n">dt</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_spike_cut_time</span> <span class="o">/</span> <span class="n">dt</span><span class="p">))</span>  <span class="c1">#NOTE: THIS IS USED IN REFERENCE TO SPIKE TIME</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">expVarIndRangeAfterSpike</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="mf">.001</span> <span class="o">/</span> <span class="n">dt</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="mf">.010</span> <span class="o">/</span> <span class="n">dt</span><span class="p">))</span>  <span class="c1">#NOTE: THIS IS USED IN REFERENCE TO SPIKE TIME</span>
+    <span class="n">vectorIndex_of_max_explained_var</span> <span class="o">=</span> <span class="n">expVarIndRangeAfterSpike</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># this is just here for the title of the plot</span>
+    <span class="n">list_of_endPointArrays</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># this should end up a list of numpy arrays where each numpy array contains the indices of the v_spike_shape_list that are a certain time after the threshold</span>
+    <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">expVarIndRangeAfterSpike</span><span class="p">:</span>
+        <span class="n">list_of_endPointArrays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_thresholdInd</span><span class="p">)</span> <span class="o">+</span> <span class="n">ii</span><span class="p">)</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">line_force_slope_to_1</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">+</span><span class="n">c</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">line_force_int_to_0</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>  <span class="c1">#TODO: CHANGE THIS TO REST TOD DISCONNECT EVERYTHING.</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">*</span><span class="n">x</span>
+
+<span class="c1">#    HERE YOU GET THE SLOPE AND INTERCEPT AT EACH POINT</span>
+    <span class="n">linRegress_error_4_each_time_end</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">slope_at_each_time_end</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">intercept_at_each_time_end</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">varData_4_each_time_end</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">varModel_4_each_time_end</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">chi2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">sum_residuals_4_each_time_end</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">xdata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v</span><span class="p">[</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]]</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">)])</span>
+    <span class="k">for</span> <span class="n">jj</span><span class="p">,</span> <span class="n">vectorOfIndAcrossWaves</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">list_of_endPointArrays</span><span class="p">):</span>  <span class="c1"># these indices should be in terms of the spike waveforms</span>
+<span class="c1">#        print('jj', jj)</span>
+        <span class="c1"># TODO: Teeter get rid of the nonblipness</span>
+        <span class="n">v_at_specificEndPoint</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">vectorOfIndAcrossWaves</span><span class="p">)]</span>  <span class="c1"># this is calculating variance at certain time points</span>
+        <span class="c1"># --currently the model of voltage reset is a linear regression between voltage before the spike and the voltage after the spike but it could be more complicated (for example as a function of current) </span>
+        <span class="n">ydata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v_at_specificEndPoint</span><span class="p">)</span>  <span class="c1"># this is the voltage at the specified end point</span>
+        <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">xdata</span><span class="p">,</span> <span class="n">ydata</span><span class="p">)</span>
+
+<span class="c1">#        print(slope, intercept, r_value, p_value, std_err)</span>
+    
+<span class="c1">#        if slope&gt;1.0:</span>
+<span class="c1">#            logging.warning('linear regression slope is bigger than one: forcing slope to 1 and refitting intercept.')</span>
+<span class="c1">#            slope=1.0</span>
+<span class="c1">#            (intercept, nothing)=curve_fit(line_force_slope_to_1, xdata, ydata)</span>
+<span class="c1">#            #print("NEW INTERCEPT:", intercept)</span>
+<span class="c1">#            if intercept&gt;0.0:</span>
+<span class="c1">#                #warnings.warn('/t ... and intercept is bigger than zero: forcing intercept to 0')</span>
+<span class="c1">#                intercept=0.0</span>
+<span class="c1">#            </span>
+<span class="c1">#        if intercept&gt;0.0:</span>
+<span class="c1">#            logging.warning('Intercept is bigger than zero: forcing intercept to 0 and refitting slope.')</span>
+<span class="c1">#            intercept=0.0                        </span>
+<span class="c1">#            (slope, nothing)=curve_fit(line_force_int_to_0,xdata, ydata)  </span>
+<span class="c1">#            #print("NEW SLOPE: ", slope)</span>
+<span class="c1">#            if slope&gt;1.0:</span>
+<span class="c1">#                logging.warning('/t ... and linear regression slope is bigger than one: forcing slope to 1.')</span>
+<span class="c1">#                slope=1.0</span>
+              
+        <span class="n">slope_at_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span>
+        <span class="n">intercept_at_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">intercept</span><span class="p">)</span>
+        <span class="n">ymodel</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">xdata</span> <span class="o">+</span> <span class="n">intercept</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">ydata</span> <span class="o">-</span> <span class="n">ymodel</span>
+        <span class="n">sum_residuals</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">residuals</span><span class="p">))</span>
+        <span class="n">sum_residuals_4_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sum_residuals</span><span class="p">)</span>
+        <span class="n">chi2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">residuals</span><span class="p">))</span>  <span class="c1"># how well the model describes the data</span>
+        <span class="n">linRegress_error_4_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">std_err</span><span class="p">)</span>
+        <span class="n">varData_4_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">v_at_specificEndPoint</span><span class="p">))</span>
+        <span class="n">varModel_4_each_time_end</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">ymodel</span><span class="p">))</span>
+        
+    <span class="c1"># --these will line up with how many arrays there are in the list</span>
+    <span class="n">vectorIndex_of_min_sum_residuals</span> <span class="o">=</span> <span class="n">sum_residuals_4_each_time_end</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">sum_residuals_4_each_time_end</span><span class="p">))</span>
+
+    <span class="c1">#----NOTE THIS ISNT ACTUALLY CALCULATING EXPLAINED VARIANCE!!!!!!!!!!!!!!!!!!</span>
+    <span class="n">vectorIndex_of_max_explained_var</span><span class="o">=</span><span class="n">vectorIndex_of_min_sum_residuals</span>
+    
+    
+    <span class="n">all_v_spike_init_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]]</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">)]</span>
+<span class="c1"># USE THIS WHEN MUTIPLE VECTORS all_v_at_min_expVar_list=[v[list_of_endPointArrays[vectorIndex_of_max_explained_var][ii]] for ii, v in enumerate(all_v_spike_shape_list)] </span>
+    <span class="n">all_v_at_min_expVar_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="n">list_of_endPointArrays</span><span class="p">[</span><span class="n">vectorIndex_of_max_explained_var</span><span class="p">][</span><span class="n">ii</span><span class="p">]]</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">)]</span> 
+    <span class="n">time_at_minExpVar</span><span class="o">=</span><span class="n">list_of_endPointArrays</span><span class="p">[</span><span class="n">vectorIndex_of_max_explained_var</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span>
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">truncatedTime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">)):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">truncatedTime</span><span class="p">,</span> <span class="n">temp_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span>
+            <span class="c1"># plt.plot(truncatedTime[aligned_peakInd[ii]],spikewave[aligned_peakInd[ii]], '.k'</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">truncatedTime</span><span class="p">[</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]],</span> <span class="n">temp_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]],</span> <span class="s1">'*k'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Non adusted spikes'</span><span class="p">)</span>
+            
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">truncatedTime</span><span class="p">,</span> <span class="n">all_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_at_minExpVar</span><span class="p">,</span> <span class="n">all_v_at_min_expVar_list</span><span class="p">,</span> <span class="s1">'*k'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time (s)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'voltage (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"Adjusted spikes (RP=</span><span class="si">%.3g</span><span class="s2">, deltaV=</span><span class="si">%.3g</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span><span class="n">El_reference</span><span class="p">,</span><span class="n">deltaV</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">PUBLICATION_PLOT</span><span class="p">:</span>
+            <span class="n">truncatedTime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">*</span> <span class="n">dt</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_v_spike_shape_list</span><span class="p">)):</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">truncatedTime</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span> <span class="n">temp_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="c1"># plt.plot(truncatedTime[aligned_peakInd[ii]],spikewave[aligned_peakInd[ii]], '.k'</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">truncatedTime</span><span class="p">[</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]]</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span> <span class="n">temp_v_spike_shape_list</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="n">all_thresholdInd</span><span class="p">[</span><span class="n">ii</span><span class="p">]]</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="c1">#                plt.title('Spike Cutting', fontsize=20)</span>
+<span class="c1">#                plt.subplot(2,1,2)</span>
+<span class="c1">#                plt.plot(truncatedTime, all_v_spike_shape_list[ii])</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_at_minExpVar</span><span class="o">*</span><span class="mi">1000</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_v_at_min_expVar_list</span><span class="p">)</span><span class="o">+</span><span class="n">El_reference</span><span class="o">+</span><span class="n">deltaV</span><span class="p">)</span><span class="o">*</span><span class="mf">1.e3</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Time (ms)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Voltage (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">12</span><span class="p">])</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="c1">#                plt.title("Adjusted spikes (RP=%.3g, deltaV=%.3g)" % (El_reference,deltaV))  </span>
+            
+        <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">BLOCK</span><span class="p">)</span>    
+
+
+<span class="c1">#    indNotExcluded_In_regress=list(np.setdiff1d(np.array([theInd for theInd in spikeIndDict['nonblip']]), np.array(waveIndOfFirstSpikes)))</span>
+<span class="c1">#    something is wrong with all_v_at_min_expVar_list--look at the difference between starting at .003 and .005 after thresh</span>
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">,</span> <span class="n">all_v_at_min_expVar_list</span><span class="p">,</span> <span class="s1">'b.'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'noise'</span><span class="p">)</span>  <span class="c1"># list of voltage traces for blip</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'voltage at spike initiation (V)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'voltage after spike (V)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="c1">#                    plt.title(cellTitle, fontsize=20)</span>
+
+    <span class="n">slope_at_min_expVar_list</span><span class="p">,</span> <span class="n">intercept_at_min_expVar_list</span><span class="p">,</span> <span class="n">r_value_at_min_expVar_list</span><span class="p">,</span> <span class="n">p_value_at_min_expVar_list</span><span class="p">,</span> <span class="n">std_err_at_min_expVar_list</span> <span class="o">=</span> \
+        <span class="n">stats</span><span class="o">.</span><span class="n">linregress</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_v_at_min_expVar_list</span><span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'mean of voltage before spike'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'mean of voltage after spike'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">all_v_at_min_expVar_list</span><span class="p">))</span>
+    
+    
+    <span class="n">spike_cut_length</span><span class="o">=</span> <span class="p">(</span><span class="n">list_of_endPointArrays</span><span class="p">[</span><span class="n">vectorIndex_of_max_explained_var</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">ALIGN_CUT_WINDOW</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">dt</span><span class="p">)</span> <span class="c1">#note this is dangerous if they arent' all at the same ind</span>
+
+    
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">xlim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">)])</span>
+        <span class="n">plotLineRegress1</span><span class="p">(</span><span class="n">slope_at_min_expVar_list</span><span class="p">,</span> <span class="n">intercept_at_min_expVar_list</span><span class="p">,</span> <span class="n">r_value_at_min_expVar_list</span><span class="p">,</span> <span class="n">xlim</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">xlim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">)])</span>
+        <span class="n">plotLineRegressRed</span><span class="p">(</span><span class="n">slope_at_each_time_end</span><span class="p">[</span><span class="n">vectorIndex_of_max_explained_var</span><span class="p">],</span> <span class="n">intercept_at_each_time_end</span><span class="p">[</span><span class="n">vectorIndex_of_max_explained_var</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">xlim</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">BLOCK</span><span class="p">)</span>                   
+
+    <span class="k">if</span> <span class="n">PUBLICATION_PLOT</span><span class="p">:</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">)</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">all_v_at_min_expVar_list</span><span class="p">)</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="s1">'b.'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>  <span class="c1"># list of voltage traces for blip</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Voltage at spike initiation (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Voltage after spike (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="c1">#        plt.title('Voltage reset rules', fontsize=20)</span>
+        <span class="n">xlim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">min</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_v_spike_init_list</span><span class="p">)])</span>
+        
+        <span class="k">def</span><span class="w"> </span><span class="nf">plot_hack</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span><span class="n">xlim</span><span class="p">):</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">slope</span><span class="o">*</span><span class="n">xlim</span><span class="o">+</span><span class="n">intercept</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xlim</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'-k'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="c1"># label='slope='+"%.2f"%slope+', intercept='+"%.3f"%intercept)</span>
+            
+        <span class="n">plot_hack</span><span class="p">(</span><span class="n">slope_at_min_expVar_list</span><span class="p">,</span> <span class="n">intercept_at_min_expVar_list</span><span class="o">*</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">r_value_at_min_expVar_list</span><span class="p">,</span> <span class="n">xlim</span><span class="o">*</span><span class="mf">1e3</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">BLOCK</span><span class="p">)</span>
+
+    <span class="c1">#TODO:  Corinne look to see if these were calculated with zeroed out El if not does is matter?</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">slope_at_min_expVar_list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">slope_at_min_expVar_list</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">slope_at_min_expVar_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">intercept_at_min_expVar_list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">intercept_at_min_expVar_list</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">intercept_at_min_expVar_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">intercept_at_min_expVar_list</span><span class="p">)</span><span class="o">==</span><span class="nb">list</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">intercept_at_min_expVar_list</span><span class="p">)</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">intercept_at_min_expVar_list</span><span class="o">=</span><span class="n">intercept_at_min_expVar_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">spike_cut_length</span><span class="p">,</span> <span class="n">slope_at_min_expVar_list</span><span class="p">,</span> <span class="n">intercept_at_min_expVar_list</span></div>
+
+
+<div class="viewcode-block" id="plotLineRegress1">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.spike_cutting.html#allensdk.internal.model.glif.spike_cutting.plotLineRegress1">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotLineRegress1</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span><span class="n">xlim</span><span class="p">):</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">slope</span><span class="o">*</span><span class="n">xlim</span><span class="o">+</span><span class="n">intercept</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'slope='</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="s1">'intercept='</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="s1">'xlim'</span><span class="p">,</span> <span class="n">xlim</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xlim</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'-k'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'slope='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.2f</span><span class="s2">"</span><span class="o">%</span><span class="n">slope</span><span class="o">+</span><span class="s1">', intercept='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span><span class="o">%</span><span class="n">intercept</span><span class="o">+</span><span class="s1">', r='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.2f</span><span class="s2">"</span><span class="o">%</span><span class="n">r</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plotLineRegressRed">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.spike_cutting.html#allensdk.internal.model.glif.spike_cutting.plotLineRegressRed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plotLineRegressRed</span><span class="p">(</span><span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span><span class="n">xlim</span><span class="p">):</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">slope</span><span class="o">*</span><span class="n">xlim</span><span class="o">+</span><span class="n">intercept</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'slope='</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="s1">'intercept='</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="s1">'xlim'</span><span class="p">,</span> <span class="n">xlim</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xlim</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s1">'-r'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'slope='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.2f</span><span class="s2">"</span><span class="o">%</span><span class="n">slope</span><span class="o">+</span><span class="s1">', intercept='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span><span class="o">%</span><span class="n">intercept</span><span class="o">+</span><span class="s1">', r='</span><span class="o">+</span><span class="s2">"</span><span class="si">%.2f</span><span class="s2">"</span><span class="o">%</span><span class="n">r</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

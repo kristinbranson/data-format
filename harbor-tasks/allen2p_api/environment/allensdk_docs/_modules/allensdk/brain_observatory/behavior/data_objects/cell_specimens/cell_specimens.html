@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">ProcessingModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ophys</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpticalChannel</span><span class="p">,</span> <span class="n">ImageSegmentation</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.roi_masks</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">roi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.neuropil_corrected_file</span> \
+    <span class="kn">import</span><span class="w"> </span><span class="nn">NeuropilCorrectedFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.demix_file</span><span class="w"> </span><span class="kn">import</span> <span class="n">DemixFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.neuropil_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NeuropilFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.dff_file</span><span class="w"> </span><span class="kn">import</span> <span class="n">DFFFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.event_detection_file</span> \
+    <span class="kn">import</span><span class="w"> </span><span class="nn">EventDetectionFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">LimsReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbWritableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.cell_specimens.events</span> \
+    <span class="kn">import</span><span class="w"> </span><span class="nn">Events</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.cell_specimens.traces</span>\
+    <span class="o">.</span><span class="n">corrected_fluorescence_traces</span> <span class="kn">import</span><span class="w"> </span><span class="nn">CorrectedFluorescenceTraces</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.cell_specimens.traces</span>\
+    <span class="o">.</span><span class="n">demixed_traces</span> <span class="kn">import</span><span class="w"> </span><span class="nn">DemixedTraces</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.cell_specimens.traces</span>\
+    <span class="o">.</span><span class="n">neuropil_traces</span> <span class="kn">import</span><span class="w"> </span><span class="nn">NeuropilTraces</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.cell_specimens.traces</span>\
+    <span class="o">.</span><span class="n">dff_traces</span> <span class="kn">import</span><span class="w"> </span><span class="nn">DFFTraces</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata</span>\
+    <span class="o">.</span><span class="n">ophys_experiment_metadata</span><span class="o">.</span><span class="n">field_of_view_shape</span> <span class="kn">import</span><span class="w"> </span><span class="nn">FieldOfViewShape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata</span>\
+    <span class="o">.</span><span class="n">ophys_experiment_metadata</span><span class="o">.</span><span class="n">imaging_plane</span> <span class="kn">import</span><span class="w"> </span><span class="nn">ImagingPlane</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.timestamps</span>\
+    <span class="o">.</span><span class="n">ophys_timestamps</span> <span class="kn">import</span><span class="w"> </span><span class="nn">OphysTimestamps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.image_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">CELL_SPECIMEN_COL_DESCRIPTIONS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb.nwb_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_image_to_nwb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+
+
+<div class="viewcode-block" id="EventsParams">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.EventsParams">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventsParams</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Container for arguments to event detection"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">filter_scale_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mf">31.0</span><span class="p">,</span>
+        <span class="n">filter_n_time_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param filter_scale_seconds</span>
+<span class="sd">            See Events.filter_scale_seconds</span>
+<span class="sd">        :param filter_n_time_steps</span>
+<span class="sd">            See Events.filter_n_time_steps</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filter_scale_seconds</span> <span class="o">=</span> <span class="n">filter_scale_seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_filter_n_time_steps</span> <span class="o">=</span> <span class="n">filter_n_time_steps</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_scale_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_scale_seconds</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_n_time_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_n_time_steps</span></div>
+
+
+
+<div class="viewcode-block" id="CellSpecimenMeta">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimenMeta">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CellSpecimenMeta</span><span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">LimsReadableInterface</span><span class="p">,</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Cell specimen metadata"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">imaging_plane</span><span class="p">:</span> <span class="n">ImagingPlane</span><span class="p">,</span> <span class="n">emission_lambda</span><span class="o">=</span><span class="mf">520.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"cell_specimen_meta"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_value_self</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_emission_lambda</span> <span class="o">=</span> <span class="n">emission_lambda</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_imaging_plane</span> <span class="o">=</span> <span class="n">imaging_plane</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emission_lambda</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emission_lambda</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">imaging_plane</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imaging_plane</span>
+
+<div class="viewcode-block" id="CellSpecimenMeta.from_lims">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimenMeta.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">ophys_experiment_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimenMeta"</span><span class="p">:</span>
+        <span class="n">imaging_plane_meta</span> <span class="o">=</span> <span class="n">ImagingPlane</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span>
+            <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane_meta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CellSpecimenMeta.from_json">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimenMeta.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimenMeta"</span><span class="p">:</span>
+        <span class="n">imaging_plane_meta</span> <span class="o">=</span> <span class="n">ImagingPlane</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">,</span> <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane_meta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CellSpecimenMeta.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimenMeta.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimenMeta"</span><span class="p">:</span>
+        <span class="n">ophys_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">"ophys"</span><span class="p">]</span>
+        <span class="n">image_seg</span> <span class="o">=</span> <span class="n">ophys_module</span><span class="o">.</span><span class="n">data_interfaces</span><span class="p">[</span><span class="s2">"image_segmentation"</span><span class="p">]</span>
+        <span class="n">plane_segmentations</span> <span class="o">=</span> <span class="n">image_seg</span><span class="o">.</span><span class="n">plane_segmentations</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">plane_segmentations</span><span class="p">[</span><span class="s2">"cell_specimen_table"</span><span class="p">]</span>
+
+        <span class="n">imaging_plane</span> <span class="o">=</span> <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">imaging_plane</span>
+        <span class="n">optical_channel</span> <span class="o">=</span> <span class="n">imaging_plane</span><span class="o">.</span><span class="n">optical_channel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">emission_lambda</span> <span class="o">=</span> <span class="n">optical_channel</span><span class="o">.</span><span class="n">emission_lambda</span>
+
+        <span class="n">imaging_plane</span> <span class="o">=</span> <span class="n">ImagingPlane</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CellSpecimenMeta</span><span class="p">(</span>
+            <span class="n">emission_lambda</span><span class="o">=</span><span class="n">emission_lambda</span><span class="p">,</span> <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CellSpecimens">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimens">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CellSpecimens</span><span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">LimsReadableInterface</span><span class="p">,</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cell_specimen_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="n">CellSpecimenMeta</span><span class="p">,</span>
+        <span class="n">events</span><span class="p">:</span> <span class="n">Events</span><span class="p">,</span>
+        <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span><span class="p">,</span>
+        <span class="n">segmentation_mask_image_spacing</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span>
+        <span class="n">corrected_fluorescence_traces</span><span class="p">:</span> <span class="n">CorrectedFluorescenceTraces</span><span class="p">,</span>
+        <span class="n">dff_traces</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DFFTraces</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">demixed_traces</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DemixedTraces</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">neuropil_traces</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NeuropilTraces</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        A container for cell specimens including traces, events, metadata, etc.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cell_specimen_table</span>
+<span class="sd">            index cell_specimen_id</span>
+<span class="sd">            columns:</span>
+<span class="sd">                - cell_roi_id</span>
+<span class="sd">                - height</span>
+<span class="sd">                - mask_image_plane</span>
+<span class="sd">                - max_correction_down</span>
+<span class="sd">                - max_correction_left</span>
+<span class="sd">                - max_correction_right</span>
+<span class="sd">                - max_correction_up</span>
+<span class="sd">                - roi_mask</span>
+<span class="sd">                - valid_roi</span>
+<span class="sd">                - width</span>
+<span class="sd">                - x</span>
+<span class="sd">                - y</span>
+<span class="sd">        meta</span>
+<span class="sd">        dff_traces</span>
+<span class="sd">        demixed_traces</span>
+<span class="sd">        neuropil_traces</span>
+<span class="sd">        corrected_fluorescence_traces</span>
+<span class="sd">        events</span>
+<span class="sd">        ophys_timestamps</span>
+<span class="sd">        segmentation_mask_image_spacing</span>
+<span class="sd">            Spacing to pass to sitk when constructing segmentation mask image</span>
+<span class="sd">        exclude_invalid_rois</span>
+<span class="sd">            Whether to exclude invalid rois</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"cell_specimen_table"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_value_self</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Validate ophys timestamps, traces</span>
+        <span class="n">ophys_timestamps</span> <span class="o">=</span> <span class="n">ophys_timestamps</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span>
+            <span class="n">number_of_frames</span><span class="o">=</span><span class="n">dff_traces</span><span class="o">.</span><span class="n">get_number_of_frames</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_traces</span><span class="p">(</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+            <span class="n">dff_traces</span><span class="o">=</span><span class="n">dff_traces</span><span class="p">,</span>
+            <span class="n">demixed_traces</span><span class="o">=</span><span class="n">demixed_traces</span><span class="p">,</span>
+            <span class="n">neuropil_traces</span><span class="o">=</span><span class="n">neuropil_traces</span><span class="p">,</span>
+            <span class="n">corrected_fluorescence_traces</span><span class="o">=</span><span class="n">corrected_fluorescence_traces</span><span class="p">,</span>
+            <span class="n">cell_roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">exclude_invalid_rois</span><span class="p">:</span>
+            <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">cell_specimen_table</span><span class="p">[</span>
+                <span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"valid_roi"</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="c1"># Filter/reorder rois according to cell_specimen_table</span>
+        <span class="k">if</span> <span class="n">dff_traces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dff_traces</span><span class="o">.</span><span class="n">filter_and_reorder</span><span class="p">(</span>
+                <span class="n">roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">demixed_traces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">demixed_traces</span><span class="o">.</span><span class="n">filter_and_reorder</span><span class="p">(</span>
+                <span class="n">roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">neuropil_traces</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">neuropil_traces</span><span class="o">.</span><span class="n">filter_and_reorder</span><span class="p">(</span>
+                <span class="n">roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">)</span>
+        <span class="n">corrected_fluorescence_traces</span><span class="o">.</span><span class="n">filter_and_reorder</span><span class="p">(</span>
+            <span class="n">roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Note: setting raise_if_rois_missing to False for events, since</span>
+        <span class="c1"># there seem to be cases where cell_specimen_table contains rois not in</span>
+        <span class="c1"># events</span>
+        <span class="c1"># See ie https://app.zenhub.com/workspaces/allensdk-10-5c17f74db59cfb36f158db8c/issues/alleninstitute/allensdk/2139     # noqa</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">filter_and_reorder</span><span class="p">(</span>
+            <span class="n">roi_ids</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"cell_roi_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">raise_if_rois_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span> <span class="o">=</span> <span class="n">meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cell_specimen_table</span> <span class="o">=</span> <span class="n">cell_specimen_table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dff_traces</span> <span class="o">=</span> <span class="n">dff_traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_demixed_traces</span> <span class="o">=</span> <span class="n">demixed_traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_neuropil_traces</span> <span class="o">=</span> <span class="n">neuropil_traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corrected_fluorescence_traces</span> <span class="o">=</span> <span class="n">corrected_fluorescence_traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="n">events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_segmentation_mask_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_segmentation_mask_image</span><span class="p">(</span>
+            <span class="n">spacing</span><span class="o">=</span><span class="n">segmentation_mask_image_spacing</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_specimen_table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roi_masks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_specimen_table</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">,</span> <span class="s2">"roi_mask"</span><span class="p">]]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">meta</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CellSpecimenMeta</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dff_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""traces of change in fluoescence / fluorescence</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            dataframe of traces of dff</span>
+<span class="sd">            (change in fluorescence / fluorescence)</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                cell_specimen_id [index]: (int)</span>
+<span class="sd">                    unified id of segmented cell across experiments</span>
+<span class="sd">                    assigned after cell matching</span>
+<span class="sd">                cell_roi_id: (int)</span>
+<span class="sd">                    experiment specific id of segmented roi,</span>
+<span class="sd">                    assigned before cell matching</span>
+<span class="sd">                dff: (list of float)</span>
+<span class="sd">                    fluorescence fractional values relative to baseline</span>
+<span class="sd">                    (arbitrary units)</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dff_traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">]]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dff_traces</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"cell_roi_id"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">demixed_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Demixed traces are traces that are demixed from overlapping ROIs.</span>
+<span class="sd">        Sampling rate can be found in metadata ‘ophys_frame_rate’</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Dataframe that contains the corrected fluorescence traces</span>
+<span class="sd">            for all valid cells.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                cell_specimen_id [index]: (int)</span>
+<span class="sd">                    unified id of segmented cell across experiments</span>
+<span class="sd">                    (assigned after cell matching)</span>
+<span class="sd">                cell_roi_id: (int)</span>
+<span class="sd">                    experiment specific id of segmented roi</span>
+<span class="sd">                    (assigned before cell matching)</span>
+<span class="sd">                demixed_trace: (list of float)</span>
+<span class="sd">                    fluorescence values (arbitrary units)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demixed_traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">]]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_demixed_traces</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"cell_roi_id"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">neuropil_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""neuropil traces are the fluorescent signal measured from the</span>
+<span class="sd">        neuropil_masks. Sampling rate can be found in metadata</span>
+<span class="sd">        ‘ophys_frame_rate’</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Dataframe that contains the corrected fluorescence traces</span>
+<span class="sd">            for all valid cells.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                cell_specimen_id [index]: (int)</span>
+<span class="sd">                    unified id of segmented cell across experiments</span>
+<span class="sd">                    (assigned after cell matching)</span>
+<span class="sd">                cell_roi_id: (int)</span>
+<span class="sd">                    experiment specific id of segmented roi</span>
+<span class="sd">                    (assigned before cell matching)</span>
+<span class="sd">                neuropil_trace: (list of float)</span>
+<span class="sd">                    fluorescence values (arbitrary units)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_neuropil_traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">]]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_neuropil_traces</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"cell_roi_id"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">corrected_fluorescence_traces</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Corrected fluorescence traces which are neuropil corrected</span>
+<span class="sd">        and demixed. Sampling rate can be found in metadata</span>
+<span class="sd">        ‘ophys_frame_rate’</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Dataframe that contains the corrected fluorescence traces</span>
+<span class="sd">            for all valid cells.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                cell_specimen_id [index]: (int)</span>
+<span class="sd">                    unified id of segmented cell across experiments</span>
+<span class="sd">                    (assigned after cell matching)</span>
+<span class="sd">                cell_roi_id: (int)</span>
+<span class="sd">                    experiment specific id of segmented roi</span>
+<span class="sd">                    (assigned before cell matching)</span>
+<span class="sd">                corrected_fluorescence: (list of float)</span>
+<span class="sd">                    fluorescence values (arbitrary units)</span>
+<span class="sd">                RMSE: (float)</span>
+<span class="sd">                    error values (arbitrary units)</span>
+<span class="sd">                r:</span>
+<span class="sd">                    r values (arbitrary units)</span>
+<span class="sd">        """</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">]]</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_corrected_fluorescence_traces</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"cell_roi_id"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s2">"cell_roi_id"</span><span class="p">,</span> <span class="s2">"cell_specimen_id"</span><span class="p">]]</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">"cell_roi_id"</span>
+        <span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"cell_specimen_id"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">segmentation_mask_image</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_segmentation_mask_image</span>
+
+<div class="viewcode-block" id="CellSpecimens.from_lims">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimens.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">ophys_experiment_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span><span class="p">,</span>
+        <span class="n">segmentation_mask_image_spacing</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span>
+        <span class="n">events_params</span><span class="p">:</span> <span class="n">EventsParams</span><span class="p">,</span>
+        <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimens"</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_ophys_cell_segmentation_run_id</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">"""Get the ophys cell segmentation run id associated with an</span>
+<span class="sd">            ophys experiment id"""</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">                    SELECT oseg.id</span>
+<span class="s2">                    FROM ophys_experiments oe</span>
+<span class="s2">                    JOIN ophys_cell_segmentation_runs oseg</span>
+<span class="s2">                    ON oe.id = oseg.ophys_experiment_id</span>
+<span class="s2">                    WHERE oseg.current = 't'</span>
+<span class="s2">                    AND oe.id = </span><span class="si">{}</span><span class="s2">;</span>
+<span class="s2">                    """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">lims_db</span><span class="o">.</span><span class="n">fetchone</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_cell_specimen_table</span><span class="p">():</span>
+            <span class="n">ophys_cell_seg_run_id</span> <span class="o">=</span> <span class="n">_get_ophys_cell_segmentation_run_id</span><span class="p">()</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">                    SELECT *</span>
+<span class="s2">                    FROM cell_rois cr</span>
+<span class="s2">                    WHERE cr.ophys_cell_segmentation_run_id = </span><span class="si">{}</span><span class="s2">;</span>
+<span class="s2">                    """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">ophys_cell_seg_run_id</span>
+            <span class="p">)</span>
+            <span class="n">initial_cs_table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">.</span><span class="n">get_connection</span><span class="p">())</span>
+            <span class="n">cst</span> <span class="o">=</span> <span class="n">initial_cs_table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"cell_roi_id"</span><span class="p">,</span> <span class="s2">"mask_matrix"</span><span class="p">:</span> <span class="s2">"roi_mask"</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="n">cst</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">"ophys_experiment_id"</span><span class="p">,</span> <span class="s2">"ophys_cell_segmentation_run_id"</span><span class="p">],</span>
+                <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">cst</span> <span class="o">=</span> <span class="n">cst</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="n">fov_shape</span> <span class="o">=</span> <span class="n">FieldOfViewShape</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="n">cst</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_postprocess</span><span class="p">(</span>
+                <span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">cst</span><span class="p">,</span> <span class="n">fov_shape</span><span class="o">=</span><span class="n">fov_shape</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">cst</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_dff_traces</span><span class="p">():</span>
+            <span class="n">dff_file</span> <span class="o">=</span> <span class="n">DFFFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">DFFTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span><span class="n">dff_file</span><span class="o">=</span><span class="n">dff_file</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_demixed_traces</span><span class="p">():</span>
+            <span class="n">demix_file</span> <span class="o">=</span> <span class="n">DemixFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">DemixedTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">demix_file</span><span class="o">=</span><span class="n">demix_file</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_neuropil_traces</span><span class="p">():</span>
+            <span class="n">neuropil_file</span> <span class="o">=</span> <span class="n">NeuropilFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">NeuropilTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">neuropil_file</span><span class="o">=</span><span class="n">neuropil_file</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_corrected_fluorescence_traces</span><span class="p">():</span>
+            <span class="n">neuropil_corrected_file</span> <span class="o">=</span> <span class="n">NeuropilCorrectedFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">CorrectedFluorescenceTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">neuropil_corrected_file</span><span class="o">=</span><span class="n">neuropil_corrected_file</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_events</span><span class="p">():</span>
+            <span class="n">events_file</span> <span class="o">=</span> <span class="n">EventDetectionFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_events</span><span class="p">(</span>
+                <span class="n">events_file</span><span class="o">=</span><span class="n">events_file</span><span class="p">,</span>
+                <span class="n">events_params</span><span class="o">=</span><span class="n">events_params</span><span class="p">,</span>
+                <span class="n">frame_rate_hz</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">ophys_frame_rate</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">_get_cell_specimen_table</span><span class="p">()</span>
+
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">CellSpecimenMeta</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">,</span>
+            <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">dff_traces</span> <span class="o">=</span> <span class="n">_get_dff_traces</span><span class="p">()</span>
+        <span class="n">demixed_traces</span> <span class="o">=</span> <span class="n">_get_demixed_traces</span><span class="p">()</span>
+        <span class="n">neuropil_traces</span> <span class="o">=</span> <span class="n">_get_neuropil_traces</span><span class="p">()</span>
+        <span class="n">corrected_fluorescence_traces</span> <span class="o">=</span> <span class="n">_get_corrected_fluorescence_traces</span><span class="p">()</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="n">_get_events</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">CellSpecimens</span><span class="p">(</span>
+            <span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+            <span class="n">dff_traces</span><span class="o">=</span><span class="n">dff_traces</span><span class="p">,</span>
+            <span class="n">demixed_traces</span><span class="o">=</span><span class="n">demixed_traces</span><span class="p">,</span>
+            <span class="n">neuropil_traces</span><span class="o">=</span><span class="n">neuropil_traces</span><span class="p">,</span>
+            <span class="n">corrected_fluorescence_traces</span><span class="o">=</span><span class="n">corrected_fluorescence_traces</span><span class="p">,</span>
+            <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+            <span class="n">segmentation_mask_image_spacing</span><span class="o">=</span><span class="n">segmentation_mask_image_spacing</span><span class="p">,</span>
+            <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="n">exclude_invalid_rois</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CellSpecimens.from_json">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimens.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span><span class="p">,</span>
+        <span class="n">segmentation_mask_image_spacing</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span>
+        <span class="n">events_params</span><span class="p">:</span> <span class="n">EventsParams</span><span class="p">,</span>
+        <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimens"</span><span class="p">:</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">dict_repr</span><span class="p">[</span><span class="s2">"cell_specimen_table_dict"</span><span class="p">]</span>
+        <span class="n">fov_shape</span> <span class="o">=</span> <span class="n">FieldOfViewShape</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_postprocess</span><span class="p">(</span>
+            <span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">,</span> <span class="n">fov_shape</span><span class="o">=</span><span class="n">fov_shape</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_dff_traces</span><span class="p">():</span>
+            <span class="n">dff_file</span> <span class="o">=</span> <span class="n">DFFFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">DFFTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span><span class="n">dff_file</span><span class="o">=</span><span class="n">dff_file</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_demixed_traces</span><span class="p">():</span>
+            <span class="n">demix_file</span> <span class="o">=</span> <span class="n">DemixFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">DemixedTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">demix_file</span><span class="o">=</span><span class="n">demix_file</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_neuropil_traces</span><span class="p">():</span>
+            <span class="n">neuropil_file</span> <span class="o">=</span> <span class="n">NeuropilFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">NeuropilTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">neuropil_file</span><span class="o">=</span><span class="n">neuropil_file</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_corrected_fluorescence_traces</span><span class="p">():</span>
+            <span class="n">neuropil_corrected_file</span> <span class="o">=</span> <span class="n">NeuropilCorrectedFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">CorrectedFluorescenceTraces</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+                <span class="n">neuropil_corrected_file</span><span class="o">=</span><span class="n">neuropil_corrected_file</span>
+            <span class="p">)</span>
+
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">CellSpecimenMeta</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">,</span> <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_events</span><span class="p">():</span>
+            <span class="n">events_file</span> <span class="o">=</span> <span class="n">EventDetectionFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_events</span><span class="p">(</span>
+                <span class="n">events_file</span><span class="o">=</span><span class="n">events_file</span><span class="p">,</span>
+                <span class="n">events_params</span><span class="o">=</span><span class="n">events_params</span><span class="p">,</span>
+                <span class="n">frame_rate_hz</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">ophys_frame_rate</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">dff_traces</span> <span class="o">=</span> <span class="n">_get_dff_traces</span><span class="p">()</span>
+        <span class="n">demixed_traces</span> <span class="o">=</span> <span class="n">_get_demixed_traces</span><span class="p">()</span>
+        <span class="n">neuropil_traces</span> <span class="o">=</span> <span class="n">_get_neuropil_traces</span><span class="p">()</span>
+        <span class="n">corrected_fluorescence_traces</span> <span class="o">=</span> <span class="n">_get_corrected_fluorescence_traces</span><span class="p">()</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="n">_get_events</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">CellSpecimens</span><span class="p">(</span>
+            <span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+            <span class="n">dff_traces</span><span class="o">=</span><span class="n">dff_traces</span><span class="p">,</span>
+            <span class="n">demixed_traces</span><span class="o">=</span><span class="n">demixed_traces</span><span class="p">,</span>
+            <span class="n">neuropil_traces</span><span class="o">=</span><span class="n">neuropil_traces</span><span class="p">,</span>
+            <span class="n">corrected_fluorescence_traces</span><span class="o">=</span><span class="n">corrected_fluorescence_traces</span><span class="p">,</span>
+            <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+            <span class="n">segmentation_mask_image_spacing</span><span class="o">=</span><span class="n">segmentation_mask_image_spacing</span><span class="p">,</span>
+            <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="n">exclude_invalid_rois</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CellSpecimens.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimens.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span>
+        <span class="n">segmentation_mask_image_spacing</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span>
+        <span class="n">events_params</span><span class="p">:</span> <span class="n">EventsParams</span><span class="p">,</span>
+        <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CellSpecimens"</span><span class="p">:</span>
+        <span class="c1"># NOTE: ROI masks are stored in full frame width and height arrays</span>
+        <span class="n">ophys_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">"ophys"</span><span class="p">]</span>
+        <span class="n">image_seg</span> <span class="o">=</span> <span class="n">ophys_module</span><span class="o">.</span><span class="n">data_interfaces</span><span class="p">[</span><span class="s2">"image_segmentation"</span><span class="p">]</span>
+        <span class="n">plane_segmentations</span> <span class="o">=</span> <span class="n">image_seg</span><span class="o">.</span><span class="n">plane_segmentations</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">plane_segmentations</span><span class="p">[</span><span class="s2">"cell_specimen_table"</span><span class="p">]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_read_table</span><span class="p">(</span><span class="n">cell_specimen_table</span><span class="p">):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+
+            <span class="c1"># Ensure int64 used instead of int32</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="s2">"int64"</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="s2">"int32"</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Because pynwb stores this field as "image_mask", it is renamed</span>
+            <span class="c1"># here</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"image_mask"</span><span class="p">:</span> <span class="s2">"roi_mask"</span><span class="p">})</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">"cell_roi_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">"cell_specimen_id"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="kc">None</span> <span class="k">if</span> <span class="n">id_</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">id_</span>
+                <span class="k">for</span> <span class="n">id_</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">"cell_specimen_id"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">]</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"cell_specimen_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">df</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_read_table</span><span class="p">(</span><span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">cell_specimen_table</span><span class="p">)</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">CellSpecimenMeta</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">dff_traces</span> <span class="o">=</span> <span class="n">DFFTraces</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">demixed_traces</span> <span class="o">=</span> <span class="n">DemixedTraces</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">neuropil_traces</span> <span class="o">=</span> <span class="n">NeuropilTraces</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">corrected_fluorescence_traces</span> <span class="o">=</span> <span class="n">CorrectedFluorescenceTraces</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_events</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">Events</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span>
+                <span class="n">filter_scale_seconds</span><span class="o">=</span><span class="n">events_params</span><span class="o">.</span><span class="n">filter_scale_seconds</span><span class="p">,</span>
+                <span class="n">filter_n_time_steps</span><span class="o">=</span><span class="n">events_params</span><span class="o">.</span><span class="n">filter_n_time_steps</span><span class="p">,</span>
+                <span class="n">frame_rate_hz</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">ophys_frame_rate</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="n">_get_events</span><span class="p">()</span>
+        <span class="n">ophys_timestamps</span> <span class="o">=</span> <span class="n">OphysTimestamps</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">CellSpecimens</span><span class="p">(</span>
+            <span class="n">cell_specimen_table</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span>
+            <span class="n">dff_traces</span><span class="o">=</span><span class="n">dff_traces</span><span class="p">,</span>
+            <span class="n">demixed_traces</span><span class="o">=</span><span class="n">demixed_traces</span><span class="p">,</span>
+            <span class="n">neuropil_traces</span><span class="o">=</span><span class="n">neuropil_traces</span><span class="p">,</span>
+            <span class="n">corrected_fluorescence_traces</span><span class="o">=</span><span class="n">corrected_fluorescence_traces</span><span class="p">,</span>
+            <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span>
+            <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span><span class="p">,</span>
+            <span class="n">segmentation_mask_image_spacing</span><span class="o">=</span><span class="n">segmentation_mask_image_spacing</span><span class="p">,</span>
+            <span class="n">exclude_invalid_rois</span><span class="o">=</span><span class="n">exclude_invalid_rois</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CellSpecimens.to_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.html#allensdk.brain_observatory.behavior.data_objects.cell_specimens.cell_specimens.CellSpecimens.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        :param nwbfile</span>
+<span class="sd">            In-memory nwb file object</span>
+<span class="sd">        :param ophys_timestamps</span>
+<span class="sd">            ophys timestamps</span>
+<span class="sd">        """</span>
+        <span class="c1"># 1. Add cell specimen table</span>
+        <span class="n">cell_roi_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"cell_roi_id"</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">lab_meta_data</span><span class="p">[</span><span class="s2">"metadata"</span><span class="p">]</span>
+
+        <span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_device</span><span class="p">()</span>
+
+        <span class="c1"># FOV:</span>
+        <span class="n">fov_width</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">field_of_view_width</span>
+        <span class="n">fov_height</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">field_of_view_height</span>
+        <span class="n">imaging_plane_description</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"</span><span class="si">{}</span><span class="s2"> field of view in </span><span class="si">{}</span><span class="s2"> at depth </span><span class="si">{}</span><span class="s2"> "</span>
+            <span class="s2">"um"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">fov_width</span><span class="p">,</span> <span class="n">fov_height</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">targeted_structure</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="o">.</span><span class="n">imaging_depth</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Optical Channel:</span>
+        <span class="n">optical_channel</span> <span class="o">=</span> <span class="n">OpticalChannel</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"channel_1"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"2P Optical Channel"</span><span class="p">,</span>
+            <span class="n">emission_lambda</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">emission_lambda</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Imaging Plane:</span>
+        <span class="n">imaging_plane</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_imaging_plane</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"imaging_plane_1"</span><span class="p">,</span>
+            <span class="n">optical_channel</span><span class="o">=</span><span class="n">optical_channel</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">imaging_plane_description</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">excitation_lambda</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">excitation_lambda</span><span class="p">,</span>
+            <span class="n">imaging_rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">ophys_frame_rate</span><span class="p">,</span>
+            <span class="n">indicator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">indicator</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">imaging_plane</span><span class="o">.</span><span class="n">targeted_structure</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Image Segmentation:</span>
+        <span class="n">image_segmentation</span> <span class="o">=</span> <span class="n">ImageSegmentation</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"image_segmentation"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">"ophys"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">:</span>
+            <span class="n">ophys_module</span> <span class="o">=</span> <span class="n">ProcessingModule</span><span class="p">(</span><span class="s2">"ophys"</span><span class="p">,</span> <span class="s2">"Ophys processing module"</span><span class="p">)</span>
+            <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_processing_module</span><span class="p">(</span><span class="n">ophys_module</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ophys_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">"ophys"</span><span class="p">]</span>
+
+        <span class="n">ophys_module</span><span class="o">.</span><span class="n">add_data_interface</span><span class="p">(</span><span class="n">image_segmentation</span><span class="p">)</span>
+
+        <span class="c1"># Plane Segmentation:</span>
+        <span class="n">plane_segmentation</span> <span class="o">=</span> <span class="n">image_segmentation</span><span class="o">.</span><span class="n">create_plane_segmentation</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"cell_specimen_table"</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s2">"Segmented rois"</span><span class="p">,</span>
+            <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">cell_roi_table</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="c1"># the columns 'roi_mask', 'pixel_mask', and 'voxel_mask' are</span>
+            <span class="c1"># already defined in the nwb.ophys::PlaneSegmentation Object</span>
+            <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="s2">"id"</span><span class="p">,</span>
+                <span class="s2">"mask_matrix"</span><span class="p">,</span>
+                <span class="s2">"roi_mask"</span><span class="p">,</span>
+                <span class="s2">"pixel_mask"</span><span class="p">,</span>
+                <span class="s2">"voxel_mask"</span><span class="p">,</span>
+            <span class="p">]:</span>
+                <span class="c1"># This builds the columns with name of column and description</span>
+                <span class="c1"># of column both equal to the column name in the cell_roi_table</span>
+                <span class="n">plane_segmentation</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+                    <span class="n">col_name</span><span class="p">,</span>
+                    <span class="n">CELL_SPECIMEN_COL_DESCRIPTIONS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="n">col_name</span><span class="p">,</span> <span class="s2">"No Description Available"</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="c1"># go through each roi and add it to the plan segmentation object</span>
+        <span class="k">for</span> <span class="n">cell_roi_id</span><span class="p">,</span> <span class="n">table_row</span> <span class="ow">in</span> <span class="n">cell_roi_table</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="c1"># NOTE: The 'roi_mask' in this cell_roi_table has already been</span>
+            <span class="c1"># processing by the function from</span>
+            <span class="c1"># allensdk.brain_observatory.behavior.session_apis.data_io</span>
+            <span class="c1"># .ophys_lims_api</span>
+            <span class="c1"># get_cell_specimen_table() method. As a result, the ROI is</span>
+            <span class="c1"># stored in</span>
+            <span class="c1"># an array that is the same shape as the FULL field of view of the</span>
+            <span class="c1"># experiment (e.g. 512 x 512).</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">table_row</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"roi_mask"</span><span class="p">)</span>
+
+            <span class="n">csid</span> <span class="o">=</span> <span class="n">table_row</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"cell_specimen_id"</span><span class="p">)</span>
+            <span class="n">table_row</span><span class="p">[</span><span class="s2">"cell_specimen_id"</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">csid</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">csid</span>
+            <span class="n">table_row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_roi_id</span>
+            <span class="n">plane_segmentation</span><span class="o">.</span><span class="n">add_roi</span><span class="p">(</span><span class="n">image_mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="o">**</span><span class="n">table_row</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+
+        <span class="c1"># 2. Add DFF traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dff_traces</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">ophys_timestamps</span><span class="o">=</span><span class="n">ophys_timestamps</span>
+        <span class="p">)</span>
+
+        <span class="c1"># 3. Add demixed traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_demixed_traces</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="c1"># 4. Add neuropil traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_neuropil_traces</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="c1"># 5. Add Corrected fluorescence traces</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_corrected_fluorescence_traces</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="c1"># 6. Add events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="c1"># 7. Add segmentation mask image</span>
+        <span class="n">add_image_to_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span>
+            <span class="n">image_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_segmentation_mask_image</span><span class="p">,</span>
+            <span class="n">image_name</span><span class="o">=</span><span class="s2">"segmentation_mask_image"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_segmentation_mask_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spacing</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""a 2D binary image of all cell masks</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        spacing</span>
+<span class="sd">            See image_api.Image for details</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        allensdk.brain_observatory.behavior.image_api.Image:</span>
+<span class="sd">            array-like interface to segmentation_mask image data and</span>
+<span class="sd">            metadata</span>
+<span class="sd">        """</span>
+        <span class="n">mask_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">roi_masks</span><span class="p">[</span><span class="s2">"roi_mask"</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">mask_image</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">mask_data</span><span class="p">,</span> <span class="n">spacing</span><span class="o">=</span><span class="n">spacing</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"mm"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mask_image</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_postprocess</span><span class="p">(</span>
+        <span class="n">cell_specimen_table</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">fov_shape</span><span class="p">:</span> <span class="n">FieldOfViewShape</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Converts raw cell_specimen_table dict to dataframe"""</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">cell_specimen_table</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"cell_roi_id"</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">fov_width</span> <span class="o">=</span> <span class="n">fov_shape</span><span class="o">.</span><span class="n">width</span>
+        <span class="n">fov_height</span> <span class="o">=</span> <span class="n">fov_shape</span><span class="o">.</span><span class="n">height</span>
+
+        <span class="c1"># Convert cropped ROI masks to uncropped versions</span>
+        <span class="n">roi_mask_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cell_roi_id</span><span class="p">,</span> <span class="n">table_row</span> <span class="ow">in</span> <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="c1"># Deserialize roi data into AllenSDK RoiMask object</span>
+            <span class="n">curr_roi</span> <span class="o">=</span> <span class="n">roi</span><span class="o">.</span><span class="n">RoiMask</span><span class="p">(</span>
+                <span class="n">image_w</span><span class="o">=</span><span class="n">fov_width</span><span class="p">,</span>
+                <span class="n">image_h</span><span class="o">=</span><span class="n">fov_height</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">mask_group</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">curr_roi</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">table_row</span><span class="p">[</span><span class="s2">"x"</span><span class="p">]</span>
+            <span class="n">curr_roi</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">table_row</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]</span>
+            <span class="n">curr_roi</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">table_row</span><span class="p">[</span><span class="s2">"width"</span><span class="p">]</span>
+            <span class="n">curr_roi</span><span class="o">.</span><span class="n">height</span> <span class="o">=</span> <span class="n">table_row</span><span class="p">[</span><span class="s2">"height"</span><span class="p">]</span>
+            <span class="n">curr_roi</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">table_row</span><span class="p">[</span><span class="s2">"roi_mask"</span><span class="p">])</span>
+            <span class="n">roi_mask_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">curr_roi</span><span class="o">.</span><span class="n">get_mask_plane</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">))</span>
+
+        <span class="n">cell_specimen_table</span><span class="p">[</span><span class="s2">"roi_mask"</span><span class="p">]</span> <span class="o">=</span> <span class="n">roi_mask_list</span>
+        <span class="n">cell_specimen_table</span> <span class="o">=</span> <span class="n">cell_specimen_table</span><span class="p">[</span>
+            <span class="nb">sorted</span><span class="p">(</span><span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">"cell_roi_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">cell_specimen_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"cell_specimen_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cell_specimen_table</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_traces</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ophys_timestamps</span><span class="p">:</span> <span class="n">OphysTimestamps</span><span class="p">,</span>
+        <span class="n">dff_traces</span><span class="p">:</span> <span class="n">DFFTraces</span><span class="p">,</span>
+        <span class="n">demixed_traces</span><span class="p">:</span> <span class="n">DemixedTraces</span><span class="p">,</span>
+        <span class="n">neuropil_traces</span><span class="p">:</span> <span class="n">NeuropilTraces</span><span class="p">,</span>
+        <span class="n">corrected_fluorescence_traces</span><span class="p">:</span> <span class="n">CorrectedFluorescenceTraces</span><span class="p">,</span>
+        <span class="n">cell_roi_ids</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""validates traces"""</span>
+        <span class="n">trace_col_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"dff_traces"</span><span class="p">:</span> <span class="s2">"dff"</span><span class="p">,</span>
+            <span class="s2">"demixed_traces"</span><span class="p">:</span> <span class="s2">"demixed_trace"</span><span class="p">,</span>
+            <span class="s2">"neuropil_traces"</span><span class="p">:</span> <span class="s2">"neuropil_trace"</span><span class="p">,</span>
+            <span class="s2">"corrected_fluorescence_traces"</span><span class="p">:</span> <span class="s2">"corrected_fluorescence"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">traces</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">dff_traces</span><span class="p">,</span>
+            <span class="n">demixed_traces</span><span class="p">,</span>
+            <span class="n">neuropil_traces</span><span class="p">,</span>
+            <span class="n">corrected_fluorescence_traces</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">traces</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># validate traces contain expected roi ids</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">traces</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">cell_roi_ids</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">traces</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> contains ROI IDs that "</span>
+                    <span class="sa">f</span><span class="s2">"are not in "</span>
+                    <span class="sa">f</span><span class="s2">"cell_specimen_table.cell_roi_id"</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cell_roi_ids</span><span class="p">,</span> <span class="n">traces</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"cell_specimen_table contains ROI IDs "</span>
+                    <span class="sa">f</span><span class="s2">"that are not in </span><span class="si">{</span><span class="n">traces</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+
+            <span class="c1"># validate traces contain expected timepoints</span>
+            <span class="n">num_trace_timepoints</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span>
+                <span class="n">traces</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">trace_col_map</span><span class="p">[</span><span class="n">traces</span><span class="o">.</span><span class="n">name</span><span class="p">]]</span>
+            <span class="p">)</span>
+            <span class="n">num_ophys_timestamps</span> <span class="o">=</span> <span class="n">ophys_timestamps</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">num_trace_timepoints</span> <span class="o">!=</span> <span class="n">num_ophys_timestamps</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">traces</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> contains "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">num_trace_timepoints</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"but there are </span><span class="si">{</span><span class="n">num_ophys_timestamps</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"ophys timestamps"</span>
+                <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_events</span><span class="p">(</span>
+        <span class="n">events_file</span><span class="p">:</span> <span class="n">EventDetectionFile</span><span class="p">,</span>
+        <span class="n">events_params</span><span class="p">:</span> <span class="n">EventsParams</span><span class="p">,</span>
+        <span class="n">frame_rate_hz</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">Events</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+            <span class="n">events_file</span><span class="o">=</span><span class="n">events_file</span><span class="p">,</span>
+            <span class="n">filter_scale_seconds</span><span class="o">=</span><span class="n">events_params</span><span class="o">.</span><span class="n">filter_scale_seconds</span><span class="p">,</span>
+            <span class="n">filter_n_time_steps</span><span class="o">=</span><span class="n">events_params</span><span class="o">.</span><span class="n">filter_n_time_steps</span><span class="p">,</span>
+            <span class="n">frame_rate_hz</span><span class="o">=</span><span class="n">frame_rate_hz</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

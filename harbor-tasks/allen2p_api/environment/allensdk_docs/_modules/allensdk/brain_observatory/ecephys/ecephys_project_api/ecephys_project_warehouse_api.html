@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ecephys_project_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">EcephysProjectApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.rma_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncRmaEngine</span><span class="p">,</span> <span class="n">RmaEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_and_execute</span><span class="p">,</span> <span class="n">rma_macros</span>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcephysProjectWarehouseApi</span><span class="p">(</span><span class="n">EcephysProjectApi</span><span class="p">):</span>
+    <span class="n">movie_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">".*natural_movie_(?P&lt;num&gt;\d+).npy"</span><span class="p">)</span>
+    <span class="n">scene_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">".*/(?P&lt;num&gt;\d+).tiff"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rma_engine</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rma_engine</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rma_engine</span> <span class="o">=</span> <span class="n">RmaEngine</span><span class="p">(</span><span class="n">scheme</span><span class="o">=</span><span class="s2">"http"</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"api.brain-map.org"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span> <span class="o">=</span> <span class="n">rma_engine</span>
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_session_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_session_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">well_known_files</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"criteria=model::WellKnownFile"</span>
+                <span class="s2">",rma::criteria,well_known_file_type[name$eq'EcephysNwb']"</span>
+                <span class="s2">"[attachable_type$eq'EcephysSession']"</span>
+                <span class="sa">r</span><span class="s2">"[attachable_id$eq{{session_id}}]"</span>
+            <span class="p">),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly 1 nwb file for session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">, found: </span><span class="si">{</span><span class="n">well_known_files</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">)</span>
+
+        <span class="n">download_link</span> <span class="o">=</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"download_link"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">download_link</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_natural_movie_template">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_natural_movie_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_movie_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+        <span class="n">well_known_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_templates</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_templates</span><span class="p">[</span><span class="s2">"movie_number"</span><span class="p">]</span> <span class="o">==</span> <span class="n">number</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly one natural movie template with number </span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">, found </span><span class="si">{</span><span class="n">well_known_files</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">)</span>
+
+        <span class="n">download_link</span> <span class="o">=</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"download_link"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">download_link</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_natural_scene_template">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_natural_scene_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_scene_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+        <span class="n">well_known_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_templates</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_templates</span><span class="p">[</span><span class="s2">"scene_number"</span><span class="p">]</span> <span class="o">==</span> <span class="n">number</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly one natural scene template with number </span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">, found </span><span class="si">{</span><span class="n">well_known_files</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">)</span>
+
+        <span class="n">download_link</span> <span class="o">=</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"download_link"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">download_link</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_templates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_stimulus_templates_list"</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_templates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_stimulus_templates</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_templates_list</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_stimulus_templates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ecephys_product_id</span><span class="o">=</span><span class="mi">714914585</span><span class="p">):</span>
+        <span class="n">well_known_files</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"criteria=model::WellKnownFile"</span>
+                <span class="s2">",rma::criteria,well_known_file_type[name$eq'Stimulus']"</span>
+                <span class="s2">"[attachable_type$eq'Product']"</span>
+                <span class="sa">r</span><span class="s2">"[attachable_id$eq{{ecephys_product_id}}]"</span>
+            <span class="p">),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">ecephys_product_id</span><span class="o">=</span><span class="n">ecephys_product_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">scene_number</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">movie_number</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">scene_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scene_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"path"</span><span class="p">])</span>
+            <span class="n">movie_match</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">movie_re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"path"</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">scene_match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">scene_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">scene_match</span><span class="p">[</span><span class="s2">"num"</span><span class="p">]))</span>
+                <span class="n">movie_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">movie_match</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">movie_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">movie_match</span><span class="p">[</span><span class="s2">"num"</span><span class="p">]))</span>
+                <span class="n">scene_number</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">well_known_files</span><span class="p">[</span><span class="s2">"scene_number"</span><span class="p">]</span> <span class="o">=</span> <span class="n">scene_number</span>
+        <span class="n">well_known_files</span><span class="p">[</span><span class="s2">"movie_number"</span><span class="p">]</span> <span class="o">=</span> <span class="n">movie_number</span>
+        <span class="k">return</span> <span class="n">well_known_files</span>
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_probe_lfp_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_probe_lfp_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probe_lfp_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">):</span>
+        <span class="n">well_known_files</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"criteria=model::WellKnownFile"</span>
+                <span class="s2">",rma::criteria,well_known_file_type[name$eq'EcephysLfpNwb']"</span>
+                <span class="s2">"[attachable_type$eq'EcephysProbe']"</span>
+                <span class="sa">r</span><span class="s2">"[attachable_id$eq{{probe_id}}]"</span>
+            <span class="p">),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly 1 LFP NWB file for probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">, found: </span><span class="si">{</span><span class="n">well_known_files</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">)</span>
+
+        <span class="n">download_link</span> <span class="o">=</span> <span class="n">well_known_files</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"download_link"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">download_link</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_sessions">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_sessions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sessions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">session_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">has_eye_tracking</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stimulus_names</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'rma_macros' as rm %}"</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}"</span>
+                <span class="s2">"criteria=model::EcephysSession"</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('id',session_ids)}}"</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">%i</span><span class="s2">f has_eye_tracking is not none%}[fail_eye_tracking$eq{{m.str(not has_eye_tracking).lower()}}]{</span><span class="si">%e</span><span class="s2">ndif%}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('stimulus_name',stimulus_names,True)}}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="s2">",rma::include,specimen(donor(age))"</span>
+                <span class="s2">",well_known_files(well_known_file_type)"</span>
+            <span class="p">),</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">rma_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="n">has_eye_tracking</span><span class="o">=</span><span class="n">has_eye_tracking</span><span class="p">,</span>
+            <span class="n">stimulus_names</span><span class="o">=</span><span class="n">stimulus_names</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">age_in_days</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sex</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">genotype</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">has_nwb</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">age_in_days</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"specimen"</span><span class="p">][</span><span class="s2">"donor"</span><span class="p">][</span><span class="s2">"age"</span><span class="p">][</span><span class="s2">"days"</span><span class="p">])</span>
+            <span class="n">sex</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"specimen"</span><span class="p">][</span><span class="s2">"donor"</span><span class="p">][</span><span class="s2">"sex"</span><span class="p">])</span>
+
+            <span class="n">gt</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"specimen"</span><span class="p">][</span><span class="s2">"donor"</span><span class="p">][</span><span class="s2">"full_genotype"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">gt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">gt</span> <span class="o">=</span> <span class="s2">"wt"</span>
+            <span class="n">genotype</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gt</span><span class="p">)</span>
+
+            <span class="n">current_has_nwb</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">wkf</span> <span class="ow">in</span> <span class="n">row</span><span class="p">[</span><span class="s2">"well_known_files"</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">wkf</span><span class="p">[</span><span class="s2">"well_known_file_type"</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"EcephysNwb"</span><span class="p">:</span>
+                    <span class="n">current_has_nwb</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">has_nwb</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_has_nwb</span><span class="p">)</span>
+
+        <span class="n">response</span><span class="p">[</span><span class="s2">"age_in_days"</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_in_days</span>
+        <span class="n">response</span><span class="p">[</span><span class="s2">"sex"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sex</span>
+        <span class="n">response</span><span class="p">[</span><span class="s2">"genotype"</span><span class="p">]</span> <span class="o">=</span> <span class="n">genotype</span>
+        <span class="n">response</span><span class="p">[</span><span class="s2">"has_nwb"</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_nwb</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"specimen"</span><span class="p">,</span> <span class="s2">"fail_eye_tracking"</span><span class="p">,</span> <span class="s2">"well_known_files"</span><span class="p">],</span>
+            <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"stimulus_name"</span><span class="p">:</span> <span class="s2">"session_type"</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_probes">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_probes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'rma_macros' as rm %}"</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}"</span>
+                <span class="s2">"criteria=model::EcephysProbe"</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('id',probe_ids)}}"</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('ecephys_session_id',session_ids)}}"</span>
+            <span class="p">),</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">rma_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Clarify name for external users</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"use_lfp_data"</span><span class="p">:</span> <span class="s2">"has_lfp_data"</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_channels">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_channels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">probe_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'rma_macros' as rm %}"</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}"</span>
+                <span class="s2">"criteria=model::EcephysChannel"</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('id',channel_ids)}}"</span>
+                <span class="sa">r</span><span class="s2">"{{rm.optional_contains('ecephys_probe_id',probe_ids)}}"</span>
+                <span class="s2">",rma::include,structure"</span>
+                <span class="s2">",rma::options[tabular$eq'"</span>
+                <span class="s2">"ecephys_channels.id"</span>
+                <span class="s2">",ecephys_probe_id"</span>
+                <span class="s2">",local_index"</span>
+                <span class="s2">",probe_horizontal_position"</span>
+                <span class="s2">",probe_vertical_position"</span>
+                <span class="s2">",anterior_posterior_ccf_coordinate"</span>
+                <span class="s2">",dorsal_ventral_ccf_coordinate"</span>
+                <span class="s2">",left_right_ccf_coordinate"</span>
+                <span class="s2">",structures.id as ecephys_structure_id"</span>
+                <span class="s2">",structures.acronym as ecephys_structure_acronym"</span>
+                <span class="s2">"']"</span>
+            <span class="p">),</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">rma_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+            <span class="n">channel_ids</span><span class="o">=</span><span class="n">channel_ids</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_units">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_units">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_units</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">unit_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">channel_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">probe_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">session_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">a</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">k</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}"</span>
+                <span class="s2">"criteria=model::EcephysUnit"</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f unit_ids is not none %},rma::criteria[id$in{{m.comma_sep(unit_ids)}}]{</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f channel_ids is not none %},rma::criteria[ecephys_channel_id$in{{m.comma_sep(channel_ids)}}]{</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f probe_ids is not none %},rma::criteria,ecephys_channel(ecephys_probe[id$in{{m.comma_sep(probe_ids)}}]){</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f session_ids is not none %},rma::criteria,ecephys_channel(ecephys_probe(ecephys_session[id$in{{m.comma_sep(session_ids)}}])){</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">),</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">rma_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_tabular</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+            <span class="n">channel_ids</span><span class="o">=</span><span class="n">channel_ids</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.get_unit_analysis_metrics">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.get_unit_analysis_metrics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_analysis_metrics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">unit_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ecephys_session_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">session_types</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Download analysis metrics - precalculated descriptions of unitwise</span>
+<span class="sd">        responses to visual stimulation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_ids : array-like of int, optional</span>
+<span class="sd">            Unique identifiers for ecephys units. If supplied, only download</span>
+<span class="sd">            metrics for these units.</span>
+<span class="sd">        ecephys_session_ids : array-like of int, optional</span>
+<span class="sd">            Unique identifiers for ecephys sessions. If supplied, only download</span>
+<span class="sd">            metrics for units collected during these sessions.</span>
+<span class="sd">        session_types : array-like of str, optional</span>
+<span class="sd">            Names of session types. e.g. "brain_observatory_1.1" or</span>
+<span class="sd">            "functional_connectivity". If supplied, only download</span>
+<span class="sd">            metrics for units collected during sessions of these types</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            A table of analysis metrics, indexed by unit_id.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="s2">"{</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}"</span>
+                <span class="s2">"criteria=model::EcephysUnitMetricBundle"</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f unit_ids is not none %},rma::criteria[ecephys_unit_id$in{{m.comma_sep(unit_ids)}}]{</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f session_ids is not none %},rma::criteria,ecephys_unit(ecephys_channel(ecephys_probe(ecephys_session[id$in{{m.comma_sep(session_ids)}}]))){</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+                <span class="sa">r</span><span class="s2">"{</span><span class="si">% i</span><span class="s2">f session_types is not none %},rma::criteria,ecephys_unit(ecephys_channel(ecephys_probe(ecephys_session[stimulus_name$in{{m.comma_sep(session_types, True)}}]))){</span><span class="si">% e</span><span class="s2">ndif %}"</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">),</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">rma_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">get_rma_list</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">ecephys_session_ids</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">,</span>
+            <span class="n">session_types</span><span class="o">=</span><span class="n">session_types</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"data"</span><span class="p">))</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_unit_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">colname</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">output</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                    <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">colname</span><span class="p">])),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="c1"># TODO: remove this</span>
+        <span class="c1"># on_screen_rf and p_value_rf were correctly calculated,</span>
+        <span class="c1"># but switched with one another. This snippet unswitches them.</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="k">if</span> <span class="s2">"p_value_rf"</span> <span class="ow">in</span> <span class="n">columns</span> <span class="ow">and</span> <span class="s2">"on_screen_rf"</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+            <span class="n">pv_is_bool</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">"p_value_rf"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">bool</span><span class="p">)</span>
+            <span class="n">on_screen_is_float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span>
+                <span class="n">output</span><span class="p">[</span><span class="s2">"on_screen_rf"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span>
+            <span class="p">)</span>
+
+            <span class="c1"># this is not a good test, but it avoids the case where we fix</span>
+            <span class="c1"># these in the data for a future release, but</span>
+            <span class="c1"># reintroduce the bug by forgetting to update the code.</span>
+            <span class="k">if</span> <span class="n">pv_is_bool</span> <span class="ow">and</span> <span class="n">on_screen_is_float</span><span class="p">:</span>
+                <span class="n">p_value_rf</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">"p_value_rf"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">output</span><span class="p">[</span><span class="s2">"p_value_rf"</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="s2">"on_screen_rf"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">output</span><span class="p">[</span><span class="s2">"on_screen_rf"</span><span class="p">]</span> <span class="o">=</span> <span class="n">p_value_rf</span>
+
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectWarehouseApi.default">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_warehouse_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectWarehouseApi.default">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">asynchronous</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">rma_kwargs</span><span class="p">):</span>
+        <span class="n">_rma_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"scheme"</span><span class="p">:</span> <span class="s2">"http"</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">:</span> <span class="s2">"api.brain-map.org"</span><span class="p">}</span>
+        <span class="n">_rma_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rma_kwargs</span><span class="p">)</span>
+
+        <span class="n">engine_cls</span> <span class="o">=</span> <span class="n">AsyncRmaEngine</span> <span class="k">if</span> <span class="n">asynchronous</span> <span class="k">else</span> <span class="n">RmaEngine</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">engine_cls</span><span class="p">(</span><span class="o">**</span><span class="n">_rma_kwargs</span><span class="p">))</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

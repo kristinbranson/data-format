@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables</span>\
+    <span class="o">.</span><span class="n">ophys_mixin</span> <span class="kn">import</span><span class="w"> \</span>
+<span class="w">    </span><span class="nn">OphysMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables</span>\
+    <span class="o">.</span><span class="n">project_table</span> <span class="kn">import</span><span class="w"> \</span>
+<span class="w">    </span><span class="nn">ProjectTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">add_experience_level_ophys</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables</span>\
+    <span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">experiments_table_utils</span> <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+        <span class="n">add_passive_flag_to_ophys_experiment_table</span><span class="p">,</span>
+        <span class="n">add_image_set_to_experiment_table</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.dataframe_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">enforce_df_column_order</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ophys.project_constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">VBO_METADATA_COLUMN_ORDER</span>  <span class="c1"># noqa: E501</span>
+
+
+<div class="viewcode-block" id="ExperimentsTable">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.ExperimentsTable">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ExperimentsTable</span><span class="p">(</span><span class="n">ProjectTable</span><span class="p">,</span> <span class="n">OphysMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Class for storing and manipulating project-level data</span>
+<span class="sd">    at the behavior-ophys experiment level"""</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+                 <span class="n">suppress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">passed_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        df: pd.DataFrame</span>
+<span class="sd">            The behavior-ophys experiment-level data</span>
+<span class="sd">        suppress: Optional[List[str]]</span>
+<span class="sd">            columns to drop from table (default=None)</span>
+<span class="sd">        passed_only: bool</span>
+<span class="sd">             If True, only return experiments whose</span>
+<span class="sd">             exeriment_workflow_state is True</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_passed_only</span> <span class="o">=</span> <span class="n">passed_only</span>
+        <span class="n">ProjectTable</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="n">suppress</span><span class="p">)</span>
+        <span class="n">OphysMixin</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_processing</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">enforce_df_column_order</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">,</span>
+            <span class="n">VBO_METADATA_COLUMN_ORDER</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="ExperimentsTable.postprocess_base">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.ExperimentsTable.postprocess_base">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">postprocess_base</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        It actually is possible for the same ophys_experiment_id</span>
+<span class="sd">        to map to more than one container, so we don't want to</span>
+<span class="sd">        eliminate duplicate instances of the index</span>
+<span class="sd">        """</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ExperimentsTable.postprocess_additional">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.ExperimentsTable.postprocess_additional">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">postprocess_additional</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ExperimentsTable.final_processing">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.experiments_table.ExperimentsTable.final_processing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">final_processing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># This method is necessary because self.post_process_additional()</span>
+        <span class="c1"># is called by the ProjectTable.__init__(), which is called</span>
+        <span class="c1"># before OphysMixin.__init__(). OphysMixin.__init__() joins</span>
+        <span class="c1"># some of the Behavior and Ophys columns into sigle, session-wide</span>
+        <span class="c1"># columns, which the functions below must access (specifically,</span>
+        <span class="c1"># OphysMixin.__init__() joins session_type_behavior and</span>
+        <span class="c1"># session_type_ophys into session_type, which is the column</span>
+        <span class="c1"># that add_image_set_to_experiment acts on. A future ticket</span>
+        <span class="c1"># should revisit the workflow of these classes to make it</span>
+        <span class="c1"># possible for the function calls below to be incorporated</span>
+        <span class="c1"># into post_process_additional</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">add_experience_level_ophys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">add_passive_flag_to_ophys_experiment_table</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_df</span> <span class="o">=</span> <span class="n">add_image_set_to_experiment_table</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_df</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

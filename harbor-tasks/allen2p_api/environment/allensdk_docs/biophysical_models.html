@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Biophysical Models &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="Generalized LIF Models" href="glif_models.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="biophysical-models">
+<h1>Biophysical Models<a class="headerlink" href="#biophysical-models" title="Link to this heading">¶</a></h1>
+<p>The Allen Cell Types Database contains biophysical models that
+characterize the firing behavior of neurons measured in slices
+through current injection by a somatic whole-cell patch clamp electrode.
+These models contain a set of 10 active conductances placed at the soma
+and use the reconstructed 3D morphologies of the modeled neurons.
+The biophysical modeling
+<a class="reference external" href="http://help.brain-map.org/display/celltypes/Documentation">technical white paper</a>
+contains details
+on the specific construction of these models and the optimization
+of the model parameters to match the experimentally-recorded firing behaviors.</p>
+<p>The biophysical models are run with the <a class="reference external" href="http://www.neuron.yale.edu/neuron/">NEURON</a>
+simulation environment.  The Allen SDK package contains libraries that assist
+in downloading and setting up the models available on the Allen Institute web site
+for users to run using NEURON.
+The examples and scripts provided run on Linux using the bash shell.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<p>You must have NEURON with the Python interpreter enabled and the Allen SDK installed.</p>
+<p>The Allen Institute perisomatic biophysical models were generated using
+NEURON <a class="reference external" href="http://www.neuron.yale.edu/ftp/neuron/versions/v7.4/v7.4.rel-1370">version v7.4.rel-1370</a>.
+Instructions for compiling NEURON with the Python interpreter
+are available from the NEURON team under the heading
+<a class="reference external" href="http://www.neuron.yale.edu/neuron/download/compile_linux#otheroptions">Installation with Python as an alternative interpreter</a>.
+The Allen SDK is compatible with Python version 2.7.9, included in the Anaconda 2.1.0 distribution.</p>
+<p>Instructions for optional
+<a class="reference external" href="./install.html#installation-with-docker-optional">Docker installation</a>
+are also available.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Building and installing NEURON with the Python wrapper enabled is not always easy.
+This page targets users that have a background in NEURON usage and installation.</p>
+</div>
+</section>
+<section id="downloading-biophysical-models">
+<h2>Downloading Biophysical Models<a class="headerlink" href="#downloading-biophysical-models" title="Link to this heading">¶</a></h2>
+<p>There are two ways to download files necessary to run a biophysical model.
+The first way is to visit <a class="reference external" href="http://celltypes.brain-map.org">http://celltypes.brain-map.org</a> and find cells that have
+biophysical models available for download.  The electrophysiology details page
+for a cell has a neuronal model download link.  Specifically:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Click ‘More Options+’</p></li>
+<li><p>Check ‘Models -&gt; Biophysical - perisomatic’ or ‘Biophysical - all active’</p></li>
+<li><p>Use the Filters, Cell Location and Cell Feature Filters to narrow your results.</p></li>
+<li><p>Click on a Cell Summary to view the Mouse Experiment Electrophysiology.</p></li>
+<li><p>Click the “download data” link to download the NWB stimulus and response file.</p></li>
+<li><p>Click “show model response” and select ‘Biophysical - perisomatic’ or ‘Biophysical - all active’.</p></li>
+<li><p>Scroll down and click the ‘Biophysical - perisomatic’ or ‘Biophysical - all active’ “download model” link.</p></li>
+</ol>
+</div></blockquote>
+<p>This may be also be done programmatically.
+The neuronal model id can be found to the left of
+the corresponding ‘Biophysical - perisomatic’ or
+‘Biophysical - all active’ “download model” link.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.queries.biophysical_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiophysicalApi</span>
+
+<span class="n">bp</span> <span class="o">=</span> <span class="n">BiophysicalApi</span><span class="p">()</span>
+<span class="n">bp</span><span class="o">.</span><span class="n">cache_stimulus</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># change to False to not download the large stimulus NWB file</span>
+<span class="n">neuronal_model_id</span> <span class="o">=</span> <span class="mi">472451419</span>    <span class="c1"># get this from the web site as above</span>
+<span class="n">bp</span><span class="o">.</span><span class="n">cache_data</span><span class="p">(</span><span class="n">neuronal_model_id</span><span class="p">,</span> <span class="n">working_directory</span><span class="o">=</span><span class="s1">'neuronal_model'</span><span class="p">)</span>
+
+
+</pre></div>
+</div>
+<p>More help can be found in the
+<a class="reference external" href="http://help.brain-map.org/display/celltypes/Allen+Cell+Types+Database">online help</a>
+for the Allen Cell Types Database web application.</p>
+</section>
+<section id="directory-structure">
+<h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">¶</a></h2>
+<p>The structure of the directory created looks like this.
+It includes stimulus files, model parameters, morphology, cellular mechanisms
+and application configuration.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>neuronal_model
+|-- manifest.json
+|-- 472451419_fit.json
+|-- Nr5a1-Cre_Ai14_IVSCC_-169248.04.02.01.nwb
+|-- Nr5a1-Cre_Ai14_IVSCC_-169248.04.02.01_403165543_m.swc
+|-- modfiles
+|   |--CaDynamics.mod
+|   |--Ca_HVA.mod
+|   |--Ca_LVA.mod
+|   |--Ih.mod
+|   `--...etc.
+|
+|--x86_64
+`---work
+</pre></div>
+</div>
+</section>
+<section id="running-the-simulation-linux-shell-prompt">
+<h2>Running the Simulation (Linux shell prompt)<a class="headerlink" href="#running-the-simulation-linux-shell-prompt" title="Link to this heading">¶</a></h2>
+<p>All of the sweeps available from the web site are included in manifest.json and will be run by default.
+This can take some time.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">neuronal_model</span>
+<span class="n">nrnivmodl</span> <span class="o">./</span><span class="n">modfiles</span>   <span class="c1"># compile the model (only needs to be done once)</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">allensdk</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">biophysical</span><span class="o">.</span><span class="n">runner</span> <span class="n">manifest</span><span class="o">.</span><span class="n">json</span> <span class="c1"># perisomatic models</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">allensdk</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">biophysical</span><span class="o">.</span><span class="n">runner</span> <span class="n">manifest</span><span class="o">.</span><span class="n">json</span> <span class="c1"># legacy all-active models</span>
+<span class="c1"># new all-active models (axon replaced by a 60 micron long 1 micron diameter stub)</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">allensdk</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">biophysical</span><span class="o">.</span><span class="n">runner</span> <span class="n">manifest</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">axon_type</span> <span class="n">stub</span>
+</pre></div>
+</div>
+</section>
+<section id="selecting-a-specific-sweep">
+<h2>Selecting a Specific Sweep<a class="headerlink" href="#selecting-a-specific-sweep" title="Link to this heading">¶</a></h2>
+<p>The sweeps are listed in manifest.json.
+You can remove all of the sweep numbers that you do not want run.</p>
+</section>
+<section id="simulation-main-loop">
+<h2>Simulation Main Loop<a class="headerlink" href="#simulation-main-loop" title="Link to this heading">¶</a></h2>
+<p>The top level script is in the
+<a class="reference internal" href="allensdk.model.biophysical.runner.html#allensdk.model.biophysical.runner.run" title="allensdk.model.biophysical.runner.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>
+method of the <a class="reference internal" href="allensdk.model.biophysical.runner.html#module-allensdk.model.biophysical.runner" title="allensdk.model.biophysical.runner"><code class="xref py py-mod docutils literal notranslate"><span class="pre">allensdk.model.biophysical.runner</span></code></a>
+module.  The implementation of the method is discussed here step-by-step:</p>
+<p>First configure NEURON based on the configuration file, which was
+read in from the command line at the very bottom of the script.</p>
+<p><a class="reference internal" href="allensdk.model.biophysical.runner.html#allensdk.model.biophysical.runner.run" title="allensdk.model.biophysical.runner.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure NEURON -- this will infer model type (perisomatic vs. all-active)</span>
+<span class="n">utils</span> <span class="o">=</span> <span class="n">Utils</span><span class="o">.</span><span class="n">create_utils</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>The next step is to get the path of the morphology file and pass it to NEURON.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure model</span>
+<span class="n">manifest</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">manifest</span>
+<span class="n">morphology_path</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'MORPHOLOGY'</span><span class="p">)</span>
+<span class="n">utils</span><span class="o">.</span><span class="n">generate_morphology</span><span class="p">(</span><span class="n">morphology_path</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">'ascii'</span><span class="p">,</span> <span class="s1">'ignore'</span><span class="p">))</span>
+<span class="n">utils</span><span class="o">.</span><span class="n">load_cell_parameters</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Then read the stimulus and recording configuration and configure NEURON</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># configure stimulus and recording</span>
+<span class="n">stimulus_path</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'stimulus_path'</span><span class="p">)</span>
+<span class="n">nwb_out_path</span> <span class="o">=</span> <span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s2">"output"</span><span class="p">)</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">nwb_out_path</span><span class="p">)</span>
+<span class="n">run_params</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'runs'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">sweeps</span> <span class="o">=</span> <span class="n">run_params</span><span class="p">[</span><span class="s1">'sweeps'</span><span class="p">]</span>
+<span class="n">junction_potential</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'fitting'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">'junction_potential'</span><span class="p">]</span>
+<span class="n">mV</span> <span class="o">=</span> <span class="mf">1.0e-3</span>
+</pre></div>
+</div>
+<p>Loop through the stimulus sweeps and write the output.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># run sweeps</span>
+<span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">sweeps</span><span class="p">:</span>
+    <span class="n">utils</span><span class="o">.</span><span class="n">setup_iclamp</span><span class="p">(</span><span class="n">stimulus_path</span><span class="p">,</span> <span class="n">sweep</span><span class="o">=</span><span class="n">sweep</span><span class="p">)</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">record_values</span><span class="p">()</span>
+
+    <span class="n">h</span><span class="o">.</span><span class="n">finitialize</span><span class="p">()</span>
+    <span class="n">h</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="c1"># write to an NWB File</span>
+    <span class="n">output_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="s1">'v'</span><span class="p">])</span> <span class="o">-</span> <span class="n">junction_potential</span><span class="p">)</span> <span class="o">*</span> <span class="n">mV</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">set_sweep</span><span class="p">(</span><span class="n">sweep</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">output_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="customization">
+<h2>Customization<a class="headerlink" href="#customization" title="Link to this heading">¶</a></h2>
+<p>Much of the code in the perisomatic simulation is not core Allen SDK code.
+The runner.py script largely reads the configuration file and calls into
+methods in the <a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils" title="allensdk.model.biophysical.utils.Utils"><code class="xref py py-class docutils literal notranslate"><span class="pre">Utils</span></code></a> class.
+Utils is a subclass of the <a class="reference internal" href="allensdk.model.biophys_sim.neuron.hoc_utils.html#allensdk.model.biophys_sim.neuron.hoc_utils.HocUtils" title="allensdk.model.biophys_sim.neuron.hoc_utils.HocUtils"><code class="xref py py-class docutils literal notranslate"><span class="pre">HocUtils</span></code></a>
+class, which provides access to objects in the NEURON package.
+The various methods called by the runner.script are implemented here, including:
+<a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.generate_morphology" title="allensdk.model.biophysical.utils.Utils.generate_morphology"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_morphology()</span></code></a>,
+<a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.load_cell_parameters" title="allensdk.model.biophysical.utils.Utils.load_cell_parameters"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_cell_parameters()</span></code></a>,
+<a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.setup_iclamp" title="allensdk.model.biophysical.utils.Utils.setup_iclamp"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setup_iclamp()</span></code></a>,
+<a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.read_stimulus" title="allensdk.model.biophysical.utils.Utils.read_stimulus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_stimulus()</span></code></a>
+and
+<a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.record_values" title="allensdk.model.biophysical.utils.Utils.record_values"><code class="xref py py-meth docutils literal notranslate"><span class="pre">record_values()</span></code></a>.</p>
+<p><a class="reference internal" href="allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils" title="allensdk.model.biophysical.utils.Utils"><code class="xref py py-class docutils literal notranslate"><span class="pre">Utils</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.biophys_sim.neuron.hoc_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HocUtils</span>
+
+<span class="o">.....</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Utils</span><span class="p">(</span><span class="n">HocUtils</span><span class="p">):</span>
+<span class="o">.....</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Utils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+<span class="o">....</span>
+</pre></div>
+</div>
+<p>To create a biophysical model using your own software or data,
+simply model your directory structure on one of the downloaded simulations
+or one of the examples below.
+Add your own runner.py and utils.py module to the simulation directory.</p>
+<p>Compile the .mod files using NEURON’s nrnivmodl command (Linux shell):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nrnivmodl</span> <span class="n">modfiles</span>
+</pre></div>
+</div>
+<p>Then call your runner script directly, passing in the manifest file to your script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">runner</span><span class="o">.</span><span class="n">py</span> <span class="n">manifest</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>The output from your simulation and any intermediate files will go in the work directory.</p>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
+<p>A <code class="xref download docutils literal notranslate"><span class="pre">minimal</span> <span class="pre">example</span> <span class="pre">(simple_example.tgz)</span></code>
+and a <code class="xref download docutils literal notranslate"><span class="pre">multicell</span> <span class="pre">example</span> <span class="pre">(multicell_example.tgz)</span></code>
+are available to download as a starting point for your own projects.</p>
+<p>Each example provides its own utils.py file along with a main script (Linux shell)
+and supporting configuration files.</p>
+<p>simple_example.tgz:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tar</span> <span class="n">xvzf</span> <span class="n">simple_example</span><span class="o">.</span><span class="n">tgz</span>
+<span class="n">cd</span> <span class="n">simple</span>
+<span class="n">nrnivmodl</span> <span class="n">modfiles</span>
+<span class="n">python</span> <span class="n">simple</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>multicell_example.tgz:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tar</span> <span class="n">xvzf</span> <span class="n">multicell_example</span><span class="o">.</span><span class="n">tgz</span>
+<span class="n">cd</span> <span class="n">multicell</span>
+<span class="n">nrnivmodl</span> <span class="n">modfiles</span>
+<span class="n">python</span> <span class="n">multi</span><span class="o">.</span><span class="n">py</span>
+<span class="n">python</span> <span class="n">multicell_diff</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+<section id="exporting-output-to-text-format-or-image">
+<h2>Exporting Output to Text Format or Image<a class="headerlink" href="#exporting-output-to-text-format-or-image" title="Link to this heading">¶</a></h2>
+<p>This is an example of using the AllenSDK
+to save a response voltage to other formats.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.dat_utilities</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">DatUtilities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.nwb_data_set</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">NwbDataSet</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"Agg"</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">nwb_file</span> <span class="o">=</span> <span class="s1">'313862020.nwb'</span>
+<span class="n">sweep_number</span> <span class="o">=</span> <span class="mi">52</span>
+<span class="n">dat_file</span> <span class="o">=</span> <span class="s1">'313862020_</span><span class="si">%d</span><span class="s1">.dat'</span> <span class="o">%</span> <span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+
+<span class="n">nwb</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">)</span>
+<span class="n">sweep</span> <span class="o">=</span> <span class="n">nwb</span><span class="o">.</span><span class="n">get_sweep</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+
+<span class="c1"># read v and t as numpy arrays</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">sweep</span><span class="p">[</span><span class="s1">'response'</span><span class="p">]</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">1.0e3</span> <span class="o">/</span> <span class="n">sweep</span><span class="p">[</span><span class="s1">'sampling_rate'</span><span class="p">]</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_samples</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+
+<span class="c1"># save as text file</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">)))</span>
+<span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="n">dat_file</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+<span class="c1"># save image using matplotlib</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Sweep </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">sweep_number</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">'out.png'</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-description-files">
+<h2>Model Description Files<a class="headerlink" href="#model-description-files" title="Link to this heading">¶</a></h2>
+<section id="basic-structure">
+<h3>Basic Structure<a class="headerlink" href="#basic-structure" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><p>A model description file is simply a JSON object with several sections at the top level
+and an array of JSON objects within each section.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="p">{</span>
+    <span class="s2">"cell_section"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+          <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell 1"</span><span class="p">,</span>
+          <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"pyramidal"</span>
+          <span class="s2">"position"</span><span class="p">:</span> <span class="p">[</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span> <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+          <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell 2"</span><span class="p">,</span>
+          <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"glial"</span><span class="p">,</span>
+          <span class="s2">"position"</span><span class="p">:</span> <span class="p">[</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span> <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">"extra"</span><span class="p">:</span> <span class="p">[</span>
+       <span class="p">{</span> <span class="s2">"what"</span><span class="p">:</span> <span class="s2">"wood"</span><span class="p">,</span>
+         <span class="s2">"who"</span><span class="p">:</span> <span class="s2">"woodchuck"</span>
+       <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Even if a section contains no objects or only one object the array brackets must be present.</p>
+</div></blockquote>
+</section>
+<section id="objects-within-sections">
+<h3>Objects Within Sections<a class="headerlink" href="#objects-within-sections" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><p>While no restrictions are enforced on what kinds of objects are stored in a section,
+some rules of thumb make the file easier to work with.</p>
+<ol class="arabic simple">
+<li><p>All objects within a section are the same structure.
+Common operations on a section are to display it as a table,
+iterate over it, load from or write to a spreadsheet or csv file.
+These operations are all easier if the section is fairly homogeneous.</p></li>
+<li><p>Objects are not deeply nested.
+While some shallow nesting is often useful, deep nesting such as a tree structure
+is not recommended.
+It makes interoperability with other tools and data formats more difficult.</p></li>
+<li><p>Arrays are allowed, though they should not be deeply nested either.</p></li>
+<li><p>Object member values should be literals.  Do not use pickled classes, for example.</p></li>
+</ol>
+</div></blockquote>
+</section>
+<section id="comment-lines">
+<h3>Comment Lines<a class="headerlink" href="#comment-lines" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><p>The JSON specification does not allow comments.
+However, the Allen SDK library applies a preprocessing stage
+to remove C++-style comments, so they can be used in description files.</p>
+<p>Multi-line comments should be surrounded by /* */
+and single-line comments start with //.
+Commented description files will not be recognized by strict json parsers
+unless the comments are stripped.</p>
+<p>commented.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="o">/*</span>
+    <span class="o">*</span>  <span class="n">multi</span><span class="o">-</span><span class="n">line</span> <span class="n">comment</span>
+    <span class="o">*/</span>
+   <span class="s2">"section1"</span><span class="p">:</span> <span class="p">[</span>
+       <span class="p">{</span>
+          <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"simon"</span>  <span class="o">//</span> <span class="n">single</span> <span class="n">line</span> <span class="n">comment</span>
+       <span class="p">}]</span>
+   <span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="split-description-files-by-section">
+<h3>Split Description Files by Section<a class="headerlink" href="#split-description-files-by-section" title="Link to this heading">¶</a></h3>
+<blockquote>
+<div><p>A model description can be split into multiple files
+by putting some sections in one file and other sections into another file.
+This can be useful if you want to put a topology of cells and connections in one file
+and experimental conditions and stimulus in another file.  The resulting structure in
+memory will behave the same way as if the files were not split.
+This allows a small experiment to be described in a single file
+and large experiments to be more modular.</p>
+<p>cells.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">"cell_section"</span><span class="p">:</span> <span class="p">[</span>
+       <span class="p">{</span>
+         <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell 1"</span><span class="p">,</span>
+         <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"pyramidal"</span>
+         <span class="s2">"position"</span><span class="p">:</span> <span class="p">[</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span> <span class="p">]</span>
+       <span class="p">},</span>
+       <span class="p">{</span>
+         <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell 2"</span><span class="p">,</span>
+         <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"glial"</span><span class="p">,</span>
+         <span class="s2">"position"</span><span class="p">:</span> <span class="p">[</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span> <span class="p">]</span>
+       <span class="p">}</span>
+   <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>extras.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"extra"</span><span class="p">:</span> <span class="p">[</span>
+       <span class="p">{</span>
+         <span class="s2">"what"</span><span class="p">:</span> <span class="s2">"wood"</span><span class="p">,</span>
+         <span class="s2">"who"</span><span class="p">:</span> <span class="s2">"woodchuck"</span>
+       <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="split-sections-between-description-files">
+<h3>Split Sections Between Description Files<a class="headerlink" href="#split-sections-between-description-files" title="Link to this heading">¶</a></h3>
+<p>If two description files containing the same sections are combined,
+the resulting description will contain objects from both files.
+This feature allows sub-networks to be described in separate files.
+The sub-networks can then be composed into a larger network with an additional
+description of the interconnections.</p>
+<blockquote>
+<div><p>network1.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*</span> <span class="n">A</span> <span class="bp">self</span><span class="o">-</span><span class="n">contained</span> <span class="n">sub</span><span class="o">-</span><span class="n">network</span> <span class="o">*/</span>
+<span class="p">{</span>
+    <span class="s2">"cells"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell1"</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell2"</span> <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="o">/*</span> <span class="n">intra</span><span class="o">-</span><span class="n">network</span> <span class="n">connections</span> <span class="o">/*</span>
+    <span class="s2">"connections"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"cell1"</span><span class="p">,</span> <span class="s2">"target"</span> <span class="p">:</span> <span class="s2">"cell2"</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>network2.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/*</span> <span class="n">Another</span> <span class="bp">self</span><span class="o">-</span><span class="n">contained</span> <span class="n">sub</span><span class="o">-</span><span class="n">network</span> <span class="o">*/</span>
+<span class="p">{</span>
+    <span class="s2">"cells"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell3"</span> <span class="p">},</span>
+        <span class="p">{</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"cell4"</span> <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">"connections"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"cell3"</span><span class="p">,</span> <span class="s2">"target"</span> <span class="p">:</span> <span class="s2">"cell4"</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>interconnect.json:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="o">//</span> <span class="n">the</span> <span class="n">additional</span> <span class="n">connections</span> <span class="n">needed</span> <span class="n">to</span>
+    <span class="o">//</span> <span class="n">connect</span> <span class="n">the</span> <span class="n">network1</span> <span class="ow">and</span> <span class="n">network2</span>
+    <span class="o">//</span> <span class="n">into</span> <span class="n">a</span> <span class="n">ring</span> <span class="n">topology</span><span class="o">.</span>
+    <span class="s2">"connections"</span><span class="p">:</span> <span class="p">[</span>
+       <span class="p">{</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"cell2"</span><span class="p">,</span> <span class="s2">"target"</span><span class="p">:</span> <span class="s2">"cell3"</span> <span class="p">},</span>
+       <span class="p">{</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"cell4"</span><span class="p">,</span> <span class="s2">"target"</span><span class="p">:</span> <span class="s2">"cell1"</span> <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="resource-manifest">
+<h2>Resource Manifest<a class="headerlink" href="#resource-manifest" title="Link to this heading">¶</a></h2>
+<p>JSON has many advantages.  It is widely supported,
+readable and easy to parse and edit.
+As data sets get larger or specialized those advantages diminish.
+Large or complex models and experiments generally need more than
+a single model description file to completely describe an experiment.
+A manifest file is a way to describe all of the resources needed within
+the Allen SDK description format itself.</p>
+<p>The manifest section is named “manifest” by default,
+though it is configurable.  The objects in the manifest section
+each specify a directory, file, or file pattern.
+Files and directories may be organized in a parent-child relationship.</p>
+<section id="a-simple-manifest">
+<h3>A Simple Manifest<a class="headerlink" href="#a-simple-manifest" title="Link to this heading">¶</a></h3>
+<p>This is a simple manifest file that specifies the BASEDIR directory
+using “.”, meaning the current directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"manifest"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>   <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"BASEDIR"</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"dir"</span><span class="p">,</span>
+            <span class="s2">"spec"</span><span class="p">:</span> <span class="s2">"."</span>
+        <span class="p">}</span>
+    <span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="parent-child-relationships">
+<h3>Parent Child Relationships<a class="headerlink" href="#parent-child-relationships" title="Link to this heading">¶</a></h3>
+<p>Adding the optional “parent_key” member to a manifest object
+creates a parent-child relation.  In this case WORKDIR will
+be found in “./work”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"manifest"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>   <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"BASEDIR"</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"dir"</span><span class="p">,</span>
+            <span class="s2">"spec"</span><span class="p">:</span> <span class="s2">"."</span>
+        <span class="p">},</span>
+        <span class="p">{</span>   <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"WORKDIR"</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"dir"</span><span class="p">,</span>
+            <span class="s2">"spec"</span><span class="p">:</span> <span class="s2">"/work"</span><span class="p">,</span>
+            <span class="s2">"parent_key"</span><span class="p">:</span> <span class="s2">"BASEDIR"</span>
+        <span class="p">}</span>
+    <span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="file-spec-patterns">
+<h3>File Spec Patterns<a class="headerlink" href="#file-spec-patterns" title="Link to this heading">¶</a></h3>
+<p>Files can be specified using the type “file” instead of “dir”.
+If a sequence of many files is needed, the spec may contain patterns
+to indicate where the sequence number (%d) or string (%s) will be
+interpolated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">"manifest"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>   <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"BASEDIR"</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"dir"</span><span class="p">,</span>
+            <span class="s2">"spec"</span><span class="p">:</span> <span class="s2">"."</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"voltage_out_cell_path"</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"file"</span><span class="p">,</span>
+            <span class="s2">"spec"</span><span class="p">:</span> <span class="s2">"v_out-cell-</span><span class="si">%d</span><span class="s2">.dat"</span><span class="p">,</span>
+            <span class="s2">"parent_key"</span><span class="p">:</span> <span class="s2">"BASEDIR"</span>
+        <span class="p">}</span>
+    <span class="p">]</span> <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="split-manifest-files">
+<h3>Split Manifest Files<a class="headerlink" href="#split-manifest-files" title="Link to this heading">¶</a></h3>
+<p>Manifest files can be split like any description file.
+This allows the specification of a general directory structure in a
+shared file and specific files in a separate configuration
+(i.e. stimulus and working directory)</p>
+</section>
+<section id="extensions">
+<h3>Extensions<a class="headerlink" href="#extensions" title="Link to this heading">¶</a></h3>
+<p>To date, manifest description files have not been used to reference
+URLs that provide model data, but it is a planned future use case.</p>
+</section>
+</section>
+<section id="further-reading">
+<h2>Further Reading<a class="headerlink" href="#further-reading" title="Link to this heading">¶</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="http://www.neuron.yale.edu/neuron">NEURON</a></p></li>
+<li><p><a class="reference external" href="https://www.python.org/">Python</a></p></li>
+<li><p><a class="reference external" href="http://www.w3schools.com/json/">JSON</a></p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="models.html">Models</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

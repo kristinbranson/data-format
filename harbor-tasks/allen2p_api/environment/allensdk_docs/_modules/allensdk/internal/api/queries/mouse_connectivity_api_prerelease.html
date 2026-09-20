@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.api.queries.mouse_connectivity_api_prerelease &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.api.queries.mouse_connectivity_api_prerelease</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.warehouse_cache.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span><span class="p">,</span> <span class="n">cacheable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.queries.grid_data_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridDataApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.queries.mouse_connectivity_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">MouseConnectivityApi</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.grid_data_api_prerelease</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridDataApiPrerelease</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...core</span><span class="w"> </span><span class="kn">import</span> <span class="n">lims_utilities</span> <span class="k">as</span> <span class="n">lu</span>
+
+
+<span class="n">_STRUCTURE_TREE_ROOT_ID</span> <span class="o">=</span> <span class="mi">997</span>
+<span class="n">_STRUCTURE_TREE_ROOT_NAME</span> <span class="o">=</span> <span class="s2">"root"</span>
+<span class="n">_STRUCTURE_TREE_ROOT_ACRONYM</span> <span class="o">=</span> <span class="s2">"root"</span>
+
+<span class="n">_EXPERIMENT_QUERY</span> <span class="o">=</span> <span class="s1">'''</span>
+<span class="s1">with    specimens_concat_workflows as  (</span>
+<span class="s1">    select    sp.id,</span>
+<span class="s1">              string_agg(w.name, '|') as workflows</span>
+<span class="s1">    from      specimens as sp</span>
+<span class="s1">    join      specimens_workflows as spw on spw.specimen_id = sp.id</span>
+<span class="s1">    join      workflows as w on w.id = spw.workflow_id</span>
+<span class="s1">    group by  sp.id</span>
+<span class="s1">        ),</span>
+<span class="s1">        injections_concat_structures as  (</span>
+<span class="s1">    select    inj.id as injection_id,</span>
+<span class="s1">              string_agg(st.name,'|' order by st.graph_order)</span>
+<span class="s1">                  as injection_structures_name,</span>
+<span class="s1">              string_agg(st.acronym,'|' order by st.graph_order)</span>
+<span class="s1">                  as injection_structures_acronym,</span>
+<span class="s1">              string_agg(cast(st.id as varchar),'|' order by st.graph_order)</span>
+<span class="s1">                  as injection_structures_id</span>
+<span class="s1">    from      injections as inj</span>
+<span class="s1">    join      injections_structures as ist on ist.injection_id = inj.id</span>
+<span class="s1">    join      flat_structures_v st on st.id = ist.structure_id</span>
+<span class="s1">    group by  inj.id</span>
+<span class="s1">        )</span>
+<span class="s1">select distinct</span>
+<span class="s1">           iser.id,</span>
+<span class="s1">           iser.workflow_state,</span>
+<span class="s1">           sp.name as specimen_name,</span>
+<span class="s1">           gdr.name as gender,</span>
+<span class="s1">           a.name as age,</span>
+<span class="s1">           p.name as project_code,</span>
+<span class="s1">           spcw.workflows,</span>
+<span class="s1">           g.name as transgenic_line, --some image series have 2 lines</span>
+<span class="s1">           pst.id as structure_id,</span>
+<span class="s1">           pst.name as structure_name,</span>
+<span class="s1">           pst.acronym as structure_acronym,</span>
+<span class="s1">           ics.injection_structures_name,</span>
+<span class="s1">           ics.injection_structures_acronym,</span>
+<span class="s1">           ics.injection_structures_id</span>
+<span class="s1">from       image_series as iser</span>
+<span class="s1">join       projects as p on p.id = iser.project_id</span>
+<span class="s1">join       specimens as sp on sp.id = iser.specimen_id</span>
+<span class="s1">join       donors as d on d.id = sp.donor_id</span>
+<span class="s1">join       injections inj on inj.specimen_id = sp.id</span>
+<span class="s1">left join  flat_structures_v pst on pst.id = inj.primary_injection_structure_id</span>
+<span class="s1">left join  ages as a on a.id = d.age_id</span>
+<span class="s1">left join  genders as gdr on gdr.id = d.gender_id</span>
+<span class="s1">left join  donors_genotypes as dg on dg.donor_id = sp.donor_id</span>
+<span class="s1">left join  genotypes as g on dg.genotype_id = g.id</span>
+<span class="s1">-- concat joins --</span>
+<span class="s1">left join  specimens_concat_workflows as spcw on spcw.id = iser.specimen_id</span>
+<span class="s1">left join  injections_concat_structures as ics on ics.injection_id = inj.id</span>
+<span class="s1">-- only image series we can pull and ensure mice (should all be mice already) --</span>
+<span class="s1">where      iser.storage_directory is not null and d.organism_id = 2</span>
+<span class="s1">'''</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_experiment_dict</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+    <span class="c1"># use empty strings instead of null</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">null_fill</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">""</span>
+
+    <span class="n">exp</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'id'</span><span class="p">]</span>
+
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'age'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'age'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'gender'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'gender'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'project_code'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'project_code'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'specimen_name'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'specimen_name'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'transgenic_line'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'transgenic_line'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'workflow_state'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'workflow_state'</span><span class="p">])</span>
+
+    <span class="c1"># list : [''] or ['workflow1', 'workflow2', ... ]</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'workflows'</span><span class="p">]</span> <span class="o">=</span> <span class="n">null_fill</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'workflows'</span><span class="p">])</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'workflows'</span><span class="p">]</span> <span class="o">=</span> <span class="n">exp</span><span class="p">[</span><span class="s1">'workflows'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'|'</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'structure_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'structure_id'</span><span class="p">]</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_name'</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'structure_name'</span><span class="p">]</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_abbrev'</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'structure_acronym'</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># use root structure for compatibility with structure tree</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_STRUCTURE_TREE_ROOT_ID</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_name'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_STRUCTURE_TREE_ROOT_NAME</span>
+        <span class="n">exp</span><span class="p">[</span><span class="s1">'structure_abbrev'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_STRUCTURE_TREE_ROOT_ACRONYM</span>
+
+    <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'injection_structures_id'</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'injection_structures_id'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'|'</span><span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'injection_structures_name'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'|'</span><span class="p">)</span>
+        <span class="n">acronyms</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'injection_structures_acronym'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'|'</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># have at least prim. inj. struct. in structures</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp</span><span class="p">[</span><span class="s1">'structure_id'</span><span class="p">],</span> <span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp</span><span class="p">[</span><span class="s1">'structure_name'</span><span class="p">],</span> <span class="p">)</span>
+        <span class="n">acronyms</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp</span><span class="p">[</span><span class="s1">'structure_abbrev'</span><span class="p">],</span> <span class="p">)</span>
+
+    <span class="n">keys</span> <span class="o">=</span> <span class="s1">'id'</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">,</span> <span class="s1">'abbreviation'</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">acronyms</span><span class="p">)</span>
+
+    <span class="n">structures</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">s</span><span class="p">)),</span> <span class="n">values</span><span class="p">)</span>
+    <span class="n">exp</span><span class="p">[</span><span class="s1">'injection_structures'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">structures</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">exp</span>
+
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MouseConnectivityApiPrerelease</span><span class="p">(</span><span class="n">MouseConnectivityApi</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Client for retrieving prereleased mouse connectivity data from lims.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    base_uri : string, optional</span>
+<span class="sd">        Does not affect pulling from lims.</span>
+<span class="sd">    file_name : string, optional</span>
+<span class="sd">        File name to save/read storage_directories dict. Passed to</span>
+<span class="sd">        GridDataApiPrerelease constructor.</span>
+<span class="sd">    '''</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">storage_directories_file_name</span><span class="p">,</span>
+                 <span class="n">cache_storage_directories</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">base_uri</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MouseConnectivityApiPrerelease</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">base_uri</span><span class="o">=</span><span class="n">base_uri</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span> <span class="o">=</span> <span class="n">GridDataApiPrerelease</span><span class="o">.</span><span class="n">from_file_name</span><span class="p">(</span>
+               <span class="n">storage_directories_file_name</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache_storage_directories</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.get_experiments">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.get_experiments">[docs]</a>
+    <span class="nd">@cacheable</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_experiments</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">query_result</span> <span class="o">=</span> <span class="n">lu</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">_EXPERIMENT_QUERY</span><span class="p">)</span>
+
+        <span class="n">experiments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">query_result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="sa">b</span><span class="s1">'id'</span><span class="p">])</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span><span class="o">.</span><span class="n">storage_directories</span><span class="p">:</span>
+
+                <span class="n">exp_dict</span> <span class="o">=</span> <span class="n">_experiment_dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+                <span class="n">experiments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">exp_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">experiments</span></div>
+
+
+    <span class="c1">#@cacheable()</span>
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.get_structure_unionizes">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.get_structure_unionizes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_structure_unionizes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.download_injection_density">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.download_injection_density">[docs]</a>
+    <span class="nd">@cacheable</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s1">'create'</span><span class="p">,</span>
+               <span class="n">pathfinder</span><span class="o">=</span><span class="n">Cache</span><span class="o">.</span><span class="n">pathfinder</span><span class="p">(</span><span class="n">file_name_position</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                           <span class="n">path_keyword</span><span class="o">=</span><span class="s1">'path'</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_injection_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.nrrd"</span> <span class="o">%</span> <span class="p">(</span><span class="n">GridDataApi</span><span class="o">.</span><span class="n">INJECTION_DENSITY</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span><span class="o">.</span><span class="n">download_projection_grid_data</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.download_projection_density">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.download_projection_density">[docs]</a>
+    <span class="nd">@cacheable</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s1">'create'</span><span class="p">,</span>
+               <span class="n">pathfinder</span><span class="o">=</span><span class="n">Cache</span><span class="o">.</span><span class="n">pathfinder</span><span class="p">(</span><span class="n">file_name_position</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                           <span class="n">path_keyword</span><span class="o">=</span><span class="s1">'path'</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_projection_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.nrrd"</span> <span class="o">%</span> <span class="p">(</span><span class="n">GridDataApi</span><span class="o">.</span><span class="n">PROJECTION_DENSITY</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span><span class="o">.</span><span class="n">download_projection_grid_data</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.download_injection_fraction">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.download_injection_fraction">[docs]</a>
+    <span class="nd">@cacheable</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s1">'create'</span><span class="p">,</span>
+               <span class="n">pathfinder</span><span class="o">=</span><span class="n">Cache</span><span class="o">.</span><span class="n">pathfinder</span><span class="p">(</span><span class="n">file_name_position</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                           <span class="n">path_keyword</span><span class="o">=</span><span class="s1">'path'</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_injection_fraction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.nrrd"</span> <span class="o">%</span> <span class="p">(</span><span class="n">GridDataApi</span><span class="o">.</span><span class="n">INJECTION_FRACTION</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span><span class="o">.</span><span class="n">download_projection_grid_data</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MouseConnectivityApiPrerelease.download_data_mask">
+<a class="viewcode-back" href="../../../../../allensdk.internal.api.queries.mouse_connectivity_api_prerelease.html#allensdk.internal.api.queries.mouse_connectivity_api_prerelease.MouseConnectivityApiPrerelease.download_data_mask">[docs]</a>
+    <span class="nd">@cacheable</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s1">'create'</span><span class="p">,</span>
+               <span class="n">pathfinder</span><span class="o">=</span><span class="n">Cache</span><span class="o">.</span><span class="n">pathfinder</span><span class="p">(</span><span class="n">file_name_position</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                           <span class="n">path_keyword</span><span class="o">=</span><span class="s1">'path'</span><span class="p">))</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_data_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">_</span><span class="si">%s</span><span class="s2">.nrrd"</span> <span class="o">%</span> <span class="p">(</span><span class="n">GridDataApi</span><span class="o">.</span><span class="n">DATA_MASK</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_api</span><span class="o">.</span><span class="n">download_projection_grid_data</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span> <span class="n">experiment_id</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

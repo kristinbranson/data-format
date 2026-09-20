@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.morphology.validate_swc &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.morphology.validate_swc</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.core.swc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">swc</span>
+
+
+<div class="viewcode-block" id="resave_swc">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.validate_swc.html#allensdk.internal.morphology.validate_swc.resave_swc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resave_swc</span><span class="p">(</span><span class="n">orig_swc</span><span class="p">,</span> <span class="n">new_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Reads SWC file into AllenSDK Morphology object and resaves</span>
+<span class="sd">    it. This can fix some problems in an SWC file that may disrupt</span>
+<span class="sd">    other software tools reading the file (e.g., NEURON)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        orig_swc: string</span>
+<span class="sd">        Name of SWC file to read</span>
+
+<span class="sd">        new_file: string</span>
+<span class="sd">        Name of output SWC file</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">morphology</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">read_swc</span><span class="p">(</span><span class="n">orig_swc</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Failed to read SWC file '</span><span class="si">%s</span><span class="s2">'"</span> <span class="o">%</span> <span class="n">orig_swc</span><span class="p">)</span>
+        <span class="k">raise</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">morphology</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">new_file</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Failed to save SWC file '</span><span class="si">%s</span><span class="s2">'"</span> <span class="o">%</span> <span class="n">new_file</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TestNode">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.validate_swc.html#allensdk.internal.morphology.validate_swc.TestNode">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TestNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">pn</span><span class="p">):</span>
+        <span class="c1"># these values correspond to columns in an SWC file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pn</span> <span class="o">=</span> <span class="n">pn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># IDs of child nodes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" create string with node information in succinct, </span>
+<span class="sd">        single-line form """</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="si">%d</span><span class="s2"> </span><span class="si">%d</span><span class="s2"> </span><span class="si">%.4f</span><span class="s2"> </span><span class="si">%.4f</span><span class="s2"> </span><span class="si">%.4f</span><span class="s2"> </span><span class="si">%.4f</span><span class="s2"> </span><span class="si">%d</span><span class="s2"> </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pn</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">))</span></div>
+
+
+
+
+<div class="viewcode-block" id="validate_swc">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.validate_swc.html#allensdk.internal.morphology.validate_swc.validate_swc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_swc</span><span class="p">(</span><span class="n">swc_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" </span>
+<span class="sd">    Tests SWC files for compatibility with AllenSDK</span>
+
+<span class="sd">    To be compatible with NEURON, SWC files must have the following properties:</span>
+<span class="sd">        1) a single root node with parent ID '-1'</span>
+<span class="sd">        2) sequentially increasing ID numbers</span>
+<span class="sd">        3) immediate children of the soma cannot branch</span>
+
+<span class="sd">    To be compatible with feature analysis, SWC files can only have node</span>
+<span class="sd">    types in the range 1-4:</span>
+<span class="sd">        1 = soma</span>
+<span class="sd">        2 = axon</span>
+<span class="sd">        3 = [basal] dendrite</span>
+<span class="sd">        4 = apical dendrite</span>
+<span class="sd">    """</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># be optimistic</span>
+
+    <span class="c1"># see if SWC file is readable by internal tools</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Validating "</span> <span class="o">+</span> <span class="n">swc_file</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">morphology</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">read_swc</span><span class="p">(</span><span class="n">swc_file</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Fatal error reading SWC file"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">morphology</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Expecting type between 1 and 4, but found </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"File has unrecognized node type(s)"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+
+    <span class="c1"># make sure all dendrite nodes are in tree 0</span>
+    <span class="c1"># this is because modeling requires a full dendrite morphology</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">morphology</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span> <span class="ow">and</span> <span class="n">node</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Dendrite node(s) exist in disconnected trees"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"This breaks an SDK modeling requirement"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+
+    <span class="c1"># if we've made it here, file is OK for using Morphology class, and </span>
+    <span class="c1">#   should be valid with internal processing. It may also be able</span>
+    <span class="c1">#   to be convertable for NEURON use by resaving it</span>
+
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">node_table</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># lookup table by node num</span>
+    <span class="n">line_num</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">swc_file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="c1"># remove comments</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'#'</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="c1"># read values. expected SWC format is:</span>
+                <span class="c1">#   ID, type, x, y, z, rad, parent</span>
+                <span class="c1"># x, y, z and rad are floats. the others are ints</span>
+                <span class="n">toks</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="n">TestNode</span><span class="p">(</span>
+                        <span class="n">n</span> <span class="o">=</span>  <span class="nb">int</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                        <span class="n">t</span> <span class="o">=</span>  <span class="nb">int</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                        <span class="n">x</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+                        <span class="n">y</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span>
+                        <span class="n">z</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">4</span><span class="p">]),</span>
+                        <span class="n">r</span> <span class="o">=</span>  <span class="nb">float</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">5</span><span class="p">]),</span>
+                        <span class="n">pn</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">toks</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()),</span>
+                    <span class="p">)</span>
+                <span class="c1"># store this node</span>
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">vals</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+                    <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">nodes</span><span class="p">[</span><span class="n">vals</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="c1">#nodes.append(vals)</span>
+                <span class="c1">#</span>
+                <span class="k">if</span> <span class="n">vals</span><span class="o">.</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">"Negative node ID not allowed"</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">"Node: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">while</span> <span class="n">vals</span><span class="o">.</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_table</span><span class="p">):</span>
+                    <span class="n">node_table</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">node_table</span><span class="p">[</span><span class="n">vals</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="c1"># increment line number (used for error reporting only)</span>
+                <span class="n">line_num</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="s2">"File not recognized as valid SWC file.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">err</span> <span class="o">+=</span> <span class="s2">"Problem parsing line </span><span class="si">%d</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="n">line_num</span>
+        <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">err</span> <span class="o">+=</span> <span class="s2">"Content: '</span><span class="si">%s</span><span class="s2">'</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="n">line</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">pn</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">node_table</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">pn</span><span class="p">]</span>
+                <span class="n">par</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Error reading SWC file -- fail to link child to parent"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Node:    </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># verify presence and number of soma and root nodes</span>
+    <span class="n">num_soma_nodes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span> <span class="nb">int</span><span class="p">(</span><span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nodes</span> <span class="p">])</span>
+    <span class="k">if</span> <span class="n">num_soma_nodes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"SWC must have at least one soma node.  Found: </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">num_soma_nodes</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">num_soma_nodes</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Warning: File has multiple soma nodes. This can interfere with feature analysis in some external software (e.g., vaa3d)"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+
+    <span class="n">num_root_nodes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span> <span class="nb">int</span><span class="p">(</span><span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">pn</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nodes</span> <span class="p">])</span>
+    <span class="c1"># case of no root nodes covered by rule below that ID of child must</span>
+    <span class="c1">#   be greater than that of parent</span>
+    <span class="k">if</span> <span class="n">num_root_nodes</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Warning: File has multiple root nodes. This can interfere with feature analysis in some external software (e.g., vaa3d)"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+
+    <span class="c1"># get a list of all of the ids, make sure they are unique while we're at it</span>
+    <span class="n">all_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">iid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">iid</span> <span class="ow">in</span> <span class="n">all_ids</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Node ID </span><span class="si">%s</span><span class="s2"> is not unique."</span> <span class="o">%</span> <span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">pn</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">iid</span> <span class="o">&lt;</span> <span class="n">pid</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Node (</span><span class="si">%d</span><span class="s2">) has a smaller ID that its parent (</span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span><span class="n">iid</span><span class="p">,</span> <span class="n">pid</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">break</span>
+        <span class="n">all_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">iid</span><span class="p">)</span>
+        
+    <span class="c1"># make sure that first root node is soma</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">n</span>
+            <span class="k">break</span>
+    <span class="c1">#root = nodes[0]</span>
+    <span class="k">if</span> <span class="n">root</span><span class="o">.</span><span class="n">t</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># see if soma has a root</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">pn</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"No soma root found in file"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"First root node is not soma"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"This should be fixable by calling resave_swc() on the file if there is a soma root in the file"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># verify that children of the root have max one child</span>
+    <span class="k">for</span> <span class="n">root_child_id</span> <span class="ow">in</span> <span class="n">root</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+        <span class="n">root_child</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="n">root_child_id</span><span class="p">]</span>
+        <span class="n">num_grand_children</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">root_child</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_grand_children</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Child of root (</span><span class="si">%s</span><span class="s2">) has more than one child (</span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span> <span class="n">root_child_id</span><span class="p">,</span> <span class="n">num_grand_children</span> <span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># sort the ids and make sure there are no gaps</span>
+    <span class="n">sorted_ids</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">all_ids</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_ids</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">sorted_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">sorted_ids</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Node IDs are not sequential"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"This can be fixed by calling resave_swc() on the file"</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"----------------------------------"</span><span class="p">)</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="n">success</span></div>
+
+    
+    
+    
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.validate_swc.html#allensdk.internal.morphology.validate_swc.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">argc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"usage: python </span><span class="si">%s</span><span class="s2"> &lt;swc_file&gt; [&lt;swc_file ...]"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Validate an SWC file for use with NEURON"</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">argc</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">validate_swc</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">"    PASS"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">"    FAIL"</span><span class="p">)</span>
+                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"    FAIL"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

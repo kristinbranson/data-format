@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.core.authentication &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.core.authentication</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">CREDENTIAL_KEYS</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">DbCredentials</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">"DbCredentials"</span><span class="p">,</span>
+                           <span class="p">[</span><span class="s2">"dbname"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">,</span> <span class="s2">"port"</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="CredentialProvider">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.CredentialProvider">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CredentialProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="n">METHOD</span> <span class="o">=</span> <span class="s2">"custom"</span>
+
+<div class="viewcode-block" id="CredentialProvider.provide">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.CredentialProvider.provide">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">credential</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="EnvCredentialProvider">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.EnvCredentialProvider">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EnvCredentialProvider</span><span class="p">(</span><span class="n">CredentialProvider</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Provides credentials from environment variables for variables listed</span>
+<span class="sd">    in CREDENTIAL_KEYS.</span>
+<span class="sd">    """</span>
+    <span class="n">METHOD</span> <span class="o">=</span> <span class="s2">"env"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">environ</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        environ: dictionary or os.environ</span>
+<span class="sd">            A dictionary that provides the values for keys in</span>
+<span class="sd">            CREDENTIAL_KEYS. If not provided, defaults to os.environ to</span>
+<span class="sd">            provide environment variables.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">environ</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">environ</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CREDENTIAL_KEYS</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EnvCredentialProvider.provide">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.EnvCredentialProvider.provide">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provide</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">credential</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">credential</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">CREDENTIAL_PROVIDER</span> <span class="o">=</span> <span class="n">EnvCredentialProvider</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="set_credential_provider">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.set_credential_provider">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_credential_provider</span><span class="p">(</span><span class="n">provider</span><span class="p">):</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Setting provider to method '</span><span class="si">{</span><span class="n">provider</span><span class="o">.</span><span class="n">METHOD</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="k">global</span> <span class="n">CREDENTIAL_PROVIDER</span>
+    <span class="n">CREDENTIAL_PROVIDER</span> <span class="o">=</span> <span class="n">provider</span></div>
+
+
+
+<div class="viewcode-block" id="get_credential_provider">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.get_credential_provider">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_credential_provider</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">CREDENTIAL_PROVIDER</span></div>
+
+
+
+<div class="viewcode-block" id="credential_injector">
+<a class="viewcode-back" href="../../../allensdk.core.authentication.html#allensdk.core.authentication.credential_injector">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">credential_injector</span><span class="p">(</span><span class="n">credential_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+                        <span class="n">provider</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CredentialProvider</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Decorator used to inject credentials from another source if not</span>
+<span class="sd">    explicitly provided in the function call. This function will only supply</span>
+<span class="sd">    values for keyword arguments. All keys defined in `credential_map` must</span>
+<span class="sd">    correspond to keyword arguments in the function signature.</span>
+
+<span class="sd">    PARAMETERS</span>
+<span class="sd">    ----------</span>
+<span class="sd">    credential_map: Dict[Str: Any]</span>
+<span class="sd">        Dictionary where the keys are the keyword of a credential kwarg</span>
+<span class="sd">        passed to the decorated function, and the values are the name</span>
+<span class="sd">        of the credential in the credential provider (see CREDENTIAL_KEYS).</span>
+
+<span class="sd">        Example of credential_map for PostgresQueryMixin connecting to</span>
+<span class="sd">        LIMS database:</span>
+<span class="sd">            {</span>
+<span class="sd">                "dbname": "LIMS_DBNAME",</span>
+<span class="sd">                "user": "LIMS_USER",</span>
+<span class="sd">                "host": "LIMS_HOST",</span>
+<span class="sd">                "password": "LIMS_PASSWORD",</span>
+<span class="sd">                "port": "LIMS_PORT"</span>
+<span class="sd">            }</span>
+<span class="sd">    provider: Optional[CredentialProvider]</span>
+<span class="sd">        Subclass of CredentialProvider to provide credentials to the</span>
+<span class="sd">        wrapped function. If left unspecified, will default to</span>
+<span class="sd">        EnvCredentialProvider, which provides credentials from environment</span>
+<span class="sd">        variables.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">provider</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">get_credential_provider</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">injector_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">kw</span><span class="p">,</span> <span class="n">credential</span> <span class="ow">in</span> <span class="n">credential_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">kw</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No explicit value provided for </span><span class="si">{</span><span class="n">kw</span><span class="si">}</span><span class="s2">. "</span>
+                                 <span class="s2">"Searching credential provider."</span><span class="p">)</span>
+                    <span class="n">secret</span> <span class="o">=</span> <span class="n">provider</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="n">credential</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">secret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Found value in credential provider, "</span>
+                                     <span class="sa">f</span><span class="s2">"from '</span><span class="si">{</span><span class="n">provider</span><span class="o">.</span><span class="n">METHOD</span><span class="si">}</span><span class="s2">' method."</span><span class="p">)</span>
+                        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">kw</span><span class="p">:</span> <span class="n">provider</span><span class="o">.</span><span class="n">provide</span><span class="p">(</span><span class="n">credential</span><span class="p">)})</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">"Value for </span><span class="si">{</span><span class="n">kw</span><span class="si">}</span><span class="s2"> was neither explicitly provided "</span>
+                            <span class="s2">"nor found in credential provider."</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+    <span class="k">return</span> <span class="n">injector_decorator</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

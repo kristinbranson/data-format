@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.brain_observatory.fit_ellipse &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.brain_observatory.fit_ellipse</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<div class="viewcode-block" id="FitEllipse">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.FitEllipse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FitEllipse</span> <span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">min_points</span><span class="p">,</span><span class="n">max_iter</span><span class="p">,</span><span class="n">threshold</span><span class="p">,</span><span class="n">num_close</span><span class="p">):</span>
+
+        <span class="c1"># points = np.array(candidate_points)</span>
+        <span class="c1"># y,x = points.T</span>
+
+        <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">C</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span> <span class="mf">2.0</span>
+        <span class="n">C</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+
+        <span class="c1">#self.x = x</span>
+        <span class="c1">#self.y = y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">C</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_points</span> <span class="o">=</span> <span class="n">min_points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_close</span> <span class="o">=</span> <span class="n">num_close</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_params</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_params_set</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">besterror</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+
+<div class="viewcode-block" id="FitEllipse.ransac_fit">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.FitEllipse.ransac_fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ransac_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">candidate_points</span><span class="p">):</span>
+
+        <span class="c1">#points = np.array(candidate_points)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_iter</span><span class="p">):</span>
+
+            <span class="n">inlier_points</span><span class="p">,</span> <span class="n">outlier_points</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">choose_inliers</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)</span>
+            <span class="n">params</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_ellipse</span><span class="p">(</span><span class="n">inlier_points</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">outlier_points</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">cost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlier_cost</span><span class="p">(</span><span class="n">outlier_points</span><span class="p">,</span><span class="n">params</span><span class="p">)</span>
+                <span class="n">also_in</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cost</span><span class="p">):</span>
+                    <span class="n">point</span> <span class="o">=</span> <span class="n">outlier_points</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">cost</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">:</span>
+                        <span class="n">inlier_points</span> <span class="o">+=</span> <span class="p">[</span><span class="n">point</span><span class="p">]</span>
+                        <span class="n">also_in</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="k">if</span> <span class="n">also_in</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_close</span><span class="p">:</span>
+                    <span class="n">params</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_ellipse</span><span class="p">(</span><span class="n">inlier_points</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">error</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">besterror</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">best_params</span> <span class="o">=</span> <span class="n">params</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">best_params_set</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">besterror</span> <span class="o">=</span> <span class="n">error</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_params_set</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ellipse_center</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_params</span><span class="p">),</span> <span class="n">ellipse_angle_of_rotation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_params</span><span class="p">)</span><span class="o">*</span><span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">ellipse_axis_length</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_params</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="FitEllipse.choose_inliers">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.FitEllipse.choose_inliers">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">choose_inliers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">candidate_points</span><span class="p">):</span>
+
+        <span class="c1">#cannot take a larger sample than population</span>
+        <span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_points</span><span class="p">):</span>
+            <span class="n">inlier_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)),</span><span class="bp">self</span><span class="o">.</span><span class="n">min_points</span><span class="p">,</span><span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#TODO check this</span>
+            <span class="n">inlier_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_points</span><span class="p">)</span>
+
+        <span class="n">inlier_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">outlier_points</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlier_index</span><span class="p">:</span>
+                <span class="n">inlier_points</span> <span class="o">+=</span> <span class="p">[</span><span class="n">candidate_points</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outlier_points</span> <span class="o">+=</span> <span class="p">[</span><span class="n">candidate_points</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+        <span class="k">return</span> <span class="n">inlier_points</span><span class="p">,</span> <span class="n">outlier_points</span></div>
+
+
+<div class="viewcode-block" id="FitEllipse.outlier_cost">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.FitEllipse.outlier_cost">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">outlier_cost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">outlier_points</span><span class="p">,</span><span class="n">params</span><span class="p">):</span>
+
+        <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">outlier_points</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))])</span>
+        <span class="c1">#S = np.dot(D, D.T)</span>
+
+        <span class="n">cost</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="n">D</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">cost</span></div>
+
+
+<div class="viewcode-block" id="FitEllipse.fit_ellipse">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.FitEllipse.fit_ellipse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inlier_points</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">inlier_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inlier_points</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inlier_points</span><span class="p">)</span>
+            <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))])</span>
+            <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+            <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">S</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">)</span>
+            <span class="n">U</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">V</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+
+            <span class="n">params</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">S</span><span class="p">,</span><span class="n">params</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">inlier_points</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1">#TODO - check if this is correct</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1">#WBW error handling</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="mf">0.00000001</span> <span class="c1">#WBW error handling</span>
+
+        <span class="k">return</span> <span class="n">params</span><span class="p">,</span> <span class="n">error</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ellipse_center">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.ellipse_center">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ellipse_center</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">_g</span><span class="p">,</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># noqa: F841</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">c</span>
+    <span class="n">x0</span><span class="o">=</span><span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">f</span><span class="p">)</span><span class="o">/</span><span class="n">num</span>
+    <span class="n">y0</span><span class="o">=</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">f</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">d</span><span class="p">)</span><span class="o">/</span><span class="n">num</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ellipse_angle_of_rotation">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.ellipse_angle_of_rotation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ellipse_angle_of_rotation</span><span class="p">(</span> <span class="n">a</span> <span class="p">):</span>
+    <span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">_d</span><span class="p">,</span><span class="n">_f</span><span class="p">,</span><span class="n">_g</span><span class="p">,</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># noqa: F841</span>
+    <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ellipse_angle_of_rotation2">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.ellipse_angle_of_rotation2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ellipse_angle_of_rotation2</span><span class="p">(</span> <span class="n">a</span> <span class="p">):</span>
+    <span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">_d</span><span class="p">,</span><span class="n">_f</span><span class="p">,</span><span class="n">_g</span><span class="p">,</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># noqa: F841</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">c</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="n">c</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">))</span><span class="o">/</span><span class="mi">2</span></div>
+
+
+
+<div class="viewcode-block" id="ellipse_axis_length">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.ellipse_axis_length">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ellipse_axis_length</span><span class="p">(</span> <span class="n">a</span> <span class="p">):</span>
+    <span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">a</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">up</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">f</span><span class="o">*</span><span class="n">f</span><span class="o">+</span><span class="n">c</span><span class="o">*</span><span class="n">d</span><span class="o">*</span><span class="n">d</span><span class="o">+</span><span class="n">g</span><span class="o">*</span><span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">b</span><span class="o">*</span><span class="n">d</span><span class="o">*</span><span class="n">f</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">c</span><span class="o">*</span><span class="n">g</span><span class="p">)</span>
+    <span class="n">down1</span><span class="o">=</span><span class="p">(</span><span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mi">4</span><span class="o">*</span><span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="p">((</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">)))</span><span class="o">-</span><span class="p">(</span><span class="n">c</span><span class="o">+</span><span class="n">a</span><span class="p">))</span>
+    <span class="n">down2</span><span class="o">=</span><span class="p">(</span><span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="o">*</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="p">(</span> <span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mi">4</span><span class="o">*</span><span class="n">b</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="p">((</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">c</span><span class="p">)))</span><span class="o">-</span><span class="p">(</span><span class="n">c</span><span class="o">+</span><span class="n">a</span><span class="p">))</span>
+
+    <span class="c1">#TODO check this - cannot divide by 0 so just use a small number instead</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">down1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">down1</span> <span class="o">=</span> <span class="mf">.0000000001</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="n">down2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">down2</span> <span class="o">=</span> <span class="mf">.0000000001</span>
+
+    <span class="n">res1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">up</span><span class="o">/</span><span class="n">down1</span><span class="p">)</span>
+    <span class="n">res2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">up</span><span class="o">/</span><span class="n">down2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">res1</span><span class="p">,</span> <span class="n">res2</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="fit_ellipse">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.fit_ellipse">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_ellipse</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">):</span>
+
+    <span class="c1"># method from http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)</span>
+    <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">))])</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="n">D</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span><span class="mi">6</span><span class="p">])</span>
+    <span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">C</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">C</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">S</span><span class="p">),</span><span class="n">C</span><span class="p">)</span>
+
+    <span class="n">U</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">V</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+
+    <span class="n">params</span> <span class="o">=</span> <span class="n">U</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ellipse_center</span><span class="p">(</span><span class="n">params</span><span class="p">),</span> <span class="n">ellipse_angle_of_rotation</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">*</span><span class="mf">180.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">ellipse_axis_length</span><span class="p">(</span><span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rotate_vector">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.rotate_vector">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rotate_vector</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">theta</span><span class="p">):</span>
+
+    <span class="n">xp</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">yp</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">yp</span><span class="p">,</span><span class="n">xp</span></div>
+
+
+<div class="viewcode-block" id="test_fit">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.fit_ellipse.html#allensdk.internal.brain_observatory.fit_ellipse.test_fit">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_fit</span><span class="p">():</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'Agg'</span><span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">3.0</span><span class="p">,</span><span class="mf">3.0</span><span class="p">,</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">yp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">4.0</span> <span class="o">-</span> <span class="p">(</span><span class="mf">4.0</span><span class="o">/</span><span class="mf">9.0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">ym</span> <span class="o">=</span> <span class="o">-</span><span class="n">yp</span>
+
+    <span class="n">yp</span> <span class="o">+=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">yp</span><span class="p">))</span>
+    <span class="n">ym</span> <span class="o">+=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">yp</span><span class="p">))</span>
+
+    <span class="n">yp</span><span class="p">,</span> <span class="n">x1</span> <span class="o">=</span> <span class="n">rotate_vector</span><span class="p">(</span><span class="n">yp</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">ym</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">rotate_vector</span><span class="p">(</span><span class="n">ym</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span>
+
+    <span class="n">y_outlier</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="mf">4.0</span> <span class="o">-</span> <span class="mf">2.0</span>
+    <span class="n">x_outlier</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span><span class="o">*</span><span class="mf">6.0</span> <span class="o">-</span> <span class="mf">3.0</span>
+
+
+    <span class="n">outlier_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">y_outlier</span><span class="p">,</span> <span class="n">x_outlier</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">candidate_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">yp</span><span class="p">,</span><span class="n">ym</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">x</span><span class="p">,</span><span class="n">x</span><span class="p">])])</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">candidate_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">outlier_points</span><span class="p">,</span> <span class="n">candidate_points</span><span class="p">])</span>
+
+    <span class="n">yt</span><span class="p">,</span> <span class="n">xt</span> <span class="o">=</span> <span class="n">candidate_points</span><span class="o">.</span><span class="n">T</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">xt</span><span class="p">)</span>
+
+    <span class="c1">#center, angle, (axis1,axis2) = fit_ellipse(candidate_points)</span>
+
+    <span class="n">fe</span><span class="o">=</span><span class="n">FitEllipse</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mf">0.0001</span><span class="p">,</span><span class="mi">40</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fe</span><span class="o">.</span><span class="n">ransac_fit</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">center</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span> <span class="p">(</span><span class="n">axis1</span><span class="p">,</span><span class="n">axis2</span><span class="p">)</span> <span class="o">=</span> <span class="n">fe</span><span class="o">.</span><span class="n">ransac_fit</span><span class="p">(</span><span class="n">candidate_points</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"center = "</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"angle = "</span><span class="p">,</span> <span class="n">angle</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"axis1 = "</span><span class="p">,</span> <span class="n">axis1</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"axis2 = "</span><span class="p">,</span> <span class="n">axis2</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">yp</span><span class="p">,</span><span class="s1">'bo'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">ym</span><span class="p">,</span><span class="s1">'bo'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_outlier</span><span class="p">,</span> <span class="n">y_outlier</span><span class="p">,</span> <span class="s1">'rx'</span><span class="p">)</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ellipse</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="n">Ellipse</span><span class="p">(</span><span class="n">center</span><span class="p">,</span><span class="n">width</span><span class="o">=</span><span class="mf">2.0</span><span class="o">*</span><span class="n">axis1</span><span class="p">,</span><span class="n">height</span><span class="o">=</span><span class="mf">2.0</span><span class="o">*</span><span class="n">axis2</span><span class="p">,</span><span class="n">angle</span><span class="o">=</span><span class="n">angle</span><span class="p">,</span><span class="n">fill</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s1">'r'</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">add_artist</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span><span class="o">==</span><span class="s1">'__main__'</span><span class="p">:</span>
+
+    <span class="n">test_fit</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

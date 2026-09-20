@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.test_utilities.custom_comparators &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.test_utilities.custom_comparators</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">difflib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numbers</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="WhitespaceStrippedString">
+<a class="viewcode-back" href="../../../allensdk.test_utilities.custom_comparators.html#allensdk.test_utilities.custom_comparators.WhitespaceStrippedString">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WhitespaceStrippedString</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Comparator class to compare strings that have been stripped of</span>
+<span class="sd">    whitespace. By default removes any unicode whitespace character that</span>
+<span class="sd">    matches the regex \\s, (which includes [ \\t\\n\\r\\f\\v],</span>
+<span class="sd">    and other unicode whitespace characters).</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">whitespace_chars</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"\s"</span><span class="p">,</span>
+                 <span class="n">ASCII</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orig</span> <span class="o">=</span> <span class="n">string</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">whitespace_chars</span> <span class="o">=</span> <span class="n">whitespace_chars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">ASCII</span> <span class="k">if</span> <span class="n">ASCII</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">differ</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">Differ</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">whitespace_chars</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">string</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"WhitespaceStrippedString"</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">other</span> <span class="o">=</span> <span class="n">WhitespaceStrippedString</span><span class="p">(</span>
+                <span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">whitespace_chars</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diff</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">differ</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span></div>
+
+
+
+<div class="viewcode-block" id="safe_df_comparison">
+<a class="viewcode-back" href="../../../allensdk.test_utilities.custom_comparators.html#allensdk.test_utilities.custom_comparators.safe_df_comparison">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_df_comparison</span><span class="p">(</span><span class="n">expected</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+                       <span class="n">obtained</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+                       <span class="n">expect_identical_column_order</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare two dataframes in a way that is agnostic to column order</span>
+<span class="sd">    and datatype of NULL values</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    expected: pd.DataFrame</span>
+
+<span class="sd">    obtained: pd.DataFrame</span>
+
+<span class="sd">    expect_identical_column_order: bool</span>
+<span class="sd">       If True, raise an error if columns are not</span>
+<span class="sd">       in the same order (default=False)</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    RuntimeError</span>
+<span class="sd">       If:</span>
+<span class="sd">           - dataframes do not have the same columns</span>
+<span class="sd">           - dataframes do not have identical indexes</span>
+<span class="sd">           - dataframe columns do not have identical contents</span>
+
+<span class="sd">        When comparing the contents of dataframe columns,</span>
+<span class="sd">        the function:</span>
+<span class="sd">            - verifies that NULL values (whether None or NaN) are in</span>
+<span class="sd">              the same location</span>
+<span class="sd">            - loops over non-null values, casts arrays into lists, and</span>
+<span class="sd">              compares with ==</span>
+<span class="sd">    """</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="s1">''</span>
+    <span class="n">columns_match</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">expect_identical_column_order</span><span class="p">:</span>
+        <span class="n">obtained_column_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">obtained</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">expected_column_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obtained_column_set</span> <span class="o">!=</span> <span class="n">expected_column_set</span><span class="p">:</span>
+            <span class="n">columns_match</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obtained</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+            <span class="n">columns_match</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">columns_match</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'column mis-match</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'obtained columns</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">obtained</span><span class="o">.</span><span class="n">columns</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'expected columns</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+
+        <span class="n">missing_from_obtained</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">obtained</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">missing_from_obtained</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">missing_from_expected</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">obtained</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">missing_from_expected</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'missing from obtained</span><span class="se">\n</span><span class="si">{</span><span class="n">missing_from_obtained</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'missing from expected</span><span class="se">\n</span><span class="si">{</span><span class="n">missing_from_expected</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">expected</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">obtained</span><span class="o">.</span><span class="n">index</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'index mis-match</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'expected index</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'obtained index</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">obtained</span><span class="o">.</span><span class="n">index</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">expected</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">expected_null</span> <span class="o">=</span> <span class="n">expected</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
+        <span class="n">obtained_null</span> <span class="o">=</span> <span class="n">obtained</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">expected_null</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">obtained_null</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s1"> not null at same point in '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'obtained and expected</span><span class="se">\n</span><span class="s1">'</span>
+            <span class="k">continue</span>
+        <span class="n">expected_valid</span> <span class="o">=</span> <span class="n">expected</span><span class="p">[</span><span class="o">~</span><span class="n">expected_null</span><span class="p">]</span>
+        <span class="n">obtained_valid</span> <span class="o">=</span> <span class="n">obtained</span><span class="p">[</span><span class="o">~</span><span class="n">obtained_null</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">expected_valid</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">obtained_valid</span><span class="o">.</span><span class="n">index</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">index mismatch in non-null when checking '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="k">for</span> <span class="n">index_val</span> <span class="ow">in</span> <span class="n">expected_valid</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="n">expected_valid</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index_val</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="n">obtained_valid</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index_val</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+                <span class="n">o</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">e</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="se">\n</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'expected: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'obtained: </span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+    <span class="k">if</span> <span class="n">msg</span> <span class="o">!=</span> <span class="s1">''</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="stimulus_pickle_equivalence">
+<a class="viewcode-back" href="../../../allensdk.test_utilities.custom_comparators.html#allensdk.test_utilities.custom_comparators.stimulus_pickle_equivalence">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stimulus_pickle_equivalence</span><span class="p">(</span>
+        <span class="n">data0</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">data1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare two sets of data loaded from a stimulus pickle file.</span>
+<span class="sd">    Return True if they are identical.</span>
+<span class="sd">    Return False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_nested_dict_equivalence</span><span class="p">(</span><span class="n">data0</span><span class="p">,</span> <span class="n">data1</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nested_scalar_equivalence</span><span class="p">(</span>
+        <span class="n">val0</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">val1</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare two scalars.</span>
+<span class="sd">    Return True if the scalars are identical.</span>
+<span class="sd">    Return False otherwise.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">val0</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">val1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">val0</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">val1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="n">val1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">val0</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">val1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">val0</span> <span class="o">!=</span> <span class="n">val1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nested_iterable_equivalence</span><span class="p">(</span>
+        <span class="n">list0</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">list1</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare the contents of two iterables.</span>
+<span class="sd">    Return True if they are identical.</span>
+<span class="sd">    False if otherwise.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list0</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">list1</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list0</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">list0</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">list0</span> <span class="o">==</span> <span class="n">list1</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">list0</span><span class="p">)):</span>
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">list0</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">list1</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v0</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">v1</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_dict_equivalence</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="s1">'__len__'</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_iterable_equivalence</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_scalar_equivalence</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">v1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nested_dict_equivalence</span><span class="p">(</span>
+        <span class="n">dict0</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">dict1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compare the contents of two dicts.</span>
+<span class="sd">    Return True if the dicts are identical.</span>
+<span class="sd">    Return False otherwise</span>
+<span class="sd">    """</span>
+
+    <span class="n">k0_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict0</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">k1_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dict1</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">k0_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="n">k1_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">k0_list</span> <span class="o">!=</span> <span class="n">k1_list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">this_key</span> <span class="ow">in</span> <span class="n">k0_list</span><span class="p">:</span>
+        <span class="n">val0</span> <span class="o">=</span> <span class="n">dict0</span><span class="p">[</span><span class="n">this_key</span><span class="p">]</span>
+        <span class="n">val1</span> <span class="o">=</span> <span class="n">dict1</span><span class="p">[</span><span class="n">this_key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">val0</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">val1</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_dict_equivalence</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="n">val1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="s1">'__len__'</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_iterable_equivalence</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="n">val1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_nested_scalar_equivalence</span><span class="p">(</span><span class="n">val0</span><span class="p">,</span> <span class="n">val1</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,697 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linking to External Resources (HERD) &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Annotating Multiple Streamed NWB Files with a Single HERD" href="resources_streaming.html" />
+    <link rel="prev" title="Reading and Exploring an NWB File" href="plot_read_basics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Linking to External Resources (HERD)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-an-nwb-file">Create an NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-the-file-s-herd">Get the file’s HERD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-references-with-add-ref">Add references with <code class="docutils literal notranslate"><span class="pre">add_ref</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#inspect-the-herd">Inspect the HERD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#write-and-read-the-nwb-file">Write and read the NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#access-the-loaded-data">Access the loaded data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#alternative-store-a-herd-outside-an-nwb-file">Alternative: store a HERD outside an NWB file</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Linking to External Resources (HERD)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/plot_external_resources.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-plot-external-resources-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="linking-to-external-resources-herd">
+<span id="external-resources"></span><span id="sphx-glr-tutorials-general-plot-external-resources-py"></span><h1>Linking to External Resources (HERD)<a class="headerlink" href="#linking-to-external-resources-herd" title="Link to this heading"></a></h1>
+<p>The <a class="reference internal" href="../../pynwb.resources.html#pynwb.resources.HERD" title="pynwb.resources.HERD"><code class="xref py py-class docutils literal notranslate"><span class="pre">HERD</span></code></a> (HDMF External Resources Data Structure) class lets you map
+terms used in your data to entities defined in external, web-accessible resources such as
+ontologies. For example, you may store a species name <code class="docutils literal notranslate"><span class="pre">&quot;Mus</span> <span class="pre">musculus&quot;</span></code> on a
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a> and want to link it to the corresponding NCBI Taxonomy term so that
+the value is standardized and easy to query.</p>
+<p>From a user’s perspective, a HERD can be treated as a single table that associates a <code class="docutils literal notranslate"><span class="pre">key</span></code> (a term
+used on an <code class="docutils literal notranslate"><span class="pre">object</span></code>, i.e. a dataset or attribute in the file) with an <code class="docutils literal notranslate"><span class="pre">entity</span></code> (a term in an
+external resource, identified by an <code class="docutils literal notranslate"><span class="pre">entity_id</span></code> and an <code class="docutils literal notranslate"><span class="pre">entity_uri</span></code>). Internally, HERD stores
+this in six interlinked tables (<code class="docutils literal notranslate"><span class="pre">keys</span></code>, <code class="docutils literal notranslate"><span class="pre">files</span></code>, <code class="docutils literal notranslate"><span class="pre">entities</span></code>, <code class="docutils literal notranslate"><span class="pre">entity_keys</span></code>, <code class="docutils literal notranslate"><span class="pre">objects</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">object_keys</span></code>) and provides convenience methods so you rarely need to interact with those tables
+directly.</p>
+<p>This tutorial shows how to create a HERD, annotate objects in an NWB file, store the HERD in the
+file, and inspect the annotations after reading the file back. For the full HERD API (including
+<code class="docutils literal notranslate"><span class="pre">add_ref_termset</span></code> for validating terms against a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSet" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSet</span></code></a>, <code class="docutils literal notranslate"><span class="pre">get_key</span></code>,
+and compound-data references), see the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/tutorials/plot_external_resources.html">HDMF HERD tutorial</a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.file</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a>
+</pre></div>
+</div>
+<section id="create-an-nwb-file">
+<h2>Create an NWB file<a class="headerlink" href="#create-an-nwb-file" title="Link to this heading"></a></h2>
+<p>Start with an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> that has a <a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a>. The
+subject’s species is the value we will annotate with an external resource.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;a demonstration of external resources&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>
+    <span class="n">subject</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a><span class="p">(</span><span class="n">subject_id</span><span class="o">=</span><span class="s2">&quot;001&quot;</span><span class="p">,</span> <span class="n">species</span><span class="o">=</span><span class="s2">&quot;Mus musculus&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="get-the-file-s-herd">
+<h2>Get the file’s HERD<a class="headerlink" href="#get-the-file-s-herd" title="Link to this heading"></a></h2>
+<p>Use <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_external_resources" title="pynwb.file.NWBFile.get_external_resources"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_external_resources</span></code></a> to get the file’s
+<a class="reference internal" href="../../pynwb.resources.html#pynwb.resources.HERD" title="pynwb.resources.HERD"><code class="xref py py-class docutils literal notranslate"><span class="pre">HERD</span></code></a>. A file has at most one HERD, so this returns the existing HERD if
+the file already has one (for example, when the file was read from disk) and creates and attaches a
+new empty HERD otherwise. The <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.external_resources" title="pynwb.file.NWBFile.external_resources"><code class="xref py py-attr docutils literal notranslate"><span class="pre">external_resources</span></code></a> attribute returns
+the HERD without creating one, returning <code class="docutils literal notranslate"><span class="pre">None</span></code> when the file has no external resources.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">herd</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager.get_external_resources" title="hdmf.container.HERDManager.get_external_resources" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-method"><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_external_resources</span></a><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="add-references-with-add-ref">
+<h2>Add references with <code class="docutils literal notranslate"><span class="pre">add_ref</span></code><a class="headerlink" href="#add-references-with-add-ref" title="Link to this heading"></a></h2>
+<p>Use <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.add_ref" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_ref</span></code></a> to add a row that links a key on an object to an
+external entity. Here we link the subject’s species to the NCBI Taxonomy entry for <em>Mus musculus</em>.
+The subject must be part of a file before a reference is added to it.</p>
+<p>An entity is identified by an <code class="docutils literal notranslate"><span class="pre">entity_id</span></code> and an <code class="docutils literal notranslate"><span class="pre">entity_uri</span></code>. The <code class="docutils literal notranslate"><span class="pre">entity_id</span></code> is a compact
+URI (CURIE) of the form <code class="docutils literal notranslate"><span class="pre">prefix:identifier</span></code> whose prefix is registered with
+<a class="reference external" href="https://bioregistry.io/">bioregistry.io</a>, such as <code class="docutils literal notranslate"><span class="pre">NCBITaxon</span></code> for the NCBI Taxonomy. The
+<code class="docutils literal notranslate"><span class="pre">entity_uri</span></code> is the persistent URL the CURIE resolves to, which you can look up at
+<code class="docutils literal notranslate"><span class="pre">https://bioregistry.io/&lt;entity_id&gt;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.add_ref" title="hdmf.common.resources.HERD.add_ref" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">herd</span><span class="o">.</span><span class="n">add_ref</span></a><span class="p">(</span>
+    <span class="n">container</span><span class="o">=</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">subject</span><span class="p">,</span>
+    <span class="n">key</span><span class="o">=</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">species</span><span class="p">,</span>
+    <span class="n">entity_id</span><span class="o">=</span><span class="s2">&quot;NCBITaxon:10090&quot;</span><span class="p">,</span>
+    <span class="n">entity_uri</span><span class="o">=</span><span class="s2">&quot;http://purl.obolibrary.org/obo/NCBITaxon_10090&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>References can also point to an attribute of an object, such as a column of a table. Here we record
+the brain region of a set of electrodes in the electrodes table and link the region to the
+corresponding structure in the
+<a class="reference external" href="https://atlas.brain-map.org/">Allen Mouse Brain Atlas</a>. When the target is a column, pass the
+table as the <code class="docutils literal notranslate"><span class="pre">container</span></code> and the column name as the <code class="docutils literal notranslate"><span class="pre">attribute</span></code>; HERD resolves the reference to
+the column object itself.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This same <code class="docutils literal notranslate"><span class="pre">container</span></code> plus <code class="docutils literal notranslate"><span class="pre">attribute</span></code> form also works for ragged columns (those backed by a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorIndex" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">VectorIndex</span></code></a>): <code class="docutils literal notranslate"><span class="pre">add_ref(container=table,</span> <span class="pre">attribute=&quot;col&quot;,</span> <span class="pre">...)</span></code>
+annotates the column’s <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">VectorData</span></code></a>, which holds the actual values
+used as keys. Do not annotate the column with <code class="docutils literal notranslate"><span class="pre">add_ref(container=table[&quot;col&quot;],</span> <span class="pre">attribute=None,</span>
+<span class="pre">...)</span></code>: for a ragged column, <code class="docutils literal notranslate"><span class="pre">table[&quot;col&quot;]</span></code> is the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorIndex" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">VectorIndex</span></code></a>
+(the integer offsets into the <code class="docutils literal notranslate"><span class="pre">VectorData</span></code>), so HERD would annotate the index instead of the
+values.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;probe&quot;</span><span class="p">)</span>
+<span class="n">electrode_group</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_group</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;shank0&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a shank of the recording probe&quot;</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;VISp&quot;</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">for</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_electrode</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="s2">&quot;VISp&quot;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">electrode_group</span><span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.add_ref" title="hdmf.common.resources.HERD.add_ref" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">herd</span><span class="o">.</span><span class="n">add_ref</span></a><span class="p">(</span>
+    <span class="n">container</span><span class="o">=</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">electrodes</span><span class="p">,</span>
+    <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;location&quot;</span><span class="p">,</span>
+    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;VISp&quot;</span><span class="p">,</span>
+    <span class="n">entity_id</span><span class="o">=</span><span class="s2">&quot;MBA:385&quot;</span><span class="p">,</span>
+    <span class="n">entity_uri</span><span class="o">=</span><span class="s2">&quot;https://purl.brain-bican.org/ontology/mbao/MBA_385&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inspect-the-herd">
+<h2>Inspect the HERD<a class="headerlink" href="#inspect-the-herd" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a> flattens the interlinked tables into a single
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>, with one row per (object, key, entity) association.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.to_dataframe" title="hdmf.common.resources.HERD.to_dataframe" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">herd</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>file_object_id</th>
+      <th>objects_idx</th>
+      <th>object_id</th>
+      <th>files_idx</th>
+      <th>object_type</th>
+      <th>relative_path</th>
+      <th>field</th>
+      <th>keys_idx</th>
+      <th>key</th>
+      <th>entities_idx</th>
+      <th>entity_id</th>
+      <th>entity_uri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>21da1ef2-6981-4b7a-9a75-e2b3958c7742</td>
+      <td>0</td>
+      <td>ba032bc0-56d3-4c06-a45c-1fdeb1cbc860</td>
+      <td>0</td>
+      <td>Subject</td>
+      <td></td>
+      <td></td>
+      <td>0</td>
+      <td>Mus musculus</td>
+      <td>0</td>
+      <td>NCBITaxon:10090</td>
+      <td>http://purl.obolibrary.org/obo/NCBITaxon_10090</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>21da1ef2-6981-4b7a-9a75-e2b3958c7742</td>
+      <td>1</td>
+      <td>1d5bbd11-a5b5-429f-aeb3-80d730b47d62</td>
+      <td>0</td>
+      <td>VectorData</td>
+      <td></td>
+      <td></td>
+      <td>1</td>
+      <td>VISp</td>
+      <td>1</td>
+      <td>MBA:385</td>
+      <td>https://purl.brain-bican.org/ontology/mbao/MBA...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>You can also view the individual tables. Each is a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> and has its own <code class="docutils literal notranslate"><span class="pre">to_dataframe</span></code> method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.keys" title="hdmf.common.resources.HERD.keys" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-property"><span class="n">herd</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>key</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Mus musculus</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>VISp</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.entities" title="hdmf.common.resources.HERD.entities" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-property"><span class="n">herd</span><span class="o">.</span><span class="n">entities</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>entity_id</th>
+      <th>entity_uri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>NCBITaxon:10090</td>
+      <td>http://purl.obolibrary.org/obo/NCBITaxon_10090</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>MBA:385</td>
+      <td>https://purl.brain-bican.org/ontology/mbao/MBA...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.get_object_type" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_object_type</span></code></a> returns all annotations for objects of a
+given type, for example every annotated <a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.get_object_type" title="hdmf.common.resources.HERD.get_object_type" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">herd</span><span class="o">.</span><span class="n">get_object_type</span></a><span class="p">(</span><span class="n">object_type</span><span class="o">=</span><span class="s2">&quot;Subject&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>file_object_id</th>
+      <th>objects_idx</th>
+      <th>object_id</th>
+      <th>files_idx</th>
+      <th>object_type</th>
+      <th>relative_path</th>
+      <th>field</th>
+      <th>keys_idx</th>
+      <th>key</th>
+      <th>entities_idx</th>
+      <th>entity_id</th>
+      <th>entity_uri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>21da1ef2-6981-4b7a-9a75-e2b3958c7742</td>
+      <td>0</td>
+      <td>ba032bc0-56d3-4c06-a45c-1fdeb1cbc860</td>
+      <td>0</td>
+      <td>Subject</td>
+      <td></td>
+      <td></td>
+      <td>0</td>
+      <td>Mus musculus</td>
+      <td>0</td>
+      <td>NCBITaxon:10090</td>
+      <td>http://purl.obolibrary.org/obo/NCBITaxon_10090</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /></section>
+<section id="write-and-read-the-nwb-file">
+<h2>Write and read the NWB file<a class="headerlink" href="#write-and-read-the-nwb-file" title="Link to this heading"></a></h2>
+<p>Writing the file stores the HERD inside it. Reading the file back makes the HERD available again
+through the <code class="docutils literal notranslate"><span class="pre">external_resources</span></code> field.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename</span></a> <span class="o">=</span> <span class="s2">&quot;external_resources_tutorial.nwb&quot;</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="n">read_io</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">read_io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD" title="hdmf.common.resources.HERD" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">read_herd</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager.external_resources" title="hdmf.container.HERDManager.external_resources" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">external_resources</span></a>
+</pre></div>
+</div>
+</section>
+<section id="access-the-loaded-data">
+<h2>Access the loaded data<a class="headerlink" href="#access-the-loaded-data" title="Link to this heading"></a></h2>
+<p>The loaded HERD provides the same accessors as before. In a Jupyter notebook, displaying the HERD
+renders the flattened references as a table, and
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a> returns that same table as a
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>. The individual tables give a more focused view.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.to_dataframe" title="hdmf.common.resources.HERD.to_dataframe" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">read_herd</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>file_object_id</th>
+      <th>objects_idx</th>
+      <th>object_id</th>
+      <th>files_idx</th>
+      <th>object_type</th>
+      <th>relative_path</th>
+      <th>field</th>
+      <th>keys_idx</th>
+      <th>key</th>
+      <th>entities_idx</th>
+      <th>entity_id</th>
+      <th>entity_uri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>21da1ef2-6981-4b7a-9a75-e2b3958c7742</td>
+      <td>0</td>
+      <td>ba032bc0-56d3-4c06-a45c-1fdeb1cbc860</td>
+      <td>0</td>
+      <td>Subject</td>
+      <td></td>
+      <td></td>
+      <td>0</td>
+      <td>Mus musculus</td>
+      <td>0</td>
+      <td>NCBITaxon:10090</td>
+      <td>http://purl.obolibrary.org/obo/NCBITaxon_10090</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>21da1ef2-6981-4b7a-9a75-e2b3958c7742</td>
+      <td>1</td>
+      <td>1d5bbd11-a5b5-429f-aeb3-80d730b47d62</td>
+      <td>0</td>
+      <td>VectorData</td>
+      <td></td>
+      <td></td>
+      <td>1</td>
+      <td>VISp</td>
+      <td>1</td>
+      <td>MBA:385</td>
+      <td>https://purl.brain-bican.org/ontology/mbao/MBA...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>View the individual tables, for example:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.keys" title="hdmf.common.resources.HERD.keys" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-property"><span class="n">read_herd</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>key</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>Mus musculus</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>VISp</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.get_object_entities" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_object_entities</span></code></a> returns the entities annotated on a
+single object as a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>. Here we view the species annotation stored for
+the subject:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.get_object_entities" title="hdmf.common.resources.HERD.get_object_entities" class="sphx-glr-backref-module-hdmf-common-resources sphx-glr-backref-type-py-method"><span class="n">read_herd</span><span class="o">.</span><span class="n">get_object_entities</span></a><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">subject</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>entity_id</th>
+      <th>entity_uri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>NCBITaxon:10090</td>
+      <td>http://purl.obolibrary.org/obo/NCBITaxon_10090</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>Close the file once you are done reading from it.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">read_io</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="alternative-store-a-herd-outside-an-nwb-file">
+<h2>Alternative: store a HERD outside an NWB file<a class="headerlink" href="#alternative-store-a-herd-outside-an-nwb-file" title="Link to this heading"></a></h2>
+<p>A HERD can also be saved independently of an NWB file as a zip archive of the underlying tables
+using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.to_zip" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_zip</span></code></a>, and read back with
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.resources.html#hdmf.common.resources.HERD.from_zip" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">from_zip</span></code></a>. This is useful when external resources span
+multiple files; see <a class="reference internal" href="resources_streaming.html#external-resources-streaming"><span class="std std-ref">Annotating Multiple Streamed NWB Files with a Single HERD</span></a> for an example that annotates many NWB
+files with a single HERD. For the full HERD API, see the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/tutorials/plot_external_resources.html">HDMF HERD tutorial</a>.</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-plot-external-resources-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/b9768beec549f71214a252e510b07f69/plot_external_resources.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_external_resources.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d69a1643f41977a88bcde2654e395bd9/plot_external_resources.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_external_resources.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/f68f92b37864882c9fb3bf0dc7740495/plot_external_resources.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_external_resources.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_read_basics.html" class="btn btn-neutral float-left" title="Reading and Exploring an NWB File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="resources_streaming.html" class="btn btn-neutral float-right" title="Annotating Multiple Streamed NWB Files with a Single HERD" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

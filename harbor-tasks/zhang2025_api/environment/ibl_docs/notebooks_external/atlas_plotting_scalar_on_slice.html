@@ -1,0 +1,405 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plotting brain region values on histology slices &mdash; IBL Library  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/style.css?v=17142d56" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Plotting brain region values on cortical flatmap" href="atlas_dorsal_cortex_flatmap.html" />
+    <link rel="prev" title="Atlas mapping" href="atlas_mapping.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            IBL Library
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">The Open Neurophysiology Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="one_quickstart.html">ONE Quick Start</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://int-brain-lab.github.io/ONE/">Full documentation Website for ONE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/public_introduction.html">Publicly Available IBL Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/dataset_overview.html">What is available for download ?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Datasets - Collaboration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="2025_data_release_brainwidemap.html">2025 - Brain Wide Map</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2024_data_release_repro_ephys.html">2024 - Reproducible Ephys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2021_data_release_behavior.html">2021 - Behavior</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Datasets - Projects</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="2025_data_release_autism_noel.html">2025 - Autism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2025_data_release_autism_davatolhagh.html">2025 - Autism Widefield</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2025_data_release_aging_zang.html">2025 - Ageing and neural variability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2022_data_release_spikesorting_benchmarks.html">2022 - Spike sorting benchmark datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/data_release_pilot.html">Data Release - Pilot Dataset</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Exploring IBL Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../02_installation.html">Installation of IBL Unified Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_structure.html">Get to know the datasets and folder structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_download.html">Setting up credentials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_download.html#Explore-and-download-data-using-the-ONE-api">Explore and download data using the ONE-api</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../loading_examples.html">Loading Data</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../09_contribution.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/information_contact.html">Getting Help: Information and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples &amp; Tutorials</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../atlas_examples.html">Atlas Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../atlas_examples.html#anatomical-atlases">Anatomical Atlases</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="atlas_working_with_ibllib_atlas.html">Working with IBL atlas object</a></li>
+<li class="toctree-l3"><a class="reference internal" href="atlas_mapping.html">Atlas mapping</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Plotting brain region values on histology slices</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Data-preparation">Data preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-1:-Coronal-slices">Example 1: Coronal slices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-2:-Sagittal-slices">Example 2: Sagittal slices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-3:-Horizontal-slices">Example 3: Horizontal slices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Example-4:-Top-view">Example 4: Top view</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="atlas_dorsal_cortex_flatmap.html">Plotting brain region values on cortical flatmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="atlas_circular_pyramidal_flatmap.html">Plotting brain region values on circular flatmap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="atlas_plotting_points_on_slice.html">Plotting cluster locations on histology slices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="atlas_swanson_flatmap.html">Plotting brain region values on the Swanson flat map</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../atlas_examples.html#gene-expression">Gene expression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../atlas_examples.html#streamlines">Streamlines</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="docs_wheel_moves.html">Working with wheel data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docs_wheel_screen_stimulus.html">Computing the stimulus position using the wheel</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../010_api_reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../genindex.html">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IBL Library</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../atlas_examples.html">Atlas Examples</a></li>
+      <li class="breadcrumb-item active">Plotting brain region values on histology slices</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks_external/atlas_plotting_scalar_on_slice.nblink.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Plotting-brain-region-values-on-histology-slices">
+<h1>Plotting brain region values on histology slices<a class="headerlink" href="#Plotting-brain-region-values-on-histology-slices" title="Link to this heading"></a></h1>
+<p>This example walks through various ways to overlay brain region values on histology slices</p>
+<section id="Data-preparation">
+<h2>Data preparation<a class="headerlink" href="#Data-preparation" title="Link to this heading"></a></h2>
+<p>For all the examples below, an array of acronyms and an array of values corresponding to each acronym must be provided.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="c1"># prepare array of acronyms</span>
+<span class="n">acronyms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">'VPM'</span><span class="p">,</span> <span class="s1">'VPL'</span><span class="p">,</span> <span class="s1">'PO'</span><span class="p">,</span> <span class="s1">'LP'</span><span class="p">,</span> <span class="s1">'CA1'</span><span class="p">,</span> <span class="s1">'DG-mo'</span><span class="p">,</span> <span class="s1">'SSs5'</span><span class="p">,</span> <span class="s1">'VISa5'</span><span class="p">,</span> <span class="s1">'AUDv6a'</span><span class="p">,</span> <span class="s1">'MOp5'</span><span class="p">,</span> <span class="s1">'FRP5'</span><span class="p">])</span>
+<span class="c1"># assign data to each acronym</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">acronyms</span><span class="p">))</span>
+
+<span class="c1"># acronyms and values must have the same number of rows</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">acronyms</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>If different values for each acronym want to be shown on each hemisphere, the array of values must contain two columns, the first corresponding to values on the left hemisphere and the second corresponding to values on the right hemisphere</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># values to be used for left and right hemisphere</span>
+<span class="n">values_lh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">acronyms</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+<span class="n">values_rh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">acronyms</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+<span class="n">values_lr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">values_lh</span><span class="p">,</span> <span class="n">values_rh</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>When providing values for each hemisphere, if a value for a given acronym has only been computed, for example, in the left hemisphere, the corresponding value in right hemisphere array should be set to NaN. A helper function is available that will prepare the array of values in the correct format</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iblatlas.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">prepare_lr_data</span>
+
+<span class="n">acronyms_lh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">'VPM'</span><span class="p">,</span> <span class="s1">'VPL'</span><span class="p">,</span> <span class="s1">'PO'</span><span class="p">,</span> <span class="s1">'LP'</span><span class="p">,</span> <span class="s1">'CA1'</span><span class="p">,</span> <span class="s1">'DG-mo'</span><span class="p">])</span>
+<span class="n">values_lh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">acronyms_lh</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+<span class="n">acronyms_rh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">'VPM'</span><span class="p">,</span> <span class="s1">'PO'</span><span class="p">,</span> <span class="s1">'LP'</span><span class="p">,</span> <span class="s1">'CA1'</span><span class="p">,</span> <span class="s1">'DG-mo'</span><span class="p">,</span> <span class="s1">'VISa5'</span><span class="p">,</span> <span class="s1">'SSs5'</span><span class="p">])</span>
+<span class="n">values_rh</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">acronyms_rh</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+<span class="n">acronyms_lr</span><span class="p">,</span> <span class="n">values_lr</span> <span class="o">=</span> <span class="n">prepare_lr_data</span><span class="p">(</span><span class="n">acronyms_lh</span><span class="p">,</span> <span class="n">values_lh</span><span class="p">,</span> <span class="n">acronyms_rh</span><span class="p">,</span> <span class="n">values_rh</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Different mappings can be used when plotting the images (see <a class="reference external" href="https://int-brain-lab.github.io/iblenv/notebooks_external/atlas_mapping.html">here</a> for more information on atlas mappings). The acronyms provided must correspond to the specified map</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iblatlas.regions</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrainRegions</span>
+<span class="n">br</span> <span class="o">=</span> <span class="n">BrainRegions</span><span class="p">()</span>
+
+<span class="n">acronyms_beryl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">acronym2acronym</span><span class="p">(</span><span class="n">acronyms</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Beryl'</span><span class="p">))</span>
+<span class="n">values_beryl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">acronyms_beryl</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+<span class="n">acronyms_cosmos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">br</span><span class="o">.</span><span class="n">acronym2acronym</span><span class="p">(</span><span class="n">acronyms</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Cosmos'</span><span class="p">))</span>
+<span class="n">values_cosmos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">acronyms_cosmos</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Example-1:-Coronal-slices">
+<h2>Example 1: Coronal slices<a class="headerlink" href="#Example-1:-Coronal-slices" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">iblatlas.plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_scalar_on_slice</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">iblatlas.atlas</span><span class="w"> </span><span class="kn">import</span> <span class="n">AllenAtlas</span>
+<span class="n">ba</span> <span class="o">=</span> <span class="n">AllenAtlas</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot region values on the left hemisphere of a coronal slice at ap=-2000um overlaid on the dwi Allen image</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">2000</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'coronal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Allen'</span><span class="p">,</span> <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">background</span><span class="o">=</span><span class="s1">'image'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Reds'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_12_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_12_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot single column region values on both hemispheres of a coronal slice at ap=-2000um overlaid on brain region boundaries</span>
+<span class="c1"># using Beryl mapping</span>
+<span class="c1"># If values only contains one column, the values will be mirrored on each hemisphere</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms_beryl</span><span class="p">,</span> <span class="n">values_beryl</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">2000</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'coronal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Beryl'</span><span class="p">,</span>
+                               <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'both'</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="s1">'boundary'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Blues'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_13_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_13_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot two column region values on both hemispheres of a coronal slice at ap=-1800um overlaid on brain region boundaries</span>
+<span class="c1"># and display colorbar</span>
+<span class="c1"># Values contains two columns, so each hemisphere has different values</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms_lr</span><span class="p">,</span> <span class="n">values_lr</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">1800</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'coronal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Allen'</span><span class="p">,</span> <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'both'</span><span class="p">,</span>
+                               <span class="n">background</span><span class="o">=</span><span class="s1">'boundary'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'viridis'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">,</span> <span class="n">show_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_14_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_14_0.png" />
+</div>
+</div>
+</section>
+<section id="Example-2:-Sagittal-slices">
+<h2>Example 2: Sagittal slices<a class="headerlink" href="#Example-2:-Sagittal-slices" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot region values on the left hemisphere of a sagittal slice at ml=-2000um overlaid on the dwi Allen image</span>
+<span class="c1"># using cosmos mapping</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms_cosmos</span><span class="p">,</span> <span class="n">values_cosmos</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">2000</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'sagittal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Cosmos'</span><span class="p">,</span>
+                               <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="s1">'image'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Greens'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_16_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_16_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot region values on the left hemisphere of a sagittal slice at ml=-1000um overlaid on brain region boundaries</span>
+<span class="c1"># Create figure before and pass in axis on which to plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">1000</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'sagittal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Allen'</span><span class="p">,</span> <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">background</span><span class="o">=</span><span class="s1">'boundary'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'plasma'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_17_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_17_0.png" />
+</div>
+</div>
+</section>
+<section id="Example-3:-Horizontal-slices">
+<h2>Example 3: Horizontal slices<a class="headerlink" href="#Example-3:-Horizontal-slices" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot two column region values on the both hemispheres of a horizontal slice at dv=--2500um overlaid on the dwi Allen image</span>
+<span class="c1"># Pass in clevels min max values to cap the colormap</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms_lr</span><span class="p">,</span> <span class="n">values_lr</span><span class="p">,</span> <span class="n">coord</span><span class="o">=-</span><span class="mi">2500</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'horizontal'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Allen'</span><span class="p">,</span> <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'both'</span><span class="p">,</span>
+                               <span class="n">background</span><span class="o">=</span><span class="s1">'image'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Reds'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">,</span> <span class="n">clevels</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_19_0.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_19_0.png" />
+</div>
+</div>
+</section>
+<section id="Example-4:-Top-view">
+<h2>Example 4: Top view<a class="headerlink" href="#Example-4:-Top-view" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot region values on left hemisphere of a top view overlaid on brain region boundaries using Beryl mapping and show cbar</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="n">plot_scalar_on_slice</span><span class="p">(</span><span class="n">acronyms_beryl</span><span class="p">,</span> <span class="n">values_beryl</span><span class="p">,</span> <span class="nb">slice</span><span class="o">=</span><span class="s1">'top'</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="s1">'Beryl'</span><span class="p">,</span> <span class="n">hemisphere</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                                     <span class="n">background</span><span class="o">=</span><span class="s1">'boundary'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Purples'</span><span class="p">,</span> <span class="n">brain_atlas</span><span class="o">=</span><span class="n">ba</span><span class="p">,</span> <span class="n">show_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/site-packages/iblatlas/atlas.py:233: RuntimeWarning: invalid value encountered in cast
+  ii = np.array(np.round(i)).astype(int)
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_external_atlas_plotting_scalar_on_slice_21_1.png" src="../_images/notebooks_external_atlas_plotting_scalar_on_slice_21_1.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="atlas_mapping.html" class="btn btn-neutral float-left" title="Atlas mapping" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="atlas_dorsal_cortex_flatmap.html" class="btn btn-neutral float-right" title="Plotting brain region values on cortical flatmap" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, International Brain Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

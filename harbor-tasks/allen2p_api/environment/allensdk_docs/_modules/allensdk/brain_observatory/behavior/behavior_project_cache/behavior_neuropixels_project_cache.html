@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.</span>\
+    <span class="n">project_apis</span><span class="o">.</span><span class="n">data_io</span> <span class="kn">import</span><span class="w"> </span><span class="nn">VisualBehaviorNeuropixelsProjectCloudApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.</span>\
+    <span class="n">project_cache_base</span> <span class="kn">import</span><span class="w"> </span><span class="nn">ProjectCacheBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_session</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">BehaviorSession</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.behavior_ecephys_session</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">BehaviorEcephysSession</span>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VisualBehaviorNeuropixelsProjectCache</span><span class="p">(</span><span class="n">ProjectCacheBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Entrypoint for accessing Visual Behavior Neuropixels data.</span>
+
+<span class="sd">    Supports access to metadata tables:</span>
+<span class="sd">    get_ecephys_session_table()</span>
+<span class="sd">    get_behavior_session_table()</span>
+<span class="sd">    get_probe_table()</span>
+<span class="sd">    get_channel_table()</span>
+<span class="sd">    get_unit_table</span>
+
+<span class="sd">    Provides methods for instantiating session objects</span>
+<span class="sd">    from the nwb files:</span>
+<span class="sd">    get_ecephys_session() to load BehaviorEcephysSession</span>
+<span class="sd">    get_behavior_sesion() to load BehaviorSession</span>
+
+<span class="sd">    Provides tools for downloading data:</span>
+
+<span class="sd">    Will download data from the s3 bucket if session nwb file is not</span>
+<span class="sd">    in the local cache, otherwise will use file from the cache.</span>
+<span class="sd">    """</span>
+
+    <span class="n">PROJECT_NAME</span> <span class="o">=</span> <span class="s2">"visual-behavior-neuropixels"</span>
+    <span class="n">BUCKET_NAME</span> <span class="o">=</span> <span class="s2">"visual-behavior-neuropixels-data"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fetch_api</span><span class="p">:</span> <span class="n">VisualBehaviorNeuropixelsProjectCloudApi</span><span class="p">,</span>
+            <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api</span><span class="p">,</span> <span class="n">fetch_tries</span><span class="o">=</span><span class="n">fetch_tries</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.cloud_api_class">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.cloud_api_class">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cloud_api_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">VisualBehaviorNeuropixelsProjectCloudApi</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_ecephys_session_table">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_ecephys_session_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ecephys_session_table</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">filter_abnormalities</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filter_abnormalities: bool</span>
+<span class="sd">            If True, do not return rows corresponding to</span>
+<span class="sd">            sessions with identified abnormalities in</span>
+<span class="sd">            histology or activity</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ecephys_sessions_table: pd.DataFrame</span>
+<span class="sd">            pandas dataframe representing metadata for all</span>
+<span class="sd">            ecephys sessions in the data release</span>
+<span class="sd">        """</span>
+
+        <span class="n">sessions_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_ecephys_session_table</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">filter_abnormalities</span><span class="p">:</span>
+            <span class="n">sessions_table</span> <span class="o">=</span> <span class="n">sessions_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                        <span class="n">sessions_table</span><span class="o">.</span><span class="n">abnormal_histology</span><span class="o">.</span><span class="n">isna</span><span class="p">(),</span>
+                        <span class="n">sessions_table</span><span class="o">.</span><span class="n">abnormal_activity</span><span class="o">.</span><span class="n">isna</span><span class="p">())]</span>
+
+        <span class="k">return</span> <span class="n">sessions_table</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_behavior_session_table">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_behavior_session_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_session_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        behavior_sessions_table: pd.DataFrame</span>
+<span class="sd">            pandas dataframe representing metadata for all</span>
+<span class="sd">            behavior sessions in the data release</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_behavior_session_table</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_probe_table">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_probe_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probe_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        probes table: pd.DataFrame</span>
+
+<span class="sd">        Columns:</span>
+<span class="sd">            - id: probe id</span>
+<span class="sd">            - name: probe name</span>
+<span class="sd">            - location: probe location</span>
+<span class="sd">            - lfp_sampling_rate: LFP sampling rate</span>
+<span class="sd">            - has_lfp_data: Whether this probe has LFP data</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_probe_table</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_channel_table">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_channel_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channel_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        channels table: pd.DataFrame</span>
+
+<span class="sd">        Index: id</span>
+<span class="sd">        Columns:</span>
+<span class="sd">            - properties of `allensdk.ecephys._channel.Channel`</span>
+<span class="sd">            except for 'impedance'</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_channel_table</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_unit_table">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_unit_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        units table: pd.DataFrame</span>
+
+<span class="sd">        Columns:</span>
+<span class="sd">            - properties of `allensdk.ecephys._unit.Unit`</span>
+<span class="sd">            except for 'spike_times', 'spike_amplitudes', 'mean_waveforms'</span>
+<span class="sd">            which are returned separately</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_unit_table</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_ecephys_session">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_ecephys_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ecephys_session</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BehaviorEcephysSession</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Loads all data for `ecephys_session_id` into an</span>
+<span class="sd">        `allensdk.ecephys.behavior_ecephys_session.BehaviorEcephysSession`</span>
+<span class="sd">        instance</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ecephys_session_id: int</span>
+<span class="sd">            The ecephys session id</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `allensdk.ecephys.behavior_ecephys_session.BehaviorEcephysSession`</span>
+<span class="sd">        instance</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_ecephys_session</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VisualBehaviorNeuropixelsProjectCache.get_behavior_session">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.html#allensdk.brain_observatory.behavior.behavior_project_cache.behavior_neuropixels_project_cache.VisualBehaviorNeuropixelsProjectCache.get_behavior_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_session</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BehaviorSession</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Loads all data for `behavior_session_id` into an</span>
+<span class="sd">        `allensdk.brain_observatory.behavior.behavior_session.BehaviorSession`</span>
+<span class="sd">        instance</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        behavior_session_id: int</span>
+<span class="sd">            The behavior session id</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `allensdk.brain_observatory.behavior.behavior_session.BehaviorSession`</span>
+<span class="sd">        instance</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_behavior_session</span><span class="p">(</span><span class="n">behavior_session_id</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

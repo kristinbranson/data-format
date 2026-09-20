@@ -96,7 +96,8 @@ def check_task(task: str) -> list[str]:
         list of str, one per problem; empty when consistent.
     """
     problems = []
-    variants = [TASKS_DIR / name for name in (task, f"{task}_minimal", f"{task}_datalimit")
+    variants = [TASKS_DIR / name
+                for name in (task, f"{task}_minimal", f"{task}_datalimit", f"{task}_api")
                 if (TASKS_DIR / name).is_dir()]
     parent = variants[0]
 

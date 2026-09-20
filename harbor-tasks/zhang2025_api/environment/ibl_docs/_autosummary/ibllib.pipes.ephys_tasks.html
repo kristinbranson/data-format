@@ -1,0 +1,865 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ibllib.pipes.ephys_tasks &mdash; IBL Library  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/style.css?v=17142d56" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ibllib.pipes.histology" href="ibllib.pipes.histology.html" />
+    <link rel="prev" title="ibllib.pipes.ephys_alignment" href="ibllib.pipes.ephys_alignment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            IBL Library
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">The Open Neurophysiology Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/one_quickstart.html">ONE Quick Start</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://int-brain-lab.github.io/ONE/">Full documentation Website for ONE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/public_introduction.html">Publicly Available IBL Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/dataset_overview.html">What is available for download ?</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Datasets - Collaboration</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2025_data_release_brainwidemap.html">2025 - Brain Wide Map</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2024_data_release_repro_ephys.html">2024 - Reproducible Ephys</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2021_data_release_behavior.html">2021 - Behavior</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Datasets - Projects</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2025_data_release_autism_noel.html">2025 - Autism</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2025_data_release_autism_davatolhagh.html">2025 - Autism Widefield</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2025_data_release_aging_zang.html">2025 - Ageing and neural variability</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/2022_data_release_spikesorting_benchmarks.html">2022 - Spike sorting benchmark datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/data_release_pilot.html">Data Release - Pilot Dataset</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Exploring IBL Data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../02_installation.html">Installation of IBL Unified Environment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/data_structure.html">Get to know the datasets and folder structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/data_download.html">Setting up credentials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/data_download.html#Explore-and-download-data-using-the-ONE-api">Explore and download data using the ONE-api</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../loading_examples.html">Loading Data</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../09_contribution.html">How to contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../public_docs/information_contact.html">Getting Help: Information and Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples &amp; Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../atlas_examples.html">Atlas Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/docs_wheel_moves.html">Working with wheel data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks_external/docs_wheel_screen_stimulus.html">Computing the stimulus position using the wheel</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../010_api_reference.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="ibllib.html">ibllib</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ibllib.ephys.html">ibllib.ephys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.exceptions.html">ibllib.exceptions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.io.html">ibllib.io</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.misc.html">ibllib.misc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.oneibl.html">ibllib.oneibl</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="ibllib.pipes.html">ibllib.pipes</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.html#ibllib.pipes.assign_task"><code class="docutils literal notranslate"><span class="pre">assign_task()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.audio_tasks.html">ibllib.pipes.audio_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.base_tasks.html">ibllib.pipes.base_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.behavior_tasks.html">ibllib.pipes.behavior_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.dynamic_pipeline.html">ibllib.pipes.dynamic_pipeline</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.ephys_alignment.html">ibllib.pipes.ephys_alignment</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ibllib.pipes.ephys_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.histology.html">ibllib.pipes.histology</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.local_server.html">ibllib.pipes.local_server</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.misc.html">ibllib.pipes.misc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.scan_fix_passive_files.html">ibllib.pipes.scan_fix_passive_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.sync_tasks.html">ibllib.pipes.sync_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.tasks.html">ibllib.pipes.tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.training_status.html">ibllib.pipes.training_status</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.video_tasks.html">ibllib.pipes.video_tasks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ibllib.pipes.widefield_tasks.html">ibllib.pipes.widefield_tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.plots.html">ibllib.plots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.qc.html">ibllib.qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.tests.html">ibllib.tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ibllib.time.html">ibllib.time</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="brainbox.html">brainbox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iblatlas.html">iblatlas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iblutil.html">iblutil</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../genindex.html">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IBL Library</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../010_api_reference.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="ibllib.html">ibllib</a></li>
+          <li class="breadcrumb-item"><a href="ibllib.pipes.html">ibllib.pipes</a></li>
+      <li class="breadcrumb-item active">ibllib.pipes.ephys_tasks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/ibllib.pipes.ephys_tasks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ibllib.pipes.ephys_tasks">
+<span id="ibllib-pipes-ephys-tasks"></span><h1>ibllib.pipes.ephys_tasks<a class="headerlink" href="#module-ibllib.pipes.ephys_tasks" title="Link to this heading"></a></h1>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.CellQCMixin" title="ibllib.pipes.ephys_tasks.CellQCMixin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CellQCMixin</span></code></a></p></td>
+<td><p>This mixin class is used to compute the cell QC metrics and update the json field of the probe insertion The compute_cell_qc method is static and can be used independently.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1" title="ibllib.pipes.ephys_tasks.EphysCompressNP1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysCompressNP1</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21" title="ibllib.pipes.ephys_tasks.EphysCompressNP21"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysCompressNP21</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24" title="ibllib.pipes.ephys_tasks.EphysCompressNP24"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysCompressNP24</span></code></a></p></td>
+<td><p>Compresses NP2.4 data by splitting into N binary files, corresponding to N shanks</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysPulses" title="ibllib.pipes.ephys_tasks.EphysPulses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysPulses</span></code></a></p></td>
+<td><p>Extract Pulses from raw electrophysiology data into numpy arrays Perform the probes synchronisation with nidq (3B) or main probe (3A) First the job extract the sync pulses from the synchronisation task in all probes, and then perform the  synchronisation with the nidq</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysRegisterRaw" title="ibllib.pipes.ephys_tasks.EphysRegisterRaw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysRegisterRaw</span></code></a></p></td>
+<td><p>Creates the probe insertions and uploads the probe descriptions file, also compresses the nidq files and uploads</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses" title="ibllib.pipes.ephys_tasks.EphysSyncPulses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysSyncPulses</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw" title="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EphysSyncRegisterRaw</span></code></a></p></td>
+<td><p>Task to rename, compress and register raw daq data with .bin format collected using NIDAQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.RawEphysQC" title="ibllib.pipes.ephys_tasks.RawEphysQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RawEphysQC</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ibllib.pipes.ephys_tasks.SpikeSorting" title="ibllib.pipes.ephys_tasks.SpikeSorting"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpikeSorting</span></code></a></p></td>
+<td><p>Pykilosort 2.5 pipeline</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysRegisterRaw">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysRegisterRaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysRegisterRaw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysRegisterRaw" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.DynamicTask" title="ibllib.pipes.base_tasks.DynamicTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTask</span></code></a></p>
+<p>Creates the probe insertions and uploads the probe descriptions file, also compresses the nidq files and uploads</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysRegisterRaw.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysRegisterRaw.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysRegisterRaw.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'small'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysRegisterRaw.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysRegisterRaw.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysRegisterRaw.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysSyncRegisterRaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysSyncRegisterRaw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.DynamicTask" title="ibllib.pipes.base_tasks.DynamicTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTask</span></code></a></p>
+<p>Task to rename, compress and register raw daq data with .bin format collected using NIDAQ</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'small'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncRegisterRaw.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysCompressNP1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysCompressNP1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'large'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP1.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP1.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysCompressNP21</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysCompressNP21"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'large'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP21.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP21.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysCompressNP24</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_collection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raw_ephys_data'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nshanks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysCompressNP24"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a></p>
+<p>Compresses NP2.4 data by splitting into N binary files, corresponding to N shanks</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pname</strong> – a probe name string</p></li>
+<li><p><strong>device_collection</strong> – the collection containing the probes (usually ‘raw_ephys_data’)</p></li>
+<li><p><strong>nshanks</strong> – number of shanks used (usually 4 but it may be less depending on electrode map), optional</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'large'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysCompressNP24.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysCompressNP24.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysSyncPulses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysSyncPulses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.sync_tasks.html#ibllib.pipes.sync_tasks.SyncPulses" title="ibllib.pipes.sync_tasks.SyncPulses"><code class="xref py py-class docutils literal notranslate"><span class="pre">SyncPulses</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'small'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysSyncPulses.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysSyncPulses.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">EphysPulses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#EphysPulses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a></p>
+<p>Extract Pulses from raw electrophysiology data into numpy arrays
+Perform the probes synchronisation with nidq (3B) or main probe (3A)
+First the job extract the sync pulses from the synchronisation task in all probes, and then perform the</p>
+<blockquote>
+<div><p>synchronisation with the nidq</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pname</strong> – a list of probes names or a single probe name string</p></li>
+<li><p><strong>device_collection</strong> – the collection containing the probes (usually ‘raw_ephys_data’)</p></li>
+<li><p><strong>sync_collection</strong> – the collection containing the synchronisation device - nidq (usually ‘raw_ephys_data’)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'small'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.EphysPulses.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.EphysPulses.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">RawEphysQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#RawEphysQC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC.cpu">
+<span class="sig-name descname"><span class="pre">cpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC.cpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'small'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.RawEphysQC.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.RawEphysQC.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.CellQCMixin">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CellQCMixin</span></span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#CellQCMixin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.CellQCMixin" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This mixin class is used to compute the cell QC metrics and update the json field of the probe insertion
+The compute_cell_qc method is static and can be used independently.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.CellQCMixin.compute_cell_qc">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">compute_cell_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_alf_probe</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#CellQCMixin.compute_cell_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.CellQCMixin.compute_cell_qc" title="Link to this definition"></a></dt>
+<dd><p>Computes the cell QC given an extracted probe alf path</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder_alf_probe</strong> – folder</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">SpikeSorting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ibllib/pipes/ephys_tasks.html#SpikeSorting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="ibllib.pipes.base_tasks.html#ibllib.pipes.base_tasks.EphysTask" title="ibllib.pipes.base_tasks.EphysTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">EphysTask</span></code></a>, <a class="reference internal" href="#ibllib.pipes.ephys_tasks.CellQCMixin" title="ibllib.pipes.ephys_tasks.CellQCMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">CellQCMixin</span></code></a></p>
+<p>Pykilosort 2.5 pipeline</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.gpu">
+<span class="sig-name descname"><span class="pre">gpu</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.gpu" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.io_charge">
+<span class="sig-name descname"><span class="pre">io_charge</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.io_charge" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.priority">
+<span class="sig-name descname"><span class="pre">priority</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.priority" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.job_size">
+<span class="sig-name descname"><span class="pre">job_size</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'large'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.job_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.force">
+<span class="sig-name descname"><span class="pre">force</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.force" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.env">
+<span class="sig-name descname"><span class="pre">env</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'iblsorter'</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.env" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.SHELL_SCRIPT">
+<span class="sig-name descname"><span class="pre">SHELL_SCRIPT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/home/runner/Documents/PYTHON/iblscripts/deploy/serverpc/iblsorter/sort_recording.sh')</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.SHELL_SCRIPT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.SORTER_REPOSITORY">
+<span class="sig-name descname"><span class="pre">SORTER_REPOSITORY</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/home/runner/Documents/PYTHON/SPIKE_SORTING/ibl-sorter')</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.SORTER_REPOSITORY" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.signature">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">signature</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.signature" title="Link to this definition"></a></dt>
+<dd><p>The signature of the task specifies inputs and outputs for the given task.
+For some tasks it is dynamic and calculated. The legacy code specifies those as tuples.
+The preferred way is to use the ExpectedDataset input and output constructors.</p>
+<blockquote>
+<div><p>I = ExpectedDataset.input
+O = ExpectedDataset.output
+signature = {</p>
+<blockquote>
+<div><dl class="simple">
+<dt>‘input_files’: [</dt><dd><p>I(name=’extract.me.npy’, collection=’raw_data’, required=True, register=False, unique=False),</p>
+</dd>
+</dl>
+<p>],
+‘output_files’: [</p>
+<blockquote>
+<div><p>O(name=’look.atme.npy’, collection=’shiny_data’, required=True, register=True, unique=False)</p>
+</div></blockquote>
+</div></blockquote>
+<p>]}
+is equivalent to:
+signature = {</p>
+<blockquote>
+<div><p>‘input_files’: [(‘extract.me.npy’, ‘raw_data’, True, True)],
+‘output_files’: [(‘look.atme.npy’, ‘shiny_data’, True)],
+}</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="ibllib.pipes.ephys_tasks.SpikeSorting.scratch_folder_run">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">scratch_folder_run</span></span><a class="headerlink" href="#ibllib.pipes.ephys_tasks.SpikeSorting.scratch_folder_run" title="Link to this definition"></a></dt>
+<dd><p>Constructs a path to a temporary folder for the spike sorting output and scratch files
+This is usually on a high performance drive, and we should factor around 2.5 times the uncompressed raw recording size
+For a scratch drive at /mnt/h0 we would have the following temp dir:
+/mnt/h0/iblsorter_1.8.0_CSHL071_2020-10-04_001_probe01/</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ibllib.pipes.ephys_alignment.html" class="btn btn-neutral float-left" title="ibllib.pipes.ephys_alignment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ibllib.pipes.histology.html" class="btn btn-neutral float-right" title="ibllib.pipes.histology" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, International Brain Laboratory.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

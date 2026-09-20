@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pynwb</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ecephys_session_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">EcephysSessionApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb.nwb_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_unit_filter_value</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_nwbfile_version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.._channels</span><span class="w"> </span><span class="kn">import</span> <span class="n">Channels</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..optotagging</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptotaggingTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..probes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Probes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...behavior.data_objects.stimuli.presentations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Presentations</span>
+
+<span class="n">color_triplet_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\[(-{0,1}\d*\.\d*,\s*)*(-{0,1}\d*\.\d*)\]"</span><span class="p">)</span>
+
+
+<span class="c1"># TODO: If ecephys write_nwb is revisited, need to re-add `structure_id`</span>
+<span class="c1"># column and add the structure ids to the nwbfile for the</span>
+<span class="c1"># add_ecephys_electrodes() function.</span>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcephysNwbSessionApi</span><span class="p">(</span><span class="n">NwbApi</span><span class="p">,</span> <span class="n">EcephysSessionApi</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">path</span><span class="p">,</span>
+                 <span class="n">probe_lfp_paths</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                     <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">NWBFile</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">additional_unit_metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">external_channel_columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_out_of_brain_units</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
+            <span class="s2">"filter_out_of_brain_units"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_by_validity</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"filter_by_validity"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">amplitude_cutoff_maximum</span> <span class="o">=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span>
+            <span class="s2">"amplitude_cutoff_maximum"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">presence_ratio_minimum</span> <span class="o">=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span>
+            <span class="s2">"presence_ratio_minimum"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isi_violations_maximum</span> <span class="o">=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span>
+            <span class="s2">"isi_violations_maximum"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">EcephysNwbSessionApi</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">probe_lfp_paths</span> <span class="o">=</span> <span class="n">probe_lfp_paths</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">additional_unit_metrics</span> <span class="o">=</span> <span class="n">additional_unit_metrics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">external_channel_columns</span> <span class="o">=</span> <span class="n">external_channel_columns</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"path"</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+            <span class="n">check_nwbfile_version</span><span class="p">(</span>
+                <span class="n">nwbfile_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="n">desired_minimum_version</span><span class="o">=</span><span class="s2">"2.2.2"</span><span class="p">,</span>
+                <span class="n">warning_msg</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"It looks like the Visual Coding Neuropixels nwbfile "</span>
+                    <span class="sa">f</span><span class="s2">"you are trying to access (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">)"</span>
+                    <span class="sa">f</span><span class="s2">"was created by a previous (and incompatible) version of "</span>
+                    <span class="sa">f</span><span class="s2">"AllenSDK and pynwb. You will need to either 1) use "</span>
+                    <span class="sa">f</span><span class="s2">"AllenSDK version &lt; 2.0.0 or 2) re-download an updated "</span>
+                    <span class="sa">f</span><span class="s2">"version of the nwbfile to access the desired data."</span><span class="p">))</span>
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.test">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.test">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" A minimal test to make sure that this API's NWB file exists and is</span>
+<span class="sd">        readable. Ecephys NWB files use the required session identifier field</span>
+<span class="sd">        to store the session id, so this is guaranteed to be present for any</span>
+<span class="sd">        uncorrupted NWB file.</span>
+
+<span class="sd">        Of course, this does not ensure that the file as a whole is correct.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_ecephys_session_id</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_session_start_time">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_session_start_time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">session_start_time</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_stimulus_presentations">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_stimulus_presentations">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_presentations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">Presentations</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">,</span>
+                                       <span class="n">add_is_change</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="s2">"color"</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="c1"># .loc breaks on nan values so fill with empty string</span>
+            <span class="c1"># This is backwards compatible change for older nwb files</span>
+            <span class="c1"># Newer ones encode nan value here with empty string</span>
+            <span class="n">table</span><span class="p">[</span><span class="s1">'color'</span><span class="p">]</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">'color'</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s1">''</span><span class="p">)</span>
+
+            <span class="c1"># the color column actually contains two parameters. One is</span>
+            <span class="c1"># coded as rgb triplets and the other as -1 or 1</span>
+            <span class="k">if</span> <span class="s2">"color_triplet"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">table</span><span class="p">[</span><span class="s2">"color_triplet"</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">rgb_color_match</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">"color"</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">color_triplet_re</span><span class="p">)</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rgb_color_match</span><span class="p">,</span> <span class="s2">"color_triplet"</span><span class="p">]</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">rgb_color_match</span><span class="p">,</span> <span class="s2">"color"</span><span class="p">]</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rgb_color_match</span><span class="p">,</span> <span class="s2">"color"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span>
+
+            <span class="c1"># make sure the color column's values are numeric</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">table</span><span class="p">[</span><span class="s2">"color"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"color"</span><span class="p">]</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">table</span><span class="p">[</span><span class="s2">"color"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"color"</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">table</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_probe_nwbfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">probe_lfp_paths</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"EcephysNwbSessionApi assumes a split NWB file, with "</span>
+                <span class="s2">"probewise LFP stored in individual files. "</span>
+                <span class="s2">"this object was not configured with probe_lfp_paths"</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">probe_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">probe_lfp_paths</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"no probe lfp file path is recorded for probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">probe_lfp_paths</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]()</span>
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_probes">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_probes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">probes</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">electrode_groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">probes</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s1">'id'</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">probe_id</span><span class="p">,</span>
+                <span class="s1">'name'</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s1">'location'</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">location</span><span class="p">,</span>
+                <span class="s2">"sampling_rate"</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">device</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">,</span>
+                <span class="s2">"lfp_sampling_rate"</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">lfp_sampling_rate</span><span class="p">,</span>
+                <span class="s2">"has_lfp_data"</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">has_lfp_data</span>
+            <span class="p">})</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">probes</span><span class="p">)</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">probes</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="s1">'id'</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">probes</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"description"</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">probes</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_channels">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_channels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="n">Channels</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="n">channels</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span>
+            <span class="n">external_channel_columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">external_channel_columns</span><span class="p">,</span>
+            <span class="n">filter_by_validity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_by_validity</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">channels</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_mean_waveforms">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_mean_waveforms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mean_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">Probes</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probes</span><span class="o">.</span><span class="n">mean_waveforms</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_spike_times">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_spike_times">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_spike_times</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">Probes</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probes</span><span class="o">.</span><span class="n">spike_times</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_spike_amplitudes">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_spike_amplitudes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_spike_amplitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">Probes</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probes</span><span class="o">.</span><span class="n">spike_amplitudes</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_units">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_units">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">Probes</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probes</span><span class="o">.</span><span class="n">get_units_table</span><span class="p">(</span>
+            <span class="n">filter_by_validity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_by_validity</span><span class="p">,</span>
+            <span class="n">filter_out_of_brain_units</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_out_of_brain_units</span><span class="p">,</span>
+            <span class="n">amplitude_cutoff_maximum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">amplitude_cutoff_maximum</span><span class="p">,</span>
+            <span class="n">presence_ratio_minimum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">presence_ratio_minimum</span><span class="p">,</span>
+            <span class="n">isi_violations_maximum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">isi_violations_maximum</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_lfp">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_lfp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lfp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">lfp_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probe_nwbfile</span><span class="p">(</span><span class="n">probe_id</span><span class="p">)</span>
+        <span class="n">lfp</span> <span class="o">=</span> <span class="n">lfp_file</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="sa">f</span><span class="s1">'probe_</span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s1">_lfp'</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">lfp</span><span class="o">.</span><span class="n">get_electrical_series</span><span class="p">(</span><span class="sa">f</span><span class="s1">'probe_</span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s1">_lfp_data'</span><span class="p">)</span>
+
+        <span class="n">electrodes</span> <span class="o">=</span> <span class="n">lfp_file</span><span class="o">.</span><span class="n">electrodes</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+
+        <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"LFP"</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'time'</span><span class="p">,</span> <span class="s1">'channel'</span><span class="p">],</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">[</span><span class="n">timestamps</span><span class="p">,</span> <span class="n">electrodes</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_running_speed">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_running_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_running_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_rotation</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">running_module</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span><span class="s2">"running"</span><span class="p">)</span>
+        <span class="n">running_speed_series</span> <span class="o">=</span> <span class="n">running_module</span><span class="p">[</span><span class="s2">"running_speed"</span><span class="p">]</span>
+        <span class="n">running_speed_start_times</span> <span class="o">=</span> <span class="n">running_speed_series</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+
+        <span class="n">running_speed_end_series</span> <span class="o">=</span> <span class="n">running_module</span><span class="p">[</span><span class="s2">"running_speed_end_times"</span><span class="p">]</span>
+        <span class="n">running_speed_end_times</span> <span class="o">=</span> <span class="n">running_speed_end_series</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+
+        <span class="n">running</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">running_speed_start_times</span><span class="p">,</span>
+            <span class="s2">"end_time"</span><span class="p">:</span> <span class="n">running_speed_end_times</span><span class="p">,</span>
+            <span class="s2">"velocity"</span><span class="p">:</span> <span class="n">running_speed_series</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">include_rotation</span><span class="p">:</span>
+            <span class="n">rotation_series</span> <span class="o">=</span> <span class="n">running_module</span><span class="p">[</span><span class="s2">"running_wheel_rotation"</span><span class="p">]</span>
+            <span class="n">running</span><span class="p">[</span><span class="s2">"net_rotation"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_series</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+
+        <span class="k">return</span> <span class="n">running</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_raw_running_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_raw_running_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_raw_running_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">rotation_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span>
+            <span class="s2">"raw_running_wheel_rotation"</span><span class="p">)</span>
+        <span class="n">signal_voltage_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span>
+            <span class="s2">"running_wheel_signal_voltage"</span><span class="p">)</span>
+        <span class="n">supply_voltage_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span>
+            <span class="s2">"running_wheel_supply_voltage"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s2">"frame_time"</span><span class="p">:</span> <span class="n">rotation_series</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:],</span>
+            <span class="s2">"net_rotation"</span><span class="p">:</span> <span class="n">rotation_series</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+            <span class="s2">"signal_voltage"</span><span class="p">:</span> <span class="n">signal_voltage_series</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+            <span class="s2">"supply_voltage"</span><span class="p">:</span> <span class="n">supply_voltage_series</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_rig_metadata">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_rig_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_rig_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">et_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span>
+                <span class="s2">"eye_tracking_rig_metadata"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"This ecephys session '</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span><span class="si">}</span><span class="s2">' has "</span>
+                <span class="sa">f</span><span class="s2">"no eye tracking rig metadata. (NWB error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">et_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"eye_tracking_rig_metadata"</span><span class="p">)</span>
+
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="sa">f</span><span class="s2">"monitor_position_</span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">monitor_position__unit</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span>
+                <span class="n">meta</span><span class="o">.</span><span class="n">monitor_position</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"camera_position_</span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">camera_position__unit</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span>
+                <span class="n">meta</span><span class="o">.</span><span class="n">camera_position</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"led_position_</span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">led_position__unit</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">led_position</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"monitor_rotation_</span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">monitor_rotation__unit</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span>
+                <span class="n">meta</span><span class="o">.</span><span class="n">monitor_rotation</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"camera_rotation_</span><span class="si">{</span><span class="n">meta</span><span class="o">.</span><span class="n">camera_rotation__unit</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span>
+                <span class="n">meta</span><span class="o">.</span><span class="n">camera_rotation</span>
+        <span class="p">})</span>
+
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">'x'</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">'y'</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">'z'</span><span class="p">})</span>
+
+        <span class="n">returned_metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"geometry"</span><span class="p">:</span> <span class="n">rig_geometry</span><span class="p">,</span>
+            <span class="s2">"equipment"</span><span class="p">:</span> <span class="n">meta</span><span class="o">.</span><span class="n">equipment</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">returned_metadata</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_screen_gaze_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_screen_gaze_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_screen_gaze_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_filtered_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> \
+            <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rgm_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span><span class="s2">"raw_gaze_mapping"</span><span class="p">)</span>
+            <span class="n">fgm_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span>
+                <span class="s2">"filtered_gaze_mapping"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"This ecephys session '</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span><span class="si">}</span><span class="s2">' has "</span>
+                <span class="sa">f</span><span class="s2">"no eye tracking data. (NWB error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">raw_eye_area_ts</span> <span class="o">=</span> <span class="n">rgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"eye_area"</span><span class="p">)</span>
+        <span class="n">raw_pupil_area_ts</span> <span class="o">=</span> <span class="n">rgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"pupil_area"</span><span class="p">)</span>
+        <span class="n">raw_screen_coordinates_ts</span> <span class="o">=</span> <span class="n">rgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"screen_coordinates"</span><span class="p">)</span>
+        <span class="n">raw_screen_coordinates_spherical_ts</span> <span class="o">=</span> <span class="n">rgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"screen_coordinates_spherical"</span><span class="p">)</span>
+
+        <span class="n">filtered_eye_area_ts</span> <span class="o">=</span> <span class="n">fgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"eye_area"</span><span class="p">)</span>
+        <span class="n">filtered_pupil_area_ts</span> <span class="o">=</span> <span class="n">fgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"pupil_area"</span><span class="p">)</span>
+        <span class="n">filtered_screen_coordinates_ts</span> <span class="o">=</span> <span class="n">fgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"screen_coordinates"</span><span class="p">)</span>
+        <span class="n">filtered_screen_coordinates_spherical_ts</span> <span class="o">=</span> <span class="n">fgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"screen_coordinates_spherical"</span><span class="p">)</span>
+
+        <span class="n">gaze_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"raw_eye_area"</span><span class="p">:</span> <span class="n">raw_eye_area_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+            <span class="s2">"raw_pupil_area"</span><span class="p">:</span> <span class="n">raw_pupil_area_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+            <span class="s2">"raw_screen_coordinates_x_cm"</span><span class="p">:</span>
+                <span class="n">raw_screen_coordinates_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="s2">"raw_screen_coordinates_y_cm"</span><span class="p">:</span>
+                <span class="n">raw_screen_coordinates_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="s2">"raw_screen_coordinates_spherical_x_deg"</span><span class="p">:</span>
+                <span class="n">raw_screen_coordinates_spherical_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="s2">"raw_screen_coordinates_spherical_y_deg"</span><span class="p">:</span>
+                <span class="n">raw_screen_coordinates_spherical_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">include_filtered_data</span><span class="p">:</span>
+            <span class="n">gaze_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"filtered_eye_area"</span><span class="p">:</span> <span class="n">filtered_eye_area_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+                    <span class="s2">"filtered_pupil_area"</span><span class="p">:</span> <span class="n">filtered_pupil_area_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+                    <span class="s2">"filtered_screen_coordinates_x_cm"</span><span class="p">:</span>
+                        <span class="n">filtered_screen_coordinates_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+                                                        <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span>
+                    <span class="s2">"filtered_screen_coordinates_y_cm"</span><span class="p">:</span>
+                        <span class="n">filtered_screen_coordinates_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+                                                        <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span>
+                    <span class="s2">"filtered_screen_coordinates_spherical_x_deg"</span><span class="p">:</span>
+                        <span class="n">filtered_screen_coordinates_spherical_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+                                                                   <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span>
+                    <span class="s2">"filtered_screen_coordinates_spherical_y_deg"</span><span class="p">:</span>
+                        <span class="n">filtered_screen_coordinates_spherical_ts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+                                                                   <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">raw_eye_area_ts</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Time (s)"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">gaze_data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_pupil_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_pupil_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pupil_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">et_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span><span class="s2">"eye_tracking"</span><span class="p">)</span>
+            <span class="n">rgm_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span><span class="s2">"raw_gaze_mapping"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"This ecephys session '</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span><span class="si">}</span><span class="s2">' has "</span>
+                <span class="sa">f</span><span class="s2">"no eye tracking data. (NWB error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">cr_ellipse_fits</span> <span class="o">=</span> <span class="n">et_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"cr_ellipse_fits"</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="n">eye_ellipse_fits</span> <span class="o">=</span> <span class="n">et_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"eye_ellipse_fits"</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="n">pupil_ellipse_fits</span> <span class="o">=</span> <span class="n">et_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span>
+            <span class="s2">"pupil_ellipse_fits"</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+
+        <span class="c1"># NOTE: ellipse fit "height" and "width" parameters describe the</span>
+        <span class="c1"># "half-height" and "half-width" of fitted ellipse.</span>
+        <span class="n">eye_tracking_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"corneal_reflection_center_x"</span><span class="p">:</span> <span class="n">cr_ellipse_fits</span><span class="p">[</span><span class="s2">"center_x"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"corneal_reflection_center_y"</span><span class="p">:</span> <span class="n">cr_ellipse_fits</span><span class="p">[</span><span class="s2">"center_y"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"corneal_reflection_height"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cr_ellipse_fits</span><span class="p">[</span><span class="s2">"height"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"corneal_reflection_width"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cr_ellipse_fits</span><span class="p">[</span><span class="s2">"width"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"corneal_reflection_phi"</span><span class="p">:</span> <span class="n">cr_ellipse_fits</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+
+            <span class="s2">"pupil_center_x"</span><span class="p">:</span> <span class="n">pupil_ellipse_fits</span><span class="p">[</span><span class="s2">"center_x"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"pupil_center_y"</span><span class="p">:</span> <span class="n">pupil_ellipse_fits</span><span class="p">[</span><span class="s2">"center_y"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"pupil_height"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pupil_ellipse_fits</span><span class="p">[</span><span class="s2">"height"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"pupil_width"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pupil_ellipse_fits</span><span class="p">[</span><span class="s2">"width"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"pupil_phi"</span><span class="p">:</span> <span class="n">pupil_ellipse_fits</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+
+            <span class="s2">"eye_center_x"</span><span class="p">:</span> <span class="n">eye_ellipse_fits</span><span class="p">[</span><span class="s2">"center_x"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"eye_center_y"</span><span class="p">:</span> <span class="n">eye_ellipse_fits</span><span class="p">[</span><span class="s2">"center_y"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"eye_height"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">eye_ellipse_fits</span><span class="p">[</span><span class="s2">"height"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"eye_width"</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">eye_ellipse_fits</span><span class="p">[</span><span class="s2">"width"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"eye_phi"</span><span class="p">:</span> <span class="n">eye_ellipse_fits</span><span class="p">[</span><span class="s2">"phi"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">}</span>
+
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">rgm_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"eye_area"</span><span class="p">)</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Time (s)"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">eye_tracking_data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_ecephys_session_id">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_ecephys_session_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ecephys_session_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_current_source_density">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_current_source_density">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_source_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">):</span>
+        <span class="n">csd_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probe_nwbfile</span><span class="p">(</span><span class="n">probe_id</span><span class="p">)</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span>
+            <span class="s2">"current_source_density"</span><span class="p">)</span>
+        <span class="n">nwb_csd</span> <span class="o">=</span> <span class="n">csd_mod</span><span class="p">[</span><span class="s2">"ecephys_csd"</span><span class="p">]</span>
+        <span class="n">csd_data</span> <span class="o">=</span> <span class="n">nwb_csd</span><span class="o">.</span><span class="n">time_series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+                   <span class="p">:]</span><span class="o">.</span><span class="n">T</span>  <span class="c1"># csd data stored as (timepoints x channels) but we</span>
+        <span class="c1"># want (channels x timepoints)</span>
+
+        <span class="n">csd</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"CSD"</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">csd_data</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s2">"virtual_channel_index"</span><span class="p">,</span> <span class="s2">"time"</span><span class="p">],</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"virtual_channel_index"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">csd_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="s2">"time"</span><span class="p">:</span> <span class="n">nwb_csd</span><span class="o">.</span><span class="n">time_series</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:],</span>
+                <span class="s2">"vertical_position"</span><span class="p">:</span> <span class="p">((</span><span class="s2">"virtual_channel_index"</span><span class="p">,),</span>
+                                      <span class="n">nwb_csd</span><span class="o">.</span><span class="n">virtual_electrode_y_positions</span><span class="p">),</span>
+                <span class="s2">"horizontal_position"</span><span class="p">:</span> <span class="p">((</span><span class="s2">"virtual_channel_index"</span><span class="p">,),</span>
+                                        <span class="n">nwb_csd</span><span class="o">.</span><span class="n">virtual_electrode_x_positions</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">csd</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_optogenetic_stimulation">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_optogenetic_stimulation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_optogenetic_stimulation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">OptotaggingTable</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">table</span><span class="o">.</span><span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="EcephysNwbSessionApi.get_metadata">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_session_api.ecephys_nwb_session_api.html#allensdk.brain_observatory.ecephys.ecephys_session_api.EcephysNwbSessionApi.get_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">nwb_subject</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">subject</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"specimen_name"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">specimen_name</span><span class="p">,</span>
+            <span class="s2">"age_in_days"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">age_in_days</span><span class="p">,</span>
+            <span class="s2">"full_genotype"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">genotype</span><span class="p">,</span>
+            <span class="s2">"strain"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">strain</span><span class="p">,</span>
+            <span class="s2">"sex"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">sex</span><span class="p">,</span>
+            <span class="s2">"stimulus_name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">stimulus_notes</span><span class="p">,</span>
+            <span class="s2">"subject_id"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">subject_id</span><span class="p">,</span>
+            <span class="s2">"age"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">age</span><span class="p">,</span>
+            <span class="s2">"species"</span><span class="p">:</span> <span class="n">nwb_subject</span><span class="o">.</span><span class="n">species</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">metadata</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

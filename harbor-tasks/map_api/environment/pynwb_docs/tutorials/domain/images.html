@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storing Image Data in NWB &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Optogenetics" href="ogen.html" />
+    <link rel="prev" title="Behavior Data" href="plot_behavior.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ecephys.html">Extracellular Electrophysiology Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ophys.html">Calcium Imaging Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys_pandas.html">Query Intracellular Electrophysiology Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_behavior.html">Behavior Data</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Storing Image Data in NWB</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#create-an-nwb-file">Create an NWB File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#opticalseries-storing-series-of-images-as-stimuli">OpticalSeries: Storing series of images as stimuli</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#abstractfeatureseries-storing-features-of-visual-stimuli">AbstractFeatureSeries: Storing features of visual stimuli</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#imageseries-storing-series-of-images-as-acquisition">ImageSeries: Storing series of images as acquisition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#static-images">Static images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#indexseries-for-repeated-images">IndexSeries for repeated images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-the-images-to-an-nwb-file">Writing the images to an NWB File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-and-accessing-data">Reading and accessing data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Storing Image Data in NWB</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/images.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-images-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="storing-image-data-in-nwb">
+<span id="images"></span><span id="sphx-glr-tutorials-domain-images-py"></span><h1>Storing Image Data in NWB<a class="headerlink" href="#storing-image-data-in-nwb" title="Link to this heading"></a></h1>
+<p>This tutorial will demonstrate the usage of the <a class="reference internal" href="../../pynwb.image.html#module-pynwb.image" title="pynwb.image"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pynwb.image</span></code></a> module for adding
+images to an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<p>Image data can be a collection of individual images or movie segments (as a movie is simply a series of images),
+about the subject, the environment, the presented stimuli, or other parts
+related to the experiment. This tutorial focuses in particular on the usage of:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a> and <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.AbstractFeatureSeries" title="pynwb.misc.AbstractFeatureSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractFeatureSeries</span></code></a> for series of images that
+were presented as stimulus</p></li>
+<li><p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a>, for series of images (movie segments);</p></li>
+<li><p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.GrayscaleImage" title="pynwb.image.GrayscaleImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">GrayscaleImage</span></code></a>, <a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBImage" title="pynwb.image.RGBImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBImage</span></code></a>,
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBAImage" title="pynwb.image.RGBAImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBAImage</span></code></a>, for static images;</p></li>
+<li><p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.ExternalImage" title="pynwb.base.ExternalImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalImage</span></code></a>, for referencing external image files without embedding data;</p></li>
+</ul>
+<p>The following examples will reference variables that may not be defined within the block they are used in. For
+clarity, we define them here:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">tz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Images</span><span class="p">,</span> <span class="n">ExternalImage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">GrayscaleImage</span><span class="p">,</span> <span class="n">ImageSeries</span><span class="p">,</span> <span class="n">OpticalSeries</span><span class="p">,</span> <span class="n">RGBAImage</span><span class="p">,</span> <span class="n">RGBImage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractFeatureSeries</span>
+
+<span class="c1"># Define file paths used in the tutorial</span>
+<span class="n">nwbfile_path</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;images_tutorial.nwb&quot;</span><span class="p">)</span>
+<span class="n">moviefiles_path</span> <span class="o">=</span> <span class="p">[</span>
+    <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;image/file_1.tiff&quot;</span><span class="p">),</span>
+    <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;image/file_2.tiff&quot;</span><span class="p">),</span>
+    <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;image/file_3.tiff&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<section id="create-an-nwb-file">
+<h2>Create an NWB File<a class="headerlink" href="#create-an-nwb-file" title="Link to this heading"></a></h2>
+<p>Create an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object with the required fields
+(<code class="docutils literal notranslate"><span class="pre">session_description</span></code>, <code class="docutils literal notranslate"><span class="pre">identifier</span></code>, <code class="docutils literal notranslate"><span class="pre">session_start_time</span></code>) and additional metadata.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">session_start_time</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tz</span><span class="o">.</span><span class="n">gettz</span><span class="p">(</span><span class="s2">&quot;US/Pacific&quot;</span><span class="p">))</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><span class="n">session_start_time</span><span class="p">,</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN001&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You can learn more about the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> format in the <a class="reference internal" href="../general/plot_file.html#basics"><span class="std std-ref">NWB File Basics</span></a> tutorial.</p>
+</div>
+</section>
+<section id="opticalseries-storing-series-of-images-as-stimuli">
+<h2>OpticalSeries: Storing series of images as stimuli<a class="headerlink" href="#opticalseries-storing-series-of-images-as-stimuli" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a> is for time series of images that were presented
+to the subject as stimuli.
+We will create an <a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a> object with the name
+<code class="docutils literal notranslate"><span class="pre">&quot;StimulusPresentation&quot;</span></code> representing what images were shown to the subject and at what times.</p>
+<p>Image data can be stored either in the HDF5 file or as an external image file.
+For this tutorial, we will use fake image data with shape of <code class="docutils literal notranslate"><span class="pre">('time',</span> <span class="pre">'x',</span> <span class="pre">'y',</span> <span class="pre">'RGB')</span> <span class="pre">=</span> <span class="pre">(200,</span> <span class="pre">50,</span> <span class="pre">50,</span> <span class="pre">3)</span></code>.
+As in all <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, the first dimension is time.
+The second and third dimensions represent x and y.
+The fourth dimension represents the RGB value (length of 3) for color images.</p>
+<p>NWB differentiates between acquired data and data that was presented as stimulus.
+We can add it to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object as stimulus data using
+the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_stimulus" title="pynwb.file.NWBFile.add_stimulus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_stimulus</span></code></a> method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">image_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">255</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint8" title="numpy.uint8" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint8</span></a><span class="p">)</span>
+<span class="n">optical_series</span> <span class="o">=</span> <span class="n">OpticalSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;StimulusPresentation&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">distance</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">field_of_view</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>  <span class="c1"># required</span>
+    <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;lower left&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">image_data</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="n">starting_frame</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">],</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">comments</span><span class="o">=</span><span class="s2">&quot;no comments&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The images presented to the subject as stimuli&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_stimulus</span><span class="p">(</span><span class="n">stimulus</span><span class="o">=</span><span class="n">optical_series</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="abstractfeatureseries-storing-features-of-visual-stimuli">
+<h2>AbstractFeatureSeries: Storing features of visual stimuli<a class="headerlink" href="#abstractfeatureseries-storing-features-of-visual-stimuli" title="Link to this heading"></a></h2>
+<p>While it is usually recommended to store the entire image data as an <a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a>, sometimes
+it is useful to store features of the visual stimuli instead of or in addition to the raw image data. For example,
+you may want to store the mean luminance of the image, the contrast, or the spatial frequency. This can be done using
+an instance of <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.AbstractFeatureSeries" title="pynwb.misc.AbstractFeatureSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractFeatureSeries</span></code></a>. This class is a general container for storing time
+series of features that are derived from the raw image data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create some fake feature data</span>
+<span class="n">feature_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># 200 time points, 3 features</span>
+
+<span class="c1"># Create an AbstractFeatureSeries object</span>
+<span class="n">abstract_feature_series</span> <span class="o">=</span> <span class="n">AbstractFeatureSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;StimulusFeatures&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">feature_data</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Features of the visual stimuli&quot;</span><span class="p">,</span>
+    <span class="n">features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;luminance&quot;</span><span class="p">,</span> <span class="s2">&quot;contrast&quot;</span><span class="p">,</span> <span class="s2">&quot;spatial frequency&quot;</span><span class="p">],</span>
+    <span class="n">feature_units</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span> <span class="s2">&quot;n.a.&quot;</span><span class="p">,</span> <span class="s2">&quot;cycles/degree&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># Add the AbstractFeatureSeries to the NWBFile</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_stimulus</span><span class="p">(</span><span class="n">abstract_feature_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Like all <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.AbstractFeatureSeries" title="pynwb.misc.AbstractFeatureSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractFeatureSeries</span></code></a> specify timing using
+either the <code class="docutils literal notranslate"><span class="pre">rate</span></code> and <code class="docutils literal notranslate"><span class="pre">starting_time</span></code> attributes or the <code class="docutils literal notranslate"><span class="pre">timestamps</span></code> attribute.</p>
+</section>
+<section id="imageseries-storing-series-of-images-as-acquisition">
+<h2>ImageSeries: Storing series of images as acquisition<a class="headerlink" href="#imageseries-storing-series-of-images-as-acquisition" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> is a general container for time series of images acquired during
+the experiment. Image data can be stored either in the HDF5 file or as an external image file.
+When color images are stored in the HDF5 file the color channel order is expected to be RGB.</p>
+<p>We can add raw data to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object as <em>acquisition</em> using
+the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_acquisition" title="pynwb.file.NWBFile.add_acquisition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_acquisition</span></code></a> method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">image_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">255</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint8" title="numpy.uint8" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint8</span></a><span class="p">)</span>
+<span class="n">behavior_images</span> <span class="o">=</span> <span class="n">ImageSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ImageSeries&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">image_data</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Image data of an animal moving in environment.&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">behavior_images</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="external-files">
+<h3>External Files<a class="headerlink" href="#external-files" title="Link to this heading"></a></h3>
+<p>External files (e.g. video files of the behaving animal) can be added to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+by creating an <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> object using the
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries.external_file" title="pynwb.image.ImageSeries.external_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">external_file</span></code></a> attribute that specifies
+the path to the external file(s) on disk.
+The file(s) path must be relative to the path of the NWB file.
+Either <code class="docutils literal notranslate"><span class="pre">external_file</span></code> or <code class="docutils literal notranslate"><span class="pre">data</span></code> must be specified, but not both.</p>
+<p>If the sampling rate is constant, use <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.rate" title="pynwb.base.TimeSeries.rate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">rate</span></code></a> and
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.starting_time" title="pynwb.base.TimeSeries.starting_time"><code class="xref py py-attr docutils literal notranslate"><span class="pre">starting_time</span></code></a> to specify time. When using <code class="docutils literal notranslate"><span class="pre">rate</span></code>, you must also set
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries.num_samples" title="pynwb.image.ImageSeries.num_samples"><code class="xref py py-attr docutils literal notranslate"><span class="pre">num_samples</span></code></a> to the total number of frames across all external files,
+because the data array is empty and its length cannot be used to determine the frame count.
+For irregularly sampled recordings, use <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries.timestamps" title="pynwb.base.TimeSeries.timestamps"><code class="xref py py-attr docutils literal notranslate"><span class="pre">timestamps</span></code></a> to specify time for each sample
+image. When using <code class="docutils literal notranslate"><span class="pre">timestamps</span></code>, <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> is not required because <code class="docutils literal notranslate"><span class="pre">len(timestamps)</span></code> serves this purpose.</p>
+<p>Each external image may contain one or more consecutive frames of the full <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a>.
+The <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries.starting_frame" title="pynwb.image.ImageSeries.starting_frame"><code class="xref py py-attr docutils literal notranslate"><span class="pre">starting_frame</span></code></a> attribute serves as an index to indicate which frame
+each file contains.
+For example, if the <code class="docutils literal notranslate"><span class="pre">external_file</span></code> dataset has three paths to files and the first and the second file have 2
+frames, and the third file has 3 frames, then this attribute will have values <cite>[0, 2, 4]</cite>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">external_file</span> <span class="o">=</span> <span class="p">[</span>
+    <a href="https://docs.python.org/3.11/library/os.path.html#os.path.relpath" title="os.path.relpath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span></a><span class="p">(</span><span class="n">movie_path</span><span class="p">,</span> <span class="n">nwbfile_path</span><span class="p">)</span> <span class="k">for</span> <span class="n">movie_path</span> <span class="ow">in</span> <span class="n">moviefiles_path</span>
+<span class="p">]</span>
+<span class="c1"># We have 3 movie files each containing multiple frames. We here need to specify the timestamp for each frame.</span>
+<span class="n">timestamps</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.04</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.14</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">,</span> <span class="mf">0.21</span><span class="p">]</span>
+<span class="n">behavior_external_file</span> <span class="o">=</span> <span class="n">ImageSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ExternalFiles&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Behavior video of animal moving in environment.&quot;</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;n.a.&quot;</span><span class="p">,</span>
+    <span class="n">external_file</span><span class="o">=</span><span class="n">external_file</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;external&quot;</span><span class="p">,</span>
+    <span class="n">starting_frame</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">behavior_external_file</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the <a class="extlink-dandi reference external" href="https://dandiarchive.org//2022/03/03/external-links-organize.html">External Links in NWB and DANDI</a>
+guidelines of the <a class="extlink-dandi reference external" href="https://dandiarchive.org/">DANDI</a> data archive for best practices on how to organize
+external files, e.g., movies and images.</p>
+</div>
+</section>
+</section>
+<section id="static-images">
+<h2>Static images<a class="headerlink" href="#static-images" title="Link to this heading"></a></h2>
+<p>Static images can be stored in an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object by creating an
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBAImage" title="pynwb.image.RGBAImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBAImage</span></code></a>, <a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBImage" title="pynwb.image.RGBImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBImage</span></code></a> or
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.GrayscaleImage" title="pynwb.image.GrayscaleImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">GrayscaleImage</span></code></a> object with the image data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All basic image types <a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBAImage" title="pynwb.image.RGBAImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBAImage</span></code></a>, <a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBImage" title="pynwb.image.RGBImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBImage</span></code></a>, and
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.GrayscaleImage" title="pynwb.image.GrayscaleImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">GrayscaleImage</span></code></a> provide the optional: 1) <code class="docutils literal notranslate"><span class="pre">description</span></code> parameter to include a
+text description about the image and 2) <code class="docutils literal notranslate"><span class="pre">resolution</span></code> parameter to specify the <em>pixels / cm</em> resolution
+of the image.</p>
+</div>
+<section id="rgbaimage-for-color-images-with-transparency">
+<h3>RGBAImage: for color images with transparency<a class="headerlink" href="#rgbaimage-for-color-images-with-transparency" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBAImage" title="pynwb.image.RGBAImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBAImage</span></code></a> is for storing data of color image with transparency.
+<code class="docutils literal notranslate"><span class="pre">RGBAImage.data</span></code> must be 3D where the first and second dimensions
+represent x and y. The third dimension has length 4 and represents the RGBA value.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;docs/source/figures/logo_pynwb.png&quot;</span><span class="p">)</span>  <span class="c1"># an example image</span>
+
+<span class="n">rgba_logo</span> <span class="o">=</span> <span class="n">RGBAImage</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pynwb_RGBA_logo&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="n">img</span><span class="p">),</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mf">70.0</span><span class="p">,</span>  <span class="c1"># in pixels / cm</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;RGBA version of the PyNWB logo.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="rgbimage-for-color-images">
+<h3>RGBImage: for color images<a class="headerlink" href="#rgbimage-for-color-images" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.RGBImage" title="pynwb.image.RGBImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">RGBImage</span></code></a> is for storing data of RGB color image.
+<code class="docutils literal notranslate"><span class="pre">RGBImage.data</span></code> must be 3D where the first and second dimensions
+represent x and y. The third dimension has length 3 and represents the RGB value.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">rgb_logo</span> <span class="o">=</span> <span class="n">RGBImage</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pynwb_RGB_logo&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;RGB&quot;</span><span class="p">)),</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mf">70.0</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;RGB version of the PyNWB logo.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="grayscaleimage-for-grayscale-images">
+<h3>GrayscaleImage: for grayscale images<a class="headerlink" href="#grayscaleimage-for-grayscale-images" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="../../pynwb.image.html#pynwb.image.GrayscaleImage" title="pynwb.image.GrayscaleImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">GrayscaleImage</span></code></a> is for storing grayscale image data.
+<code class="docutils literal notranslate"><span class="pre">GrayscaleImage.data</span></code> must be 2D where the first and second dimensions represent x and y.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">gs_logo</span> <span class="o">=</span> <span class="n">GrayscaleImage</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pynwb_Grayscale_logo&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.array.html#numpy.array" title="numpy.array" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">array</span></a><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s2">&quot;L&quot;</span><span class="p">)),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Grayscale version of the PyNWB logo.&quot;</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mf">35.433071</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="externalimage-for-referencing-external-image-files">
+<h3>ExternalImage: for referencing external image files<a class="headerlink" href="#externalimage-for-referencing-external-image-files" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.ExternalImage" title="pynwb.base.ExternalImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalImage</span></code></a> stores a reference to an external image file
+(PNG, JPEG, or GIF) rather than embedding the image data in the NWB file.
+This is useful when:</p>
+<ul class="simple">
+<li><p>You have many large images (e.g., thousands of stimulus images) that would
+consume excessive memory if converted to arrays</p></li>
+<li><p>You want to preserve the original image compression and metadata</p></li>
+<li><p>Multiple NWB files need to reference the same image set without duplication</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">data</span></code> field contains the file path or URL to the external image.
+The <code class="docutils literal notranslate"><span class="pre">image_format</span></code> is required and must be one of: “PNG”, “JPEG”, or “GIF”.
+The optional <code class="docutils literal notranslate"><span class="pre">image_mode</span></code> describes the color mode (e.g., “RGB”, “RGBA”, “grayscale”).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">external_stimulus</span> <span class="o">=</span> <span class="n">ExternalImage</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stimulus_image_001&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="s2">&quot;stimuli/images/natural_scene_001.png&quot;</span><span class="p">,</span>  <span class="c1"># path relative to NWB file</span>
+    <span class="n">image_format</span><span class="o">=</span><span class="s2">&quot;PNG&quot;</span><span class="p">,</span>
+    <span class="n">image_mode</span><span class="o">=</span><span class="s2">&quot;RGB&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Natural scene image used as visual stimulus.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also reference images via URL (per the schema specification which
+states “file path or URI”):</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">external_reference</span> <span class="o">=</span> <span class="n">ExternalImage</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;reference_image&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="s2">&quot;https://example.com/images/calibration_target.jpg&quot;</span><span class="p">,</span>
+    <span class="n">image_format</span><span class="o">=</span><span class="s2">&quot;JPEG&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Calibration target image from external repository.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When sharing or publishing your data, it’s important to avoid
+referencing images through URLs unless you can ensure that the image will
+remain accessible long-term. For example, links with Digital Object
+Identifiers (DOIs) are generally reliable and can be used confidently.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="../../pynwb.base.html#pynwb.base.ExternalImage" title="pynwb.base.ExternalImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalImage</span></code></a> is for <strong>static images</strong> stored in an
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.Images" title="pynwb.base.Images"><code class="xref py py-class docutils literal notranslate"><span class="pre">Images</span></code></a> container. For <strong>time series of video frames</strong>
+from external files, use <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> with the
+<code class="docutils literal notranslate"><span class="pre">external_file</span></code> parameter instead (see the “External Files” section above).</p>
+</div>
+</section>
+<section id="images-a-container-for-images">
+<h3>Images: a container for images<a class="headerlink" href="#images-a-container-for-images" title="Link to this heading"></a></h3>
+<p>Add the images to an <a class="reference internal" href="../../pynwb.base.html#pynwb.base.Images" title="pynwb.base.Images"><code class="xref py py-class docutils literal notranslate"><span class="pre">Images</span></code></a> container
+that accepts any of these image types.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">images</span> <span class="o">=</span> <span class="n">Images</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;logo_images&quot;</span><span class="p">,</span>
+    <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">rgb_logo</span><span class="p">,</span> <span class="n">rgba_logo</span><span class="p">,</span> <span class="n">gs_logo</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A collection of logo images presented to the subject.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="indexseries-for-repeated-images">
+<h2>IndexSeries for repeated images<a class="headerlink" href="#indexseries-for-repeated-images" title="Link to this heading"></a></h2>
+<p>You may want to set up a time series of images where some images are repeated many
+times. You could create an <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> that repeats the data
+each time the image is shown, but that would be inefficient, because it would store
+the same data multiple times. A better solution would be to store the unique images
+once and reference those images. This is how <a class="reference internal" href="../../pynwb.image.html#pynwb.image.IndexSeries" title="pynwb.image.IndexSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexSeries</span></code></a>
+works. First, create an <a class="reference internal" href="../../pynwb.base.html#pynwb.base.Images" title="pynwb.base.Images"><code class="xref py py-class docutils literal notranslate"><span class="pre">Images</span></code></a> container with the order of
+images defined using an <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ImageReferences" title="pynwb.base.ImageReferences"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageReferences</span></code></a>. Then create an
+<a class="reference internal" href="../../pynwb.image.html#pynwb.image.IndexSeries" title="pynwb.image.IndexSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexSeries</span></code></a> that indexes into the
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.Images" title="pynwb.base.Images"><code class="xref py py-class docutils literal notranslate"><span class="pre">Images</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageReferences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">GrayscaleImage</span><span class="p">,</span> <span class="n">Images</span><span class="p">,</span> <span class="n">IndexSeries</span><span class="p">,</span> <span class="n">RGBImage</span>
+
+<span class="n">images</span> <span class="o">=</span> <span class="n">Images</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;raccoons&quot;</span><span class="p">,</span>
+    <span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">rgb_logo</span><span class="p">,</span> <span class="n">gs_logo</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A collection of raccoons.&quot;</span><span class="p">,</span>
+    <span class="n">order_of_images</span><span class="o">=</span><span class="n">ImageReferences</span><span class="p">(</span><span class="s2">&quot;order_of_images&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">rgb_logo</span><span class="p">,</span> <span class="n">gs_logo</span><span class="p">]),</span>
+<span class="p">)</span>
+
+<span class="n">idx_series</span> <span class="o">=</span> <span class="n">IndexSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">indexed_images</span><span class="o">=</span><span class="n">images</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;N/A&quot;</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Here <cite>data</cite> contains the (0-indexed) index of the displayed image as they are ordered
+in the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ImageReferences" title="pynwb.base.ImageReferences"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageReferences</span></code></a>.</p>
+</section>
+<section id="writing-the-images-to-an-nwb-file">
+<h2>Writing the images to an NWB File<a class="headerlink" href="#writing-the-images-to-an-nwb-file" title="Link to this heading"></a></h2>
+<p>As demonstrated in the <a class="reference internal" href="../general/plot_file.html#basic-writing"><span class="std std-ref">Writing an NWB file</span></a> tutorial, we will use <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>
+to write the file.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">nwbfile_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="reading-and-accessing-data">
+<h2>Reading and accessing data<a class="headerlink" href="#reading-and-accessing-data" title="Link to this heading"></a></h2>
+<p>To read the NWB file, use another <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> object,
+and use the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO.read" title="pynwb.NWBHDF5IO.read"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read</span></code></a> method to retrieve an
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object.</p>
+<p>We can access the data added as acquisition to the NWB File by indexing <code class="docutils literal notranslate"><span class="pre">nwbfile.acquisition</span></code>
+with the name of the <a class="reference internal" href="../../pynwb.image.html#pynwb.image.ImageSeries" title="pynwb.image.ImageSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSeries</span></code></a> object “ImageSeries”.</p>
+<p>We can also access <a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a> data that was added to the NWB File
+as stimuli by indexing <code class="docutils literal notranslate"><span class="pre">nwbfile.stimulus</span></code> with the name of the <a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a>
+object “StimulusPresentation”.
+Data arrays are read passively from the file.
+Accessing the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute of the <a class="reference internal" href="../../pynwb.image.html#pynwb.image.OpticalSeries" title="pynwb.image.OpticalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalSeries</span></code></a> object
+does not read the data values into memory, but returns an HDF5 object that can be indexed to read data.
+Use the <code class="docutils literal notranslate"><span class="pre">[:]</span></code> operator to read the entire data array into memory.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">nwbfile_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;ImageSeries&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">stimulus</span><span class="p">[</span><span class="s2">&quot;StimulusPresentation&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-images-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/97f01f679548c378585d3bb5f80d5b4e/images.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">images.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/6a9ed47df35809725bc752ecfa8d73c0/images.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">images.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2e7e0f52df90eb934878ca15ab8c0743/images.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">images.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_behavior.html" class="btn btn-neutral float-left" title="Behavior Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ogen.html" class="btn btn-neutral float-right" title="Optogenetics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

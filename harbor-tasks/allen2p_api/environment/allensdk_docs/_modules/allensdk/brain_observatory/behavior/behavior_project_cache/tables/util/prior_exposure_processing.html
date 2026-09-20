@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.project_apis.data_io</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">BehaviorProjectLimsApi</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.image_presentation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">get_image_set</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_prior_exposures_to_session_type">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.get_prior_exposures_to_session_type">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prior_exposures_to_session_type</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get prior exposures to session type</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The sessions df</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ---------</span>
+<span class="sd">    Series with index same as df and values prior exposure counts to</span>
+<span class="sd">    session type</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">__get_prior_exposure_count</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+        <span class="s2">"Int64"</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_prior_exposures_to_image_set">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.get_prior_exposures_to_image_set">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prior_exposures_to_image_set</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get prior exposures to image set</span>
+
+<span class="sd">    The image set here is the letter part of the session type</span>
+<span class="sd">    ie for session type OPHYS_1_images_B, it would be "B"</span>
+
+<span class="sd">    Some session types don't have an image set name, such as</span>
+<span class="sd">    gratings, which will be set to null</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The session df</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    Series with index same as df and values prior exposure counts to image set</span>
+<span class="sd">    """</span>
+    <span class="n">image_set</span> <span class="o">=</span> <span class="n">get_image_set</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">__get_prior_exposure_count</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">image_set</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"Int64"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_prior_exposures_to_omissions">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.get_prior_exposures_to_omissions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prior_exposures_to_omissions</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">fetch_api</span><span class="p">:</span> <span class="n">BehaviorProjectLimsApi</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get prior exposures to omissions</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The session df</span>
+<span class="sd">    fetch_api</span>
+<span class="sd">        API needed to query mtrain</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ---------</span>
+<span class="sd">    Series with index same as df and values prior exposure counts to omissions</span>
+<span class="sd">    """</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()]</span>
+
+    <span class="n">contains_omissions</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_habituation_sessions</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Returns all habituation sessions"""</span>
+        <span class="k">return</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"habituation"</span><span class="p">)]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_habituation_sessions_contain_omissions</span><span class="p">(</span>
+        <span class="n">habituation_sessions</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">fetch_api</span><span class="p">:</span> <span class="n">BehaviorProjectLimsApi</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Habituation sessions are not supposed to include omissions but</span>
+<span class="sd">        because of a mistake omissions were included for some habituation</span>
+<span class="sd">        sessions.</span>
+
+<span class="sd">        This queries mtrain to figure out if omissions were included</span>
+<span class="sd">        for any of the habituation sessions</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        habituation_sessions</span>
+<span class="sd">            the habituation sessions</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ---------</span>
+<span class="sd">        series where index is same as habituation sessions and values</span>
+<span class="sd">            indicate whether omissions were included</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">__session_contains_omissions</span><span class="p">(</span>
+            <span class="n">mtrain_stage_parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="s2">"flash_omit_probability"</span> <span class="ow">in</span> <span class="n">mtrain_stage_parameters</span>
+                <span class="ow">and</span> <span class="n">mtrain_stage_parameters</span><span class="p">[</span><span class="s2">"flash_omit_probability"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="p">)</span>
+
+        <span class="n">foraging_ids</span> <span class="o">=</span> <span class="n">habituation_sessions</span><span class="p">[</span><span class="s2">"foraging_id"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">foraging_ids</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">'"</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">foraging_ids</span><span class="p">]</span>
+        <span class="n">mtrain_stage_parameters</span> <span class="o">=</span> <span class="n">fetch_api</span><span class="o">.</span><span class="n">get_behavior_stage_parameters</span><span class="p">(</span>
+            <span class="n">foraging_ids</span><span class="o">=</span><span class="n">foraging_ids</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">habituation_sessions</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">session</span><span class="p">:</span> <span class="n">__session_contains_omissions</span><span class="p">(</span>
+                <span class="n">mtrain_stage_parameters</span><span class="o">=</span><span class="n">mtrain_stage_parameters</span><span class="p">[</span>
+                    <span class="n">session</span><span class="p">[</span><span class="s2">"foraging_id"</span><span class="p">]</span>
+                <span class="p">]</span>
+            <span class="p">),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">habituation_sessions</span> <span class="o">=</span> <span class="n">__get_habituation_sessions</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">habituation_sessions</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="n">contains_omissions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="n">habituation_sessions</span><span class="o">.</span><span class="n">index</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">__get_habituation_sessions_contain_omissions</span><span class="p">(</span>
+            <span class="n">habituation_sessions</span><span class="o">=</span><span class="n">habituation_sessions</span><span class="p">,</span> <span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api</span>
+        <span class="p">)</span>
+
+    <span class="n">contains_omissions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"ophys"</span><span class="p">))</span>
+        <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">habituation_sessions</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">__get_prior_exposure_count</span><span class="p">(</span>
+        <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">contains_omissions</span><span class="p">,</span> <span class="n">agg_method</span><span class="o">=</span><span class="s2">"cumsum"</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"Int64"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_prior_exposure_count</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">to</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">agg_method</span><span class="o">=</span><span class="s2">"cumcount"</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Returns prior exposures a subject had to something</span>
+<span class="sd">    i.e can be prior exposures to a stimulus type, a image_set or</span>
+<span class="sd">    omission</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The sessions df</span>
+<span class="sd">    to</span>
+<span class="sd">        The array to calculate prior exposures to</span>
+<span class="sd">        Needs to have the same index as self._df</span>
+<span class="sd">    agg_method</span>
+<span class="sd">        The aggregation method to apply on the groups (cumcount or cumsum)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    ---------</span>
+<span class="sd">    Series with index same as self._df and with values of prior</span>
+<span class="sd">    exposure counts</span>
+<span class="sd">    """</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"date_of_acquisition"</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()]</span>
+    <span class="c1"># reindex "to" to df</span>
+    <span class="n">to</span> <span class="o">=</span> <span class="n">to</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="c1"># exclude missing values from cumcount</span>
+    <span class="n">to</span> <span class="o">=</span> <span class="n">to</span><span class="p">[</span><span class="n">to</span><span class="o">.</span><span class="n">notnull</span><span class="p">()]</span>
+
+    <span class="c1"># reindex df to match "to" index with missing values removed</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">to</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">agg_method</span> <span class="o">==</span> <span class="s2">"cumcount"</span><span class="p">:</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"mouse_id"</span><span class="p">,</span> <span class="n">to</span><span class="p">])</span><span class="o">.</span><span class="n">cumcount</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">agg_method</span> <span class="o">==</span> <span class="s2">"cumsum"</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">"to"</span><span class="p">]</span> <span class="o">=</span> <span class="n">to</span>
+        <span class="n">df_index_name</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">cumsum</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)</span>
+
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"mouse_id"</span><span class="p">])[</span><span class="s2">"to"</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">cumsum</span><span class="p">)</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">counts</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_level_values</span><span class="p">(</span><span class="n">df_index_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"agg method </span><span class="si">{</span><span class="n">agg_method</span><span class="si">}</span><span class="s2"> not supported"</span><span class="p">)</span>
+
+    <span class="c1"># reindex to original index</span>
+    <span class="k">return</span> <span class="n">counts</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="add_experience_level_ophys">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.add_experience_level_ophys">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_experience_level_ophys</span><span class="p">(</span><span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    adds a column to ophys tables that contains a string</span>
+<span class="sd">    indicating whether a session had exposure level of Familiar,</span>
+<span class="sd">    Novel 1, or Novel &gt;1, based on session number and</span>
+<span class="sd">    prior_exposure_to_image_set</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_df: pd.DataFrame</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    experiments_table: pd.DataFrame</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Does not change the input DataFrame in-place</span>
+<span class="sd">    """</span>
+    <span class="c1"># Ported from</span>
+    <span class="c1"># https://github.com/AllenInstitute/visual_behavior_analysis/</span>
+    <span class="c1"># blob/master/visual_behavior/data_access/utilities.py#L1307</span>
+
+    <span class="c1"># do not modify in place</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">input_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">session_number</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"session_number"</span> <span class="k">if</span> <span class="s2">"session_number"</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">columns</span> <span class="k">else</span> <span class="s2">"session"</span>
+    <span class="p">)</span>
+
+    <span class="c1"># add experience_level column with strings indicating relevant conditions</span>
+    <span class="n">table</span><span class="p">[</span><span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"None"</span>
+
+    <span class="n">session_training</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">session_type</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"TRAINING"</span><span class="p">)</span>
+    <span class="n">train_indices</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_training</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">train_indices</span><span class="p">,</span> <span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Training"</span>
+
+    <span class="n">session_0123</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_number</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">familiar_indices</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_0123</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">familiar_indices</span><span class="p">,</span> <span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Familiar"</span>
+
+    <span class="n">session_456</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_number</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+    <span class="n">zero_prior_exp</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">prior_exposures_to_image_set</span> <span class="o">==</span> <span class="mi">0</span>
+
+    <span class="n">novel_indices</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_456</span> <span class="o">&amp;</span> <span class="n">zero_prior_exp</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">novel_indices</span><span class="p">,</span> <span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Novel 1"</span>
+
+    <span class="n">session_456</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_number</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+    <span class="n">nonzero_prior_exp</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">prior_exposures_to_image_set</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="n">novel_gt_1_indices</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">session_456</span> <span class="o">&amp;</span> <span class="n">nonzero_prior_exp</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">novel_gt_1_indices</span><span class="p">,</span> <span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Novel &gt;1"</span>
+
+    <span class="k">return</span> <span class="n">table</span></div>
+
+
+
+<div class="viewcode-block" id="add_experience_level_simple">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.html#allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing.add_experience_level_simple">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_experience_level_simple</span><span class="p">(</span><span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Add the column 'experience_level' to a dataframe. This column</span>
+<span class="sd">    will be 'Novel' for any rows with</span>
+<span class="sd">    'prior_exposures_to_image_set' == 0 (or NULL) and 'Familiar' otherwise.</span>
+
+<span class="sd">    This experience level is mainly for VBN as the logic of Novel/Familiar</span>
+<span class="sd">    differs between VBO and VBN.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_df : pandas.DataFrame</span>
+<span class="sd">        Input sessions dataframe</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    output_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame with added "experience_level" column.</span>
+<span class="sd">    """</span>
+    <span class="n">tmp_exposures</span> <span class="o">=</span> <span class="n">input_df</span><span class="p">[</span><span class="s2">"prior_exposures_to_image_set"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">input_df</span><span class="p">[</span><span class="s2">"experience_level"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="n">tmp_exposures</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"Novel"</span><span class="p">,</span> <span class="s2">"Familiar"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">input_df</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

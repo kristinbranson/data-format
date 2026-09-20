@@ -1,0 +1,640 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calcium Imaging Data &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Intracellular Electrophysiology" href="plot_icephys.html" />
+    <link rel="prev" title="Extracellular Electrophysiology Data" href="ecephys.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ecephys.html">Extracellular Electrophysiology Data</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Calcium Imaging Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#creating-the-nwb-file">Creating the NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#imaging-plane">Imaging Plane</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#one-photon-series">One-photon Series</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#two-photon-series">Two-photon Series</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#motion-correction-optional">Motion Correction (optional)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plane-segmentation">Plane Segmentation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#regions-of-interest-rois">Regions Of Interest (ROIs)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#storing-fluorescence-measurements">Storing Fluorescence Measurements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#write-the-file">Write the file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#read-the-nwbfile">Read the NWBFile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-your-data">Accessing your data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-data-regions">Accessing data regions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys_pandas.html">Query Intracellular Electrophysiology Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_behavior.html">Behavior Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="images.html">Storing Image Data in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Calcium Imaging Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/ophys.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-ophys-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="calcium-imaging-data">
+<span id="sphx-glr-tutorials-domain-ophys-py"></span><h1>Calcium Imaging Data<a class="headerlink" href="#calcium-imaging-data" title="Link to this heading"></a></h1>
+<p>This tutorial will demonstrate how to write calcium imaging data. The workflow demonstrated here involves
+five main steps:</p>
+<ol class="arabic simple">
+<li><p>Create imaging plane</p></li>
+<li><p>Add acquired two-photon images</p></li>
+<li><p>Add motion correction (optional)</p></li>
+<li><p>Add image segmentation</p></li>
+<li><p>Add fluorescence and dF/F responses</p></li>
+</ol>
+<p>It is recommended to cover <a class="reference internal" href="../general/plot_file.html#basics"><span class="std std-ref">NWB File Basics</span></a> before this tutorial.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended to check if your source data is supported by
+<a class="reference external" href="https://neuroconv.readthedocs.io/en/main/conversion_examples_gallery/#optical-physiology">NeuroConv Optical Physiology Gallery</a>.
+If it is supported, it is recommended to use NeuroConv to convert your data.</p>
+</div>
+<p>The following examples will reference variables that may not be defined within the block they are used in. For
+clarity, we define them here:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ophys</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CorrectedImageStack</span><span class="p">,</span>
+    <span class="n">Fluorescence</span><span class="p">,</span>
+    <span class="n">ImageSegmentation</span><span class="p">,</span>
+    <span class="n">MotionCorrection</span><span class="p">,</span>
+    <span class="n">OnePhotonSeries</span><span class="p">,</span>
+    <span class="n">OpticalChannel</span><span class="p">,</span>
+    <span class="n">RoiResponseSeries</span><span class="p">,</span>
+    <span class="n">TwoPhotonSeries</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="creating-the-nwb-file">
+<h2>Creating the NWB file<a class="headerlink" href="#creating-the-nwb-file" title="Link to this heading"></a></h2>
+<p>When creating an NWB file, the first step is to create the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><span class="n">tzlocal</span><span class="p">()),</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">keywords</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">,</span> <span class="s2">&quot;exploration&quot;</span><span class="p">,</span> <span class="s2">&quot;wanderlust&quot;</span><span class="p">],</span>
+    <span class="n">related_publications</span><span class="o">=</span><span class="s2">&quot;doi:10.1016/j.neuron.2016.12.011&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="imaging-plane">
+<h2>Imaging Plane<a class="headerlink" href="#imaging-plane" title="Link to this heading"></a></h2>
+<p>First, we must create an <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImagingPlane" title="pynwb.ophys.ImagingPlane"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImagingPlane</span></code></a> object, which will hold information about the area and
+method used to collect the optical imaging data. This first requires creation of a <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a>
+object for the  microscope and an <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OpticalChannel" title="pynwb.ophys.OpticalChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalChannel</span></code></a> object.</p>
+<a class="reference internal image-reference" href="../../_images/ImagingPlane.svg"><img alt="imaging plane UML diagram" class="align-center" src="../../_images/ImagingPlane.svg" style="width: 50%;" />
+</a>
+<p>Create a <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> named <code class="docutils literal notranslate"><span class="pre">&quot;Thorlabs</span> <span class="pre">Bergamo</span> <span class="pre">II&quot;</span></code> in the
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object. The fields
+<code class="docutils literal notranslate"><span class="pre">description</span></code>, <code class="docutils literal notranslate"><span class="pre">serial_number</span></code>, and <code class="docutils literal notranslate"><span class="pre">model</span></code> are optional, but recommended. The
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a> object stores information about the device model, which can be useful
+when searching a set of NWB files or a data archive for all files that use a specific device model
+(e.g., specific microscope model).
+Then create an <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OpticalChannel" title="pynwb.ophys.OpticalChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalChannel</span></code></a> named <code class="docutils literal notranslate"><span class="pre">&quot;OpticalChannel&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">device_model</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device_model</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Thorlabs Bergamo II Model&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Two-photon microscope for in vivo imaging&quot;</span><span class="p">,</span>
+    <span class="n">manufacturer</span><span class="o">=</span><span class="s2">&quot;Thorlabs&quot;</span><span class="p">,</span>
+    <span class="n">model_number</span><span class="o">=</span><span class="s2">&quot;Bergamo II&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Thorlabs Bergamo II&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Two-photon microscope for in vivo imaging&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">device_model</span><span class="p">,</span>
+    <span class="n">serial_number</span><span class="o">=</span><span class="s2">&quot;SN-123456789&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">optical_channel</span> <span class="o">=</span> <span class="n">OpticalChannel</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;OpticalChannel&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;an optical channel&quot;</span><span class="p">,</span>
+    <span class="n">emission_lambda</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, create a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImagingPlane" title="pynwb.ophys.ImagingPlane"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImagingPlane</span></code></a> named <code class="docutils literal notranslate"><span class="pre">&quot;ImagingPlane&quot;</span></code>, passing in the
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OpticalChannel" title="pynwb.ophys.OpticalChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpticalChannel</span></code></a> object and the <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> object.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">imaging_plane</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_imaging_plane</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ImagingPlane&quot;</span><span class="p">,</span>
+    <span class="n">optical_channel</span><span class="o">=</span><span class="n">optical_channel</span><span class="p">,</span>
+    <span class="n">imaging_rate</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a very interesting part of the brain&quot;</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+    <span class="n">excitation_lambda</span><span class="o">=</span><span class="mf">600.0</span><span class="p">,</span>
+    <span class="n">indicator</span><span class="o">=</span><span class="s2">&quot;GFP&quot;</span><span class="p">,</span>
+    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;V1&quot;</span><span class="p">,</span>
+    <span class="n">grid_spacing</span><span class="o">=</span><span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">],</span>
+    <span class="n">grid_spacing_unit</span><span class="o">=</span><span class="s2">&quot;meters&quot;</span><span class="p">,</span>
+    <span class="n">origin_coords</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">],</span>
+    <span class="n">origin_coords_unit</span><span class="o">=</span><span class="s2">&quot;meters&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="one-photon-series">
+<h2>One-photon Series<a class="headerlink" href="#one-photon-series" title="Link to this heading"></a></h2>
+<p>Now that we have our <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImagingPlane" title="pynwb.ophys.ImagingPlane"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImagingPlane</span></code></a>, we can create a
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OnePhotonSeries" title="pynwb.ophys.OnePhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnePhotonSeries</span></code></a> object to store raw one-photon imaging data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the image data will be stored inside the NWB file</span>
+<span class="n">one_p_series</span> <span class="o">=</span> <span class="n">OnePhotonSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;OnePhotonSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Raw 1p data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span>
+    <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;normalized amplitude&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Since these one-photon data are acquired data, we will add the
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OnePhotonSeries" title="pynwb.ophys.OnePhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnePhotonSeries</span></code></a> objects to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+as acquired data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">one_p_series</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="two-photon-series">
+<h2>Two-photon Series<a class="headerlink" href="#two-photon-series" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries" title="pynwb.ophys.TwoPhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TwoPhotonSeries</span></code></a> objects store acquired two-photon imaging
+data. This class behaves similarly to <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.OnePhotonSeries" title="pynwb.ophys.OnePhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnePhotonSeries</span></code></a>.</p>
+<a class="reference internal image-reference" href="../../_images/TwoPhotonSeries.svg"><img alt="two-photon series UML diagram" class="align-center" src="../../_images/TwoPhotonSeries.svg" style="width: 80%;" />
+</a>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the image data will be stored inside the NWB file</span>
+<span class="n">two_p_series</span> <span class="o">=</span> <span class="n">TwoPhotonSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;TwoPhotonSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Raw 2p data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span>
+    <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;normalized amplitude&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">two_p_series</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="motion-correction-optional">
+<h2>Motion Correction (optional)<a class="headerlink" href="#motion-correction-optional" title="Link to this heading"></a></h2>
+<p>You can also store the result of motion correction using a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.MotionCorrection" title="pynwb.ophys.MotionCorrection"><code class="xref py py-class docutils literal notranslate"><span class="pre">MotionCorrection</span></code></a> object,
+which is a <a class="reference internal" href="../../pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a> (similar to <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a>)
+which holds 1 or more <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.CorrectedImageStack" title="pynwb.ophys.CorrectedImageStack"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorrectedImageStack</span></code></a> objects.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">corrected</span> <span class="o">=</span> <span class="n">ImageSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;corrected&quot;</span><span class="p">,</span>  <span class="c1"># this must be named &quot;corrected&quot;</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A motion corrected image stack&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)),</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;na&quot;</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">xy_translation</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;xy_translation&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;x,y translation in pixels&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">((</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;pixels&quot;</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">corrected_image_stack</span> <span class="o">=</span> <span class="n">CorrectedImageStack</span><span class="p">(</span>
+    <span class="n">corrected</span><span class="o">=</span><span class="n">corrected</span><span class="p">,</span>
+    <span class="n">original</span><span class="o">=</span><span class="n">one_p_series</span><span class="p">,</span>
+    <span class="n">xy_translation</span><span class="o">=</span><span class="n">xy_translation</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">motion_correction</span> <span class="o">=</span> <span class="n">MotionCorrection</span><span class="p">(</span><span class="n">corrected_image_stacks</span><span class="o">=</span><span class="p">[</span><span class="n">corrected_image_stack</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We will create a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a> named “ophys” to store optical
+physiology data and add the motion correction data to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ophys_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ophys&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;optical physiology processed data&quot;</span>
+<span class="p">)</span>
+
+<span class="n">ophys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">motion_correction</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plane-segmentation">
+<h2>Plane Segmentation<a class="headerlink" href="#plane-segmentation" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> class stores the detected
+regions of interest in the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries" title="pynwb.ophys.TwoPhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TwoPhotonSeries</span></code></a> data.
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> is a subclass of
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>, where each row represents a
+single region of interest (ROI).</p>
+<a class="reference internal image-reference" href="../../_images/PlaneSegmentation.svg"><img alt="plane segmentation UML diagram" class="align-center" src="../../_images/PlaneSegmentation.svg" style="width: 60%;" />
+</a>
+<p>The <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation" title="pynwb.ophys.ImageSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSegmentation</span></code></a> class can contain multiple
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> tables, so that we can store results
+of different segmentation algorithms or different segmentation classes.</p>
+<a class="reference internal image-reference" href="../../_images/ImageSegmentation.svg"><img alt="image segmentation UML diagram" class="align-center" src="../../_images/ImageSegmentation.svg" style="width: 100%;" />
+</a>
+<p>First, we create an <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation" title="pynwb.ophys.ImageSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSegmentation</span></code></a> object, then
+from that object we create a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table
+with a link to the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImagingPlane" title="pynwb.ophys.ImagingPlane"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImagingPlane</span></code></a> created earlier.
+Then we will add the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.ImageSegmentation" title="pynwb.ophys.ImageSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSegmentation</span></code></a> object
+to the previously created <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">img_seg</span> <span class="o">=</span> <span class="n">ImageSegmentation</span><span class="p">()</span>
+
+<span class="n">ps</span> <span class="o">=</span> <span class="n">img_seg</span><span class="o">.</span><span class="n">create_plane_segmentation</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PlaneSegmentation&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;output from segmenting my favorite imaging plane&quot;</span><span class="p">,</span>
+    <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+    <span class="n">reference_images</span><span class="o">=</span><span class="n">one_p_series</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+
+<span class="n">ophys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">img_seg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="regions-of-interest-rois">
+<h2>Regions Of Interest (ROIs)<a class="headerlink" href="#regions-of-interest-rois" title="Link to this heading"></a></h2>
+<section id="image-masks">
+<h3>Image masks<a class="headerlink" href="#image-masks" title="Link to this heading"></a></h3>
+<p>You can add ROIs to the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table using
+an image mask or a pixel mask. An image mask is an array that is the same size
+as a single frame of the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries" title="pynwb.ophys.TwoPhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TwoPhotonSeries</span></code></a> that
+indicates the mask weight of each pixel in the image. Image mask values (weights) may
+be boolean or continuous between 0 and 1.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">):</span>
+    <span class="n">image_mask</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.zeros.html#numpy.zeros" title="numpy.zeros" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">zeros</span></a><span class="p">((</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+
+    <span class="c1"># randomly generate example image masks</span>
+    <span class="n">x</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+    <span class="n">image_mask</span><span class="p">[</span><span class="n">x</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span><span class="n">y</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># add image mask to plane segmentation</span>
+    <span class="n">ps</span><span class="o">.</span><span class="n">add_roi</span><span class="p">(</span><span class="n">image_mask</span><span class="o">=</span><span class="n">image_mask</span><span class="p">)</span>
+
+<span class="c1"># show one of the image masks</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html#matplotlib.pyplot.imshow" title="matplotlib.pyplot.imshow" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">imshow</span></a><span class="p">(</span><span class="n">image_mask</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pixel-masks">
+<h3>Pixel masks<a class="headerlink" href="#pixel-masks" title="Link to this heading"></a></h3>
+<p>Alternatively, you could define ROIs using a pixel mask, which is an array of
+triplets (x, y, weight) that have a non-zero weight. All undefined pixels are assumed
+to be 0.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ps2</span> <span class="o">=</span> <span class="n">img_seg</span><span class="o">.</span><span class="n">create_plane_segmentation</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PlaneSegmentation2&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;output from segmenting my favorite imaging plane&quot;</span><span class="p">,</span>
+    <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+    <span class="n">reference_images</span><span class="o">=</span><span class="n">one_p_series</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">):</span>
+    <span class="c1"># randomly generate example starting points for region</span>
+    <span class="n">x</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+
+    <span class="c1"># define an example 4 x 3 region of pixels of weight &#39;1&#39;</span>
+    <span class="n">pixel_mask</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">iy</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="n">pixel_mask</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># add pixel mask to plane segmentation</span>
+    <span class="n">ps2</span><span class="o">.</span><span class="n">add_roi</span><span class="p">(</span><span class="n">pixel_mask</span><span class="o">=</span><span class="n">pixel_mask</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="voxel-masks">
+<h3>Voxel masks<a class="headerlink" href="#voxel-masks" title="Link to this heading"></a></h3>
+<p>When storing the segmentation of volumetric imaging, you can use 3D imaging masks.
+Alternatively, you could define ROIs using a voxel mask, which is an array of
+triplets (x, y, z, weight) that have a non-zero weight. All undefined voxels are
+assumed to be 0.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You need to be consistent within a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table.
+You can add ROIs either using image masks, pixel masks, or voxel masks.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ps3</span> <span class="o">=</span> <span class="n">img_seg</span><span class="o">.</span><span class="n">create_plane_segmentation</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PlaneSegmentation3&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;output from segmenting my favorite imaging plane&quot;</span><span class="p">,</span>
+    <span class="n">imaging_plane</span><span class="o">=</span><span class="n">imaging_plane</span><span class="p">,</span>
+    <span class="n">reference_images</span><span class="o">=</span><span class="n">one_p_series</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/itertools.html#itertools.product" title="itertools.product" class="sphx-glr-backref-module-itertools sphx-glr-backref-type-py-function"><span class="n">product</span></a>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">30</span><span class="p">):</span>
+    <span class="c1"># randomly generate example starting points for region</span>
+    <span class="n">x</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">95</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randint.html#numpy.random.randint" title="numpy.random.randint" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+
+    <span class="c1"># define an example 4 x 3 x 2 voxel region of weight &#39;0.5&#39;</span>
+    <span class="n">voxel_mask</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">,</span> <span class="n">iz</span> <span class="ow">in</span> <a href="https://docs.python.org/3.11/library/itertools.html#itertools.product" title="itertools.product" class="sphx-glr-backref-module-itertools sphx-glr-backref-type-py-function"><span class="n">product</span></a><span class="p">(</span>
+        <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">4</span><span class="p">),</span>
+        <span class="nb">range</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="mi">3</span><span class="p">),</span>
+        <span class="nb">range</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">z</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="n">voxel_mask</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">,</span> <span class="n">iz</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+
+    <span class="c1"># add voxel mask to plane segmentation</span>
+    <span class="n">ps3</span><span class="o">.</span><span class="n">add_roi</span><span class="p">(</span><span class="n">voxel_mask</span><span class="o">=</span><span class="n">voxel_mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can view the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table with pixel masks in
+tabular form by converting it to a <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ps2</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="storing-fluorescence-measurements">
+<h2>Storing Fluorescence Measurements<a class="headerlink" href="#storing-fluorescence-measurements" title="Link to this heading"></a></h2>
+<p>Now that the regions of interest are stored, you can store fluorescence data for these
+ROIs. This type of data is stored using the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a>
+classes.</p>
+<a class="reference internal image-reference" href="../../_images/RoiResponseSeries.svg"><img alt="RoiResponseSeries UML diagram" class="align-center" src="../../_images/RoiResponseSeries.svg" style="width: 80%;" />
+</a>
+<p>To create a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object, we will need to reference
+a set of rows from a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table to
+indicate which ROIs correspond to which rows of your recorded data matrix.
+This is done using a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>, which is a type of link that
+allows you to reference specific rows of a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>,
+such as a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table by row indices.</p>
+<p>First, we create a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> that references
+the first two ROIs of the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.PlaneSegmentation" title="pynwb.ophys.PlaneSegmentation"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaneSegmentation</span></code></a> table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">rt_region</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">create_roi_table_region</span><span class="p">(</span>
+    <span class="n">region</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;the first of two ROIs&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Then we create a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object to store fluorescence
+data for those two ROIs.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">roi_resp_series</span> <span class="o">=</span> <span class="n">RoiResponseSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;RoiResponseSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Fluorescence responses for two ROIs&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">((</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span>  <span class="c1"># 50 samples, 2 ROIs</span>
+    <span class="n">rois</span><span class="o">=</span><span class="n">rt_region</span><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;lumens&quot;</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To help data analysis and visualization tools know that this
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object represents fluorescence data,
+we will store the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object inside
+of a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> object.
+Then add the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> object into the
+same <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a> named <code class="docutils literal notranslate"><span class="pre">&quot;ophys&quot;</span></code> that we created earlier.</p>
+<a class="reference internal image-reference" href="../../_images/Fluorescence.svg"><img alt="fluorescence UML diagram" class="align-center" src="../../_images/Fluorescence.svg" style="width: 100%;" />
+</a>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">fl</span> <span class="o">=</span> <span class="n">Fluorescence</span><span class="p">(</span><span class="n">roi_response_series</span><span class="o">=</span><span class="n">roi_resp_series</span><span class="p">)</span>
+<span class="n">ophys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fl</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you want to store dF/F data instead of fluorescence data, then store
+the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object in a
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.DfOverF" title="pynwb.ophys.DfOverF"><code class="xref py py-class docutils literal notranslate"><span class="pre">DfOverF</span></code></a> object, which works the same way as the
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> class.</p>
+</div>
+</section>
+<section id="write-the-file">
+<h2>Write the file<a class="headerlink" href="#write-the-file" title="Link to this heading"></a></h2>
+<p>Once we have finished adding all of our data to our
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>, make sure to write the file.
+IO operations are carried out using <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ophys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="read-the-nwbfile">
+<h2>Read the NWBFile<a class="headerlink" href="#read-the-nwbfile" title="Link to this heading"></a></h2>
+<p>We can access the raw data by indexing <code class="docutils literal notranslate"><span class="pre">nwbfile.acquisition</span></code> with a name
+of the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.TwoPhotonSeries" title="pynwb.ophys.TwoPhotonSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TwoPhotonSeries</span></code></a>, e.g., <code class="docutils literal notranslate"><span class="pre">&quot;TwoPhotonSeries1&quot;</span></code>.</p>
+<p>We can also access the fluorescence responses by indexing <code class="docutils literal notranslate"><span class="pre">nwbfile.processing</span></code>
+with the name of the processing module, <code class="docutils literal notranslate"><span class="pre">&quot;ophys&quot;</span></code>.
+Then, we can access the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> object inside
+of the <code class="docutils literal notranslate"><span class="pre">&quot;ophys&quot;</span></code> processing module by indexing it with the name of the
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> object. The default name of
+<a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> objects is <code class="docutils literal notranslate"><span class="pre">&quot;Fluorescence&quot;</span></code>.
+Finally, we can access the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object
+inside the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.Fluorescence" title="pynwb.ophys.Fluorescence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Fluorescence</span></code></a> object by indexing it
+with the name of the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> object,
+which we named <code class="docutils literal notranslate"><span class="pre">&quot;RoiResponseSeries&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ophys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;TwoPhotonSeries&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ophys&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ophys&quot;</span><span class="p">][</span><span class="s2">&quot;Fluorescence&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ophys&quot;</span><span class="p">][</span><span class="s2">&quot;Fluorescence&quot;</span><span class="p">][</span><span class="s2">&quot;RoiResponseSeries&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-your-data">
+<h2>Accessing your data<a class="headerlink" href="#accessing-your-data" title="Link to this heading"></a></h2>
+<p>Data arrays are read passively from the file.
+Calling the data attribute on a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+such as a <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a> does not read the data
+values, but presents an <code class="docutils literal notranslate"><span class="pre">h5py</span></code> object that can be indexed to read data.
+You can use the <code class="docutils literal notranslate"><span class="pre">[:]</span></code> operator to read the entire data array into memory.
+Load and print all the data values of the <a class="reference internal" href="../../pynwb.ophys.html#pynwb.ophys.RoiResponseSeries" title="pynwb.ophys.RoiResponseSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">RoiResponseSeries</span></code></a>
+object representing the fluorescence data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ophys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;TwoPhotonSeries&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ophys&quot;</span><span class="p">][</span><span class="s2">&quot;Fluorescence&quot;</span><span class="p">][</span><span class="s2">&quot;RoiResponseSeries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-data-regions">
+<h2>Accessing data regions<a class="headerlink" href="#accessing-data-regions" title="Link to this heading"></a></h2>
+<p>It is often preferable to read only a portion of the data. To do this, index
+or slice into the data attribute just like if you were indexing or slicing a
+<a class="reference external" href="https://numpy.org/doc/stable/reference/index.html#module-numpy" title="(in NumPy v2.5)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code></a> array.</p>
+<p>The following code prints elements <code class="docutils literal notranslate"><span class="pre">0:10</span></code> in the first dimension (time)
+and <code class="docutils literal notranslate"><span class="pre">0:3</span></code> (ROIs) in the second dimension from the fluorescence data we have written.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ophys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="n">roi_resp_series</span> <span class="o">=</span> <span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ophys&quot;</span><span class="p">][</span><span class="s2">&quot;Fluorescence&quot;</span><span class="p">][</span>
+        <span class="s2">&quot;RoiResponseSeries&quot;</span>
+    <span class="p">]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;section of fluorescence responses:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">roi_resp_series</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-ophys-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/8e42a92a26282b214be4121c3ce91670/ophys.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">ophys.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/f589985e28a6c6129e108f590d5e6809/ophys.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">ophys.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/b5764deed7086d659a36d12799719732/ophys.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">ophys.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ecephys.html" class="btn btn-neutral float-left" title="Extracellular Electrophysiology Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_icephys.html" class="btn btn-neutral float-right" title="Intracellular Electrophysiology" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.fftpack</span><span class="w"> </span><span class="kn">import</span> <span class="n">fft</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.stimulus_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusAnalysis</span><span class="p">,</span> <span class="n">osi</span><span class="p">,</span> <span class="n">dsi</span><span class="p">,</span> <span class="n">deg2rad</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...circle_plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">FanPlotter</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DriftingGratings">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.DriftingGratings">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DriftingGratings</span><span class="p">(</span><span class="n">StimulusAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class for computing single-unit metrics from the drifting gratings stimulus of an ecephys session NWB file.</span>
+
+<span class="sd">    To use, pass in a EcephysSession object::</span>
+<span class="sd">        session = EcephysSession.from_nwb_path('/path/to/my.nwb')</span>
+<span class="sd">        dg_analysis = DriftingGratings(session)</span>
+
+<span class="sd">    or, alternatively, pass in the file path::</span>
+<span class="sd">        dg_analysis = DriftingGratings('/path/to/my.nwb')</span>
+
+<span class="sd">    You can also pass in a unit filter dictionary which will only select units with certain properties. For example</span>
+<span class="sd">    to get only those units which are on probe C and found in the VISp area::</span>
+<span class="sd">        dg_analysis = DriftingGratings(session, filter={'location': 'probeC', 'structure_acronym': 'VISp'})</span>
+
+<span class="sd">    To get a table of the individual unit metrics ranked by unit ID::</span>
+<span class="sd">        metrics_table_df = dg_analysis.metrics()</span>
+
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ecephys_session</span><span class="p">,</span> <span class="n">col_ori</span><span class="o">=</span><span class="s1">'orientation'</span><span class="p">,</span> <span class="n">col_tf</span><span class="o">=</span><span class="s1">'temporal_frequency'</span><span class="p">,</span> <span class="n">col_contrast</span><span class="o">=</span><span class="s1">'contrast'</span><span class="p">,</span>
+                 <span class="n">trial_duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DriftingGratings</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ecephys_session</span><span class="p">,</span> <span class="n">trial_duration</span><span class="o">=</span><span class="n">trial_duration</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_tf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contrastvals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_constrast</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span> <span class="o">=</span> <span class="n">col_ori</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span> <span class="o">=</span> <span class="n">col_tf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_contrast</span> <span class="o">=</span> <span class="n">col_contrast</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># TODO: Need to make sure</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'drifting_gratings'</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'stimulus_key'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># Overwrites parent value with argvars</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table_contrast</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1">#stim_table = self.stim_table</span>
+        <span class="c1">#self._stim_table_contrast = stim_table[stim_table['stimulus_name'] == 'drifting_gratings_contrast']</span>
+        <span class="c1">#self._stim_table = stim_table[stim_table['stimulus_name'] != 'drifting_gratings_contrast']</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_conditionwise_statistics_contrast</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions_contrast</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stim_table_contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table_contrast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stim_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session</span><span class="o">.</span><span class="n">stimulus_presentations</span>
+            <span class="k">if</span> <span class="s1">'drifting_gratings_contrast'</span> <span class="ow">in</span> <span class="n">stim_table</span><span class="p">[</span><span class="s1">'stimulus_name'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table_contrast</span> <span class="o">=</span> <span class="n">stim_table</span><span class="p">[</span><span class="n">stim_table</span><span class="p">[</span><span class="s1">'stimulus_name'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'drifting_gratings_contrast'</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table_contrast</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table_contrast</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">'Drifting Gratings'</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">orivals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating orientation conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_ori</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating orientation conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tfvals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating temporal frequency conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_tf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating temporal frequency conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_tf</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">contrastvals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating temporal frequency conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contrastvals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contrastvals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating temporal frequency conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_contrast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_contrast</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">null_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Stimulus condition ID for null (blank) stimulus """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'null'</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_conditions_contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Stimulus conditions for contrast stimulus """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions_contrast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># TODO: look into efficiency of using a table intersect instead.</span>
+            <span class="n">contrast_condition_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table_contrast</span><span class="o">.</span><span class="n">stimulus_condition_id</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions_contrast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">contrast_condition_list</span><span class="p">)</span>
+            <span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions_contrast</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">conditionwise_statistics_contrast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Conditionwise statistics for contrast stimulus """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conditionwise_statistics_contrast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_conditionwise_statistics_contrast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session</span><span class="o">.</span><span class="n">conditionwise_spike_statistics</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stim_table_contrast</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_conditionwise_statistics_contrast</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">METRICS_COLUMNS</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="s1">'pref_ori_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_ori_multi_dg'</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_tf_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_tf_multi_dg'</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'c50_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'f1_f0_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'mod_idx_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'g_osi_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'g_dsi_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'firing_rate_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'fano_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'lifetime_sparseness_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'run_pval_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'run_mod_dg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'Calculating metrics for '</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">unit_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span>
+            <span class="n">metrics_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty_metrics_table</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_ori_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_ori</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_ori_multi_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_multiple_pref_conditions</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">unit_ids</span>
+                <span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_tf_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_tf</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_tf_multi_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_multiple_pref_conditions</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">unit_ids</span>
+                <span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'f1_f0_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_f1_f0</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+                                          <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'mod_idx_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_modulation_index</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+                                            <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'g_osi_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_selectivity</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit</span><span class="p">][</span><span class="s1">'pref_tf_dg'</span><span class="p">],</span> <span class="s1">'osi'</span><span class="p">)</span>
+                                          <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'g_dsi_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_selectivity</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit</span><span class="p">][</span><span class="s1">'pref_tf_dg'</span><span class="p">],</span> <span class="s1">'dsi'</span><span class="p">)</span>
+                                          <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'firing_rate_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_overall_firing_rate</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'fano_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_fano_factor</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+                                         <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'lifetime_sparseness_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_lifetime_sparseness</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">'run_pval_dg'</span><span class="p">,</span> <span class="s1">'run_mod_dg'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_get_running_modulation</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table_contrast</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'c50_dg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_c50</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="o">=</span> <span class="n">metrics_df</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span>
+
+<div class="viewcode-block" id="DriftingGratings.known_stimulus_keys">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.DriftingGratings.known_stimulus_keys">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">known_stimulus_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s1">'drifting_gratings'</span><span class="p">,</span> <span class="s1">'drifting_gratings_75_repeats'</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_stim_table_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Extract orientations and temporal frequencies from the stimulus table """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span>
+                                                             <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span>
+                                                            <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_tf</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tfvals</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contrastvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_contrast</span><span class="p">]</span>
+                                                                  <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_contrast</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_contrast</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_contrastvals</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pref_ori</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate the preferred orientation condition for a given unit</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pref_ori : float</span>
+<span class="sd">            stimulus orientation driving the maximal response</span>
+<span class="sd">        """</span>
+        <span class="c1"># TODO: Most of the _get_pref_*() methods can be combined into one method and shared among the classes</span>
+        <span class="n">similar_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span> <span class="o">==</span> <span class="n">ori</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                              <span class="k">for</span> <span class="n">ori</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">'spike_mean'</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">condition_inds</span> <span class="ow">in</span> <span class="n">similar_conditions</span><span class="p">]}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pref_tf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate the preferred temporal frequency condition for a given unit</span>
+
+<span class="sd">        Params:</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pref_tf : float</span>
+<span class="sd">            stimulus temporal frequency driving the maximal response</span>
+<span class="sd">        """</span>
+        <span class="n">similar_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span> <span class="o">==</span> <span class="n">tf</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                              <span class="k">for</span> <span class="n">tf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">'spike_mean'</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">condition_inds</span> <span class="ow">in</span> <span class="n">similar_conditions</span><span class="p">]}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_selectivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">pref_tf</span><span class="p">,</span> <span class="n">selectivity_type</span><span class="o">=</span><span class="s1">'osi'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate the orientation or direction selectivity for a given unit</span>
+
+<span class="sd">        Params:</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit_id - unique ID for the unit of interest</span>
+<span class="sd">        pref_tf - preferred temporal frequency for this unit</span>
+<span class="sd">        selectivity_type - 'osi' or 'dsi'</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">        selectivity - orientation or direction selectivity value</span>
+
+<span class="sd">        """</span>
+        <span class="n">orivals_rad</span> <span class="o">=</span> <span class="n">deg2rad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'complex128'</span><span class="p">)</span>
+
+        <span class="n">condition_inds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span> <span class="o">==</span> <span class="n">pref_tf</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">ori</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'ori'</span><span class="p">])</span>  <span class="c1"># do not replace with self._col_ori unless we modify the line above</span>
+
+        <span class="n">tuning</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">selectivity_type</span> <span class="o">==</span> <span class="s1">'osi'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">osi</span><span class="p">(</span><span class="n">orivals_rad</span><span class="p">,</span> <span class="n">tuning</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">selectivity_type</span> <span class="o">==</span> <span class="s1">'dsi'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dsi</span><span class="p">(</span><span class="n">orivals_rad</span><span class="p">,</span> <span class="n">tuning</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">'unkown selectivity function </span><span class="si">{</span><span class="n">selectivity_type</span><span class="si">}</span><span class="s1">.'</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_f1_f0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">condition_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate F1/F0 for a given unit</span>
+
+<span class="sd">        A measure of how tightly locked a unit's firing rate is to the cycles of a drifting grating</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id - unique ID for the unit of interest</span>
+<span class="sd">        condition_id - ID for the condition of interest (usually the preferred condition)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        f1_f0 - metric</span>
+
+<span class="sd">        """</span>
+        <span class="n">presentation_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="p">[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span> <span class="o">==</span> <span class="n">condition_id</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+                                              
+        <span class="n">tf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">presentation_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session</span><span class="o">.</span><span class="n">presentationwise_spike_counts</span><span class="p">(</span>
+            <span class="n">bin_edges</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trial_duration</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">),</span>
+            <span class="n">stimulus_presentation_ids</span><span class="o">=</span><span class="n">presentation_ids</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">'unit_id'</span><span class="p">)</span>
+
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">trial_duration</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">time_relative_to_stimulus_onset</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>  <span class="c1">#TODO: If there a reason not to use self.trial_duration?</span>
+        <span class="k">return</span> <span class="n">f1_f0</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">trial_duration</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_modulation_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">condition_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate modulation index for a given unit.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+<span class="sd">        condition_id :</span>
+<span class="sd">            ID for the condition of interest (usually the preferred condition)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        modulation_index : metric</span>
+<span class="sd">        """</span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_id</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_psth</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">unit_id</span><span class="o">=</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">stimulus_condition_id</span><span class="o">=</span><span class="n">condition_id</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">sample_rate</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_psth</span><span class="o">.</span><span class="n">time_relative_to_stimulus_onset</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">modulation_index</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_c50</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate C50 for a given unit. Only valid if the contrast tuning stimulus is present. Otherwise,</span>
+<span class="sd">        return NaN value</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">        c50 : float</span>
+<span class="sd">            metric</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">contrast_conditions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table_contrast</span><span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table_contrast</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_ori</span><span class="p">(</span><span class="n">unit_id</span><span class="p">))][</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+        <span class="c1"># contrasts = self.stimulus_conditions_contrast.loc[contrast_conditions]['contrast'].values.astype('float')</span>
+        <span class="n">contrasts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions_contrast</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">contrast_conditions</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_contrast</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float'</span><span class="p">)</span>
+        <span class="n">mean_responses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics_contrast</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">contrast_conditions</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">c50</span><span class="p">(</span><span class="n">contrasts</span><span class="p">,</span> <span class="n">mean_responses</span><span class="p">)</span>
+
+    <span class="c1"># Methods need to either be removed or updated to work with latest adaptor. Talked with Jsh and decision still</span>
+    <span class="c1"># pending.</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    def _get_tfdi(self, unit_id, pref_ori):</span>
+<span class="sd">        """ Calculate temporal frequency discrimination index for a given unit</span>
+
+<span class="sd">        Only valid if the contrast tuning stimulus is present</span>
+<span class="sd">        Otherwise, return NaN value</span>
+
+<span class="sd">        Params:</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit_id - unique ID for the unit of interest</span>
+<span class="sd">        pref_ori - preferred orientation for that cell</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">        tfdi - metric</span>
+
+<span class="sd">        """</span>
+
+<span class="sd">        ### NEEDS TO BE UPDATED FOR NEW ADAPTER</span>
+
+<span class="sd">        v = list(self.spikes.keys())[nc]</span>
+<span class="sd">        tf_tuning = self.response_events[pref_ori, 1:, nc, 0]</span>
+<span class="sd">        trials = self.mean_sweep_events[(self.stim_table['Ori'] == self.orivals[pref_ori])][v].values</span>
+<span class="sd">        sse_part = np.sqrt(np.sum((trials-trials.mean())**2)/(len(trials)-5))</span>
+<span class="sd">        return (np.ptp(tf_tuning))/(np.ptp(tf_tuning) + 2*sse_part)</span>
+<span class="sd">    '''</span>
+
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    def _get_suppressed_contrast(self, unit_id, pref_ori, pref_tf):</span>
+<span class="sd">        """ Calculate two metrics used to determine if a unit is suppressed by contrast</span>
+
+<span class="sd">        Params:</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit_id - unique ID for the unit of interest</span>
+<span class="sd">        pref_ori - preferred orientation for that cell</span>
+<span class="sd">        pref_tf - preferred temporal frequency for that cell</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">        peak_blank - metric</span>
+<span class="sd">        all_blank - metric</span>
+
+<span class="sd">        """</span>
+
+<span class="sd">        ### NEEDS TO BE UPDATED FOR NEW ADAPTER</span>
+
+<span class="sd">        blank = self.response_events[0, 0, nc, 0]</span>
+<span class="sd">        peak = self.response_events[pref_ori, pref_tf+1, nc, 0]</span>
+<span class="sd">        all_resp = self.response_events[:, 1:, nc, 0].mean()</span>
+<span class="sd">        peak_blank = peak - blank</span>
+<span class="sd">        all_blank = all_resp - blank</span>
+<span class="sd">        </span>
+<span class="sd">        return peak_blank, all_blank</span>
+<span class="sd">    '''</span>
+
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    def _fit_tf_tuning(self, unit_id, pref_ori, pref_tf):</span>
+
+<span class="sd">        """ Performs Gaussian or exponential fit on the temporal frequency tuning curve at the preferred orientation.</span>
+
+<span class="sd">        Params:</span>
+<span class="sd">        -------</span>
+<span class="sd">        unit_id - unique ID for the unit of interest</span>
+<span class="sd">        pref_ori - preferred orientation for that cell</span>
+<span class="sd">        pref_tf - preferred temporal frequency for that cell</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">        fit_tf_ind - metric</span>
+<span class="sd">        fit_tf - metric</span>
+<span class="sd">        tf_low_cutoff - metric</span>
+<span class="sd">        tf_high_cutoff - metric</span>
+<span class="sd">        """</span>
+
+<span class="sd">        ### NEEDS TO BE UPDATED FOR NEW ADAPTER</span>
+
+<span class="sd">        tf_tuning = self.response_events[pref_ori, 1:, nc, 0]</span>
+<span class="sd">        fit_tf_ind = np.nan</span>
+<span class="sd">        fit_tf = np.nan</span>
+<span class="sd">        tf_low_cutoff = np.nan</span>
+<span class="sd">        tf_high_cutoff = np.nan</span>
+<span class="sd">        if pref_tf in range(1, 4):</span>
+<span class="sd">            try:</span>
+<span class="sd">                popt, pcov = curve_fit(gauss_function, range(5), tf_tuning, p0=[np.amax(tf_tuning), pref_tf, 1.],</span>
+<span class="sd">                                       maxfev=2000)</span>
+<span class="sd">                tf_prediction = gauss_function(np.arange(0., 4.1, 0.1), *popt)</span>
+<span class="sd">                fit_tf_ind = popt[1]</span>
+<span class="sd">                fit_tf = np.power(2, popt[1])</span>
+<span class="sd">                low_cut_ind = np.abs(tf_prediction - (tf_prediction.max() / 2.))[:tf_prediction.argmax()].argmin()</span>
+<span class="sd">                high_cut_ind = np.abs(tf_prediction - (tf_prediction.max() / 2.))[</span>
+<span class="sd">                               tf_prediction.argmax():].argmin() + tf_prediction.argmax()</span>
+<span class="sd">                if low_cut_ind &gt; 0:</span>
+<span class="sd">                    low_cutoff = np.arange(0, 4.1, 0.1)[low_cut_ind]</span>
+<span class="sd">                    tf_low_cutoff = np.power(2, low_cutoff)</span>
+<span class="sd">                elif high_cut_ind &lt; 49:</span>
+<span class="sd">                    high_cutoff = np.arange(0, 4.1, 0.1)[high_cut_ind]</span>
+<span class="sd">                    tf_high_cutoff = np.power(2, high_cutoff)</span>
+<span class="sd">            except Exception:</span>
+<span class="sd">                pass</span>
+<span class="sd">        else:</span>
+<span class="sd">            fit_tf_ind = pref_tf</span>
+<span class="sd">            fit_tf = self.tfvals[pref_tf]</span>
+<span class="sd">            try:</span>
+<span class="sd">                popt, pcov = curve_fit(exp_function, range(5), tf_tuning,</span>
+<span class="sd">                                       p0=[np.amax(tf_tuning), 2., np.amin(tf_tuning)], maxfev=2000)</span>
+<span class="sd">                tf_prediction = exp_function(np.arange(0., 4.1, 0.1), *popt)</span>
+<span class="sd">                if pref_tf == 0:</span>
+<span class="sd">                    high_cut_ind = np.abs(tf_prediction - (tf_prediction.max() / 2.))[</span>
+<span class="sd">                                   tf_prediction.argmax():].argmin() + tf_prediction.argmax()</span>
+<span class="sd">                    high_cutoff = np.arange(0, 4.1, 0.1)[high_cut_ind]</span>
+<span class="sd">                    tf_high_cutoff = np.power(2, high_cutoff)</span>
+<span class="sd">                else:</span>
+<span class="sd">                    low_cut_ind = np.abs(tf_prediction - (tf_prediction.max() / 2.))[</span>
+<span class="sd">                                  :tf_prediction.argmax()].argmin()</span>
+<span class="sd">                    low_cutoff = np.arange(0, 4.1, 0.1)[low_cut_ind]</span>
+<span class="sd">                    tf_low_cutoff = np.power(2, low_cutoff)</span>
+<span class="sd">            except Exception:</span>
+<span class="sd">                pass</span>
+<span class="sd">        return fit_tf_ind, fit_tf, tf_low_cutoff, tf_high_cutoff</span>
+<span class="sd">    '''</span>
+
+    <span class="c1">## VISUALIZATION ##</span>
+<div class="viewcode-block" id="DriftingGratings.plot_raster">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.DriftingGratings.plot_raster">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_raster</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_condition_id</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Plot raster for one condition and one unit """</span>
+        <span class="n">idx_tf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">stimulus_condition_id</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_ori</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">stimulus_condition_id</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_tf</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_ori</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+     
+            <span class="n">presentation_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span> <span class="o">==</span> <span class="n">stimulus_condition_id</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+            
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span><span class="s1">'stimulus_presentation_id'</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">presentation_ids</span><span class="p">))</span> <span class="o">&amp;</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span><span class="s1">'unit_id'</span><span class="p">]</span> <span class="o">==</span> <span class="n">unit_id</span><span class="p">)]</span>
+                
+            <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">stimulus_presentation_id</span><span class="p">]</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">stimulus_presentation_id</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+            
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_tf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span><span class="p">,</span> <span class="n">idx_tf</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span> <span class="o">+</span> <span class="n">idx_ori</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'k'</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DriftingGratings.plot_response_summary">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.DriftingGratings.plot_response_summary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_response_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">bar_thickness</span><span class="o">=</span><span class="mf">0.25</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Plot the spike counts across conditions """</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">null_condition</span><span class="p">)</span>
+    
+        <span class="n">df</span><span class="p">[</span><span class="s1">'tf_index'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'ori_index'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        
+        <span class="n">cond_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'tf_index'</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">cond_values</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">bar_thickness</span> <span class="o">-</span> <span class="n">bar_thickness</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'tf_index'</span><span class="p">]</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Purples'</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_tf</span><span class="p">),</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tfvals</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Temporal frequency'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Spikes per trial'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">number_tf</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'ori_index'</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">cond_values</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">bar_thickness</span> <span class="o">-</span> <span class="n">bar_thickness</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'ori_index'</span><span class="p">]</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'Spectral'</span><span class="p">)</span>
+        <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span><span class="p">),</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Orientation'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Spikes per trial'</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DriftingGratings.make_star_plot">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.DriftingGratings.make_star_plot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_star_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Make a 2P-style Star Plot based on presentationwise spike counts"""</span>
+        <span class="n">angle_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">r_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_tf</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        
+        <span class="n">null_trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">angle_data</span> <span class="o">==</span> <span class="s1">'null'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">angle_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">angle_data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        <span class="n">r_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r_data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        
+        <span class="n">cmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">cmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">fp</span> <span class="o">=</span> <span class="n">FanPlotter</span><span class="o">.</span><span class="n">for_drifting_gratings</span><span class="p">()</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_data</span><span class="o">=</span><span class="n">r_data</span><span class="p">,</span> <span class="n">angle_data</span><span class="o">=</span><span class="n">angle_data</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">clim</span><span class="o">=</span><span class="p">[</span><span class="n">cmin</span><span class="p">,</span> <span class="n">cmax</span><span class="p">])</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">show_axes</span><span class="p">(</span><span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'equal'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1">### General functions ###</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_gauss_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    fit gaussian function at log scale</span>
+<span class="sd">    good for fitting band pass, not good at low pass or high pass</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_exp_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="n">c</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_contrast_curve</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Difference of gaussian.</span>
+<span class="sd">     fit sigmoid function at log scale</span>
+<span class="sd">     not good for fitting band pass</span>
+<span class="sd">     - b: hill slope</span>
+<span class="sd">     - c: min response</span>
+<span class="sd">     - d: max response</span>
+<span class="sd">     - e: EC50</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">c</span><span class="o">+</span><span class="p">(</span><span class="n">d</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">b</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">e</span><span class="p">))))</span>
+
+
+<div class="viewcode-block" id="c50">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.c50">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">c50</span><span class="p">(</span><span class="n">contrasts</span><span class="p">,</span> <span class="n">responses</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Computes C50, the halfway point between the maximum and minimum values in a curved fitted against a difference</span>
+<span class="sd">    of gaussian for the contrast values and their responese (mean spike rates)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    contrasts : array of floats</span>
+<span class="sd">        list of different contrast stimuli</span>
+<span class="sd">    responses : array of floats</span>
+<span class="sd">        array of responses (spike rates)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    c50 : float</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">contrasts</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">contrasts</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">responses</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">'the contrasts and responses arrays must be of the same length'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># find the paraemters that best fit the contrast curve give x = contrast-vals and y = responses</span>
+        <span class="n">fitCoefs</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">_contrast_curve</span><span class="p">,</span> <span class="n">contrasts</span><span class="p">,</span> <span class="n">responses</span><span class="p">,</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="c1"># Create the constrast curve using the optimized parameters, get the halfway range point on the curve</span>
+    <span class="c1"># resids = responses - contrast_curve(contrasts.astype('float'), *fitCoefs)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">contrasts</span><span class="p">)</span><span class="o">*</span><span class="mf">0.9</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">contrasts</span><span class="p">)</span><span class="o">*</span><span class="mf">1.1</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>  <span class="c1">#</span>
+    <span class="n">y_fit</span> <span class="o">=</span> <span class="n">_contrast_curve</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="o">*</span><span class="n">fitCoefs</span><span class="p">)</span>
+    <span class="n">y_middle</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y_fit</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">y_fit</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">y_fit</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># y_fit is unlikely to be sorted, so to get the optimial value we should sort by y_fit and X before calling</span>
+        <span class="c1"># numpy's searchsorted()</span>
+        <span class="n">sorted_indicies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">y_fit</span><span class="p">)</span>
+        <span class="n">X_sorted</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">sorted_indicies</span><span class="p">]</span>
+        <span class="n">y_fit_sorted</span> <span class="o">=</span> <span class="n">y_fit</span><span class="p">[</span><span class="n">sorted_indicies</span><span class="p">]</span>
+        <span class="n">c50</span> <span class="o">=</span> <span class="n">X_sorted</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">y_fit_sorted</span><span class="p">,</span> <span class="n">y_middle</span><span class="p">)]</span>
+
+    <span class="k">except</span> <span class="ne">IndexError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        
+    <span class="k">return</span> <span class="n">c50</span></div>
+
+
+
+<div class="viewcode-block" id="f1_f0">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.f1_f0">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">f1_f0</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">trial_duration</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Computes F1/F0 of a drifting grating response</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    arr :</span>
+<span class="sd">        DataArray with trials x bin-times</span>
+<span class="sd">    tf :</span>
+<span class="sd">        temporal frequency of the stimulus</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f1_f0 : float</span>
+<span class="sd">        metric</span>
+
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="c1"># For each trial group the bins into blocks that will go to the length of the temporal frequency</span>
+    <span class="n">num_bins</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">num_trials</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">cycles_per_trial</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tf</span> <span class="o">*</span> <span class="n">trial_duration</span><span class="p">)</span>
+    <span class="n">bins_per_cycle</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">num_bins</span> <span class="o">/</span> <span class="n">cycles_per_trial</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bins_per_cycle</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># can occur if temp-freq x trial duration is greater than the total trial duration</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="p">[:,</span> <span class="p">:</span><span class="n">cycles_per_trial</span><span class="o">*</span><span class="n">bins_per_cycle</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">num_trials</span><span class="p">,</span> <span class="n">cycles_per_trial</span><span class="p">,</span> <span class="n">bins_per_cycle</span><span class="p">))</span>
+    <span class="n">avg_rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">AMP</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">fft</span><span class="p">(</span><span class="n">avg_rate</span><span class="p">,</span> <span class="n">bins_per_cycle</span><span class="p">))</span> <span class="o">/</span> <span class="n">bins_per_cycle</span>
+
+    <span class="n">f0</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">AMP</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="n">AMP</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">selection</span> <span class="o">=</span> <span class="n">f0</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">selection</span><span class="p">):</span>
+        <span class="c1"># No spikes found</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">f1</span><span class="p">[</span><span class="n">selection</span><span class="p">]</span><span class="o">/</span><span class="n">f0</span><span class="p">[</span><span class="n">selection</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="modulation_index">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.drifting_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.modulation_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">modulation_index</span><span class="p">(</span><span class="n">response_psth</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Depth of modulation by each cycle of a drifting grating; similar to F1/F0</span>
+
+<span class="sd">    ref: Matteucci et al. (2019) Nonlinear processing of shape information </span>
+<span class="sd">         in rat lateral extrastriate cortex. J Neurosci 39: 1649-1670</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    response_psth : array of floats</span>
+<span class="sd">        the binned responses of a unit for a given stimuli</span>
+<span class="sd">    tf : float</span>
+<span class="sd">        the temporal frequency</span>
+<span class="sd">    sample_rate : float</span>
+<span class="sd">        the sampling rate of response_psth</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    modulation_index : float</span>
+<span class="sd">        the mi value</span>
+
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">response_psth</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">'response_psth is empty'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">f</span><span class="p">,</span> <span class="n">psd</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">welch</span><span class="p">(</span><span class="n">response_psth</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span> <span class="n">nperseg</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>  <span class="c1"># get freqs. and power spectral density</span>
+    <span class="n">mean_psd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">psd</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mean_psd</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="c1"># TODO: Check with josh, should it be 0 or nan?</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="n">tf_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">tf</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">tf_index</span> <span class="o">&lt;</span> <span class="n">psd</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">'specified temporal frequency is not within the singals sampling range. Please adjust tf and/or'</span>
+                      <span class="s1">'sample_rate parameters.'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">return</span> <span class="nb">abs</span><span class="p">((</span><span class="n">psd</span><span class="p">[</span><span class="n">tf_index</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">psd</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">psd</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">-</span> <span class="n">mean_psd</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

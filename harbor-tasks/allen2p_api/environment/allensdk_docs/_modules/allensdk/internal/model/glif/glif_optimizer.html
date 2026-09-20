@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.glif_optimizer &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.glif_optimizer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">fminbound</span><span class="p">,</span> <span class="n">fmin</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.error_functions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">error_functions</span>
+
+<span class="c1"># TODO: clean up</span>
+<span class="c1"># TODO: license</span>
+<span class="c1"># TODO: document</span>
+
+<div class="viewcode-block" id="GlifOptimizer">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GlifOptimizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">experiment</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> 
+                 <span class="n">outer_iterations</span><span class="p">,</span> <span class="n">inner_iterations</span><span class="p">,</span> 
+                 <span class="n">sigma_outer</span><span class="p">,</span> <span class="n">sigma_inner</span><span class="p">,</span>
+                 <span class="n">param_fit_names</span><span class="p">,</span> <span class="n">stim</span><span class="p">,</span>                 
+                 <span class="n">xtol</span><span class="p">,</span> <span class="n">ftol</span><span class="p">,</span> 
+                 <span class="n">internal_iterations</span><span class="p">,</span> 
+                 <span class="n">bessel</span><span class="p">,</span>
+                 <span class="n">error_function</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">error_function_data</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">init_params</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span> <span class="o">=</span> <span class="n">experiment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outer_iterations</span> <span class="o">=</span> <span class="n">outer_iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inner_iterations</span> <span class="o">=</span> <span class="n">inner_iterations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span> <span class="o">=</span> <span class="n">init_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_outer</span> <span class="o">=</span> <span class="n">sigma_outer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_inner</span> <span class="o">=</span> <span class="n">sigma_inner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_fit_names</span> <span class="o">=</span> <span class="n">param_fit_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span> <span class="o">=</span> <span class="n">stim</span>
+
+        <span class="c1"># use MLIN by default</span>
+        <span class="k">if</span> <span class="n">error_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">error_function</span> <span class="o">=</span> <span class="n">error_functions</span><span class="o">.</span><span class="n">MLIN_list_error</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_function</span> <span class="o">=</span> <span class="n">error_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_function_data</span> <span class="o">=</span> <span class="n">error_function_data</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span> <span class="o">=</span> <span class="n">xtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span> <span class="o">=</span> <span class="n">ftol</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">internal_iterations</span> <span class="o">=</span> <span class="n">internal_iterations</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">bessel</span> <span class="o">=</span> <span class="n">bessel</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'internal_iterations: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">internal_iterations</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'outer_iterations: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">outer_iterations</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'inner_iterations: </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">inner_iterations</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">expected_param_count</span> <span class="o">=</span> <span class="n">experiment</span><span class="o">.</span><span class="n">neuron_parameter_count</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">expected_param_count</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_params</span><span class="p">)</span> <span class="o">!=</span> <span class="n">expected_param_count</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">expected_param_count</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">'optimizer init_params has wrong length (given </span><span class="si">%d</span><span class="s1">, expected </span><span class="si">%d</span><span class="s1">). settings to all ones'</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_params</span><span class="p">),</span> <span class="n">expected_param_count</span><span class="p">))</span>
+                          
+<div class="viewcode-block" id="GlifOptimizer.to_dict">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">'outer_iterations'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">outer_iterations</span><span class="p">,</span>
+            <span class="s1">'inner_iterations'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_iterations</span><span class="p">,</span>
+            <span class="s1">'init_params'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span><span class="p">,</span>
+            <span class="s1">'sigma_outer'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_outer</span><span class="p">,</span>
+            <span class="s1">'sigma_inner'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_inner</span><span class="p">,</span>
+            <span class="s1">'param_fit_names'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_fit_names</span><span class="p">,</span>
+            <span class="s1">'xtol'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtol</span><span class="p">,</span>
+            <span class="s1">'ftol'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ftol</span><span class="p">,</span>
+            <span class="s1">'internal_iterations'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">internal_iterations</span><span class="p">,</span>
+            <span class="s1">'iteration_info'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span><span class="p">,</span>
+            <span class="s1">'bessel'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bessel</span>
+        <span class="p">}</span></div>
+
+            
+<div class="viewcode-block" id="GlifOptimizer.randomize_parameter_values">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.randomize_parameter_values">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">randomize_parameter_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">sigma</span><span class="p">))</span>
+
+        <span class="c1"># values might not have a shape if it's a single element long, depending on your numpy version</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">values</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+
+    
+<div class="viewcode-block" id="GlifOptimizer.initiate_unique_seed">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.initiate_unique_seed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initiate_unique_seed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">x1</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()))</span> <span class="c1">#get a uuid, turn it into int then turn it into string</span>
+            <span class="n">x2</span><span class="o">=</span><span class="p">[</span><span class="n">x1</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="mi">8</span><span class="p">]</span><span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">8</span><span class="p">)]</span> <span class="c1">#break it up into chunks    </span>
+            <span class="n">x3</span><span class="o">=</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">x2</span><span class="p">]</span><span class="c1">#turn string chunks back into integers</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'seed'</span><span class="p">,</span> <span class="n">x3</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">x3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GlifOptimizer.evaluate">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.evaluate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">dt_multiplier</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">neuron</span><span class="o">.</span><span class="n">dt_multiplier</span> <span class="o">=</span> <span class="n">dt_multiplier</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_function</span><span class="p">([</span><span class="n">x</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_function_data</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="GlifOptimizer.run_many">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.run_many">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iteration_finished_callback</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initiate_unique_seed</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">params_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">params</span><span class="o">=</span><span class="n">params_start</span>
+<span class="c1">#        params=self.randomize_parameter_values(params_start, self.sigma_outer)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'actual starting parameters'</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        
+        <span class="n">stop_flag</span><span class="o">=</span><span class="kc">False</span>
+        
+        <span class="c1"># TODO: unhardcode this</span>
+        <span class="n">dt_multiplier_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+        <span class="c1">#Note the following line may be useful when there are more iteration but is hasnt been tested</span>
+<span class="c1">#        dt_multiplier_list = np.ceil(np.logspace(1,2,self.inner_iterations))[::-1].astype(int)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">dt_multiplier_list</span><span class="p">)</span>
+<span class="c1">#         dt_multiplier_list = [10,10,10]</span>
+        <span class="c1">#TODO: figure out the implications of this being an int versus float</span>
+        <span class="c1">#TODO: make this so that dt multiplier actually gets set</span>
+        <span class="k">for</span> <span class="n">outer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outer_iterations</span><span class="p">):</span>  <span class="c1">#outerloop </span>
+            <span class="k">for</span> <span class="n">inner</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inner_iterations</span><span class="p">):</span>  <span class="c1">#innerloop</span>
+                <span class="n">iteration_start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+                <span class="c1"># run the optimizer once.  first time is always the passed initial conditions.</span>
+<span class="c1">#                 print('dt_multiplier_list[inner]', dt_multiplier_list[inner])</span>
+                <span class="c1">#--set this equal to 1 if want to do it slow</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">neuron</span><span class="o">.</span><span class="n">dt_multiplier</span> <span class="o">=</span> <span class="n">dt_multiplier_list</span><span class="p">[</span><span class="n">inner</span><span class="p">]</span>
+                <span class="c1">#self.experiment.neuron.dt_multiplier = 10</span>
+                
+                
+                <span class="n">opt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_once</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+                <span class="n">xopt</span><span class="p">,</span> <span class="n">fopt</span> <span class="o">=</span> <span class="n">opt</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">opt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'fmin took </span><span class="si">%f</span><span class="s1"> secs, </span><span class="si">%f</span><span class="s1"> mins, </span><span class="si">%f</span><span class="s1"> hours'</span> <span class="o">%</span>  <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">iteration_start_time</span><span class="p">,</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">iteration_start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">60</span><span class="p">,</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">iteration_start_time</span><span class="p">)</span><span class="o">/</span><span class="mi">60</span><span class="o">/</span><span class="mi">60</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s1">'in_params'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s1">'out_params'</span><span class="p">:</span> <span class="n">xopt</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                    <span class="s1">'error'</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">fopt</span><span class="p">),</span>
+                    <span class="s1">'dt_multiplier'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">neuron</span><span class="o">.</span><span class="n">dt_multiplier</span>
+                <span class="p">})</span>
+
+<span class="c1">#                ER=self.iteration_info['error']</span>
+<span class="c1">#                ETOL=1.e-4</span>
+<span class="c1">#                if len(ER) &gt;=3:</span>
+<span class="c1">#                    #!!!!!!!!!!!!!!!fix this to use that actual parameters!!!!!!!!!!!!!!!!!!!!!!</span>
+<span class="c1">#                    if np.abs(ER[-1]-ER[-2])&lt;ETOL and np.abs(ER[-1]-ER[-3])&lt;ETOL and np.abs(ER[-2]-ER[-3])&lt;ETOL:</span>
+<span class="c1">#                        stop_flag=True</span>
+                    
+                    
+
+                <span class="k">if</span> <span class="n">iteration_finished_callback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">iteration_finished_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outer</span><span class="p">,</span> <span class="n">inner</span><span class="p">)</span>
+                    
+                <span class="k">if</span> <span class="n">stop_flag</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># randomize the best fit parameters</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomize_parameter_values</span><span class="p">(</span><span class="n">xopt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_inner</span><span class="p">)</span>
+                <span class="c1">#params = xtol*(1-self.eps/2+self.eps*np.random.random(len(params),))</span>
+                
+                <span class="c1">#---Calculate the other fitness functions</span>
+<span class="w">                </span>
+<span class="w">                </span><span class="sd">'''Add other fitness functions here</span>
+<span class="sd">                first gotta calculate the spike trains again</span>
+<span class="sd">                also look and see what the difference between</span>
+<span class="sd">                the size of a pickle file and a text file is to </span>
+<span class="sd">                decide how to save stimulus and traces'''</span>
+                
+                <span class="c1">#Take the current best values and run the program again.</span>
+                <span class="c1">#tempTimeIterStart=time.time()</span>
+                <span class="c1">#(voltage_list, threshold_list, AScurrentMatrix_list, gridSpikeTime_list, interpolatedSpikeTime_list, \</span>
+                <span class="c1">#    gridSpikeIndex_list, interpolatedSpikeVoltage_list, interpolatedSpikeThreshold_list) = \</span>
+                <span class="c1">#    self.experiment.run_base_model(xtol)</span>
+
+                <span class="c1">#timeFor1Iter=time.time()-tempTimeIterStart  </span>
+
+            <span class="c1"># outer loop uses the outer standard deviation to randomize the initial values</span>
+
+            <span class="k">if</span> <span class="n">stop_flag</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">break</span>
+            
+            <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">randomize_parameter_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">init_params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_outer</span><span class="p">)</span>
+
+
+        <span class="c1"># get the best one!</span>
+        <span class="n">min_error</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+        <span class="n">min_i</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">min_dt_multiplier</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s1">'dt_multiplier'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_dt_multiplier</span><span class="p">:</span>
+                <span class="n">min_dt_multiplier</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">'dt_multiplier'</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s1">'error'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_error</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="s1">'dt_multiplier'</span><span class="p">]</span> <span class="o">==</span> <span class="n">min_dt_multiplier</span><span class="p">:</span>
+                <span class="n">min_error</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">'error'</span><span class="p">]</span>
+                <span class="n">min_i</span> <span class="o">=</span> <span class="n">i</span>
+
+        <span class="n">best_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iteration_info</span><span class="p">[</span><span class="n">min_i</span><span class="p">][</span><span class="s1">'out_params'</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="o">.</span><span class="n">set_neuron_parameters</span><span class="p">(</span><span class="n">best_params</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'done optimizing'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">best_params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">init_params</span></div>
+
+
+<div class="viewcode-block" id="GlifOptimizer.run_once_bound">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.run_once_bound">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_once_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">low_bound</span><span class="p">,</span> <span class="n">high_bound</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''</span>
+<span class="sd">        @param low_bound: a scalar initial guess for the optimizer</span>
+<span class="sd">        @param high_bound: a scalar high bound for the optimizer</span>
+<span class="sd">        @return: tuple including parameters that optimize function and value - see fmin docs</span>
+<span class="sd">        '''</span>                
+        <span class="k">return</span> <span class="n">fminbound</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_function</span><span class="p">,</span> <span class="n">low_bound</span><span class="p">,</span> <span class="n">high_bound</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">error_function_data</span><span class="p">),</span> <span class="n">maxfun</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">full_output</span><span class="o">=</span><span class="kc">True</span> <span class="p">)</span></div>
+
+        <span class="c1">#Note is defined in the top level script</span>
+    
+  
+<div class="viewcode-block" id="GlifOptimizer.run_once">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.glif_optimizer.html#allensdk.internal.model.glif.glif_optimizer.GlifOptimizer.run_once">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_once</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''</span>
+<span class="sd">        @param param0: a list of the initial guesses for the optimizer</span>
+<span class="sd">        @return: tuple including parameters that optimize function and value - see fmin docs</span>
+<span class="sd">        '''</span>       
+<span class="c1">#        fmin(func, x0, args=(), xtol=1e-4, ftol=1e-4, maxiter=None, maxfun=None, full_output=0, disp=1, retall=0, callback=None):</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'self.error_function_data'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_function_data</span><span class="p">)</span>
+        <span class="n">xopt</span><span class="p">,</span> <span class="n">fopt</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fmin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_function</span><span class="p">,</span> <span class="n">param0</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">experiment</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">error_function_data</span><span class="p">),</span><span class="n">xtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xtol</span><span class="p">,</span> <span class="n">ftol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ftol</span><span class="p">,</span>  <span class="n">maxiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">internal_iterations</span><span class="p">,</span> <span class="n">maxfun</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">internal_iterations</span><span class="p">,</span> <span class="n">retall</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">full_output</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">disp</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">xopt</span><span class="p">,</span> <span class="n">fopt</span></div>
+</div>
+
+<span class="c1">#         res = minimize(self.error_function, param0,</span>
+<span class="c1">#                         method='Nelder-Mead',</span>
+<span class="c1">#                         args=(self.experiment,self.error_function_data),  </span>
+<span class="c1">#                         options={</span>
+<span class="c1">#                                  'maxiter':self.internal_iterations, </span>
+<span class="c1">#                                  'xtol':self.xtol, </span>
+<span class="c1">#                                  'ftol':self.ftol,</span>
+<span class="c1">#                                  'maxfun':self.internal_iterations, </span>
+<span class="c1">#                                  'retall':1,</span>
+<span class="c1">#                                  'full_output':1, </span>
+<span class="c1">#                                  'disp':1}</span>
+<span class="c1">#                        )</span>
+
+<span class="c1">#         res = minimize(self.error_function, param0,</span>
+<span class="c1">#                        jac=False,</span>
+<span class="c1">#                        method='BFGS',</span>
+<span class="c1">#                        args=(self.experiment,self.error_function_data),  </span>
+<span class="c1">#                        options={</span>
+<span class="c1">#                                 'maxiter':self.internal_iterations,</span>
+<span class="c1">#                                 'epsilon':1e-8,</span>
+<span class="c1">#                                 'gtol':1e-5,</span>
+<span class="c1">#                                 'full_output':1, </span>
+<span class="c1">#                                 'disp':1}</span>
+<span class="c1">#                        )</span>
+<span class="c1"># </span>
+<span class="c1">#          </span>
+<span class="c1">#         print(res)</span>
+<span class="c1">#         return res.x, res.fun</span>
+
+
+<span class="c1">#        #Note is defined in the top level script</span>
+<span class="c1">#        def mycallback_ncg(xk):</span>
+<span class="c1">#            print('Using Newton-CG method, xk: ', xk)</span>
+<span class="c1">#        def mycallback_nm(xk):</span>
+<span class="c1">#            print('Using Nelder-Mead method, xk: ', xk)</span>
+<span class="c1">#        eps=1e-15</span>
+<span class="c1">#        options={}</span>
+<span class="c1">#  #      options['avextox']=eps</span>
+<span class="c1">#        options['maxiter']=500</span>
+<span class="c1">##        options['full_output']=True</span>
+<span class="c1">##        options['disp']=True</span>
+<span class="c1">##        options['retall']=True</span>
+<span class="c1">#</span>
+<span class="c1">#        print('Using Newton-CG method')</span>
+<span class="c1">#        iteration_start_time = time.time()</span>
+<span class="c1">#        xopt = minimize(self.error_function, param0, args=(self.experiment,), method='Newton-CG', jac=f_prime_constructor(self.error_function), callback=mycallback_ncg, options=options, tol=eps)</span>
+<span class="c1">#        print('Newton-CG method took', (time.time()-iteration_start_time)/60., 'seconds')</span>
+<span class="c1">#</span>
+<span class="c1">##        print('Using Nelder-Mead method')</span>
+<span class="c1">##        iteration_start_time = time.time()</span>
+<span class="c1">##        xopt = minimize(self.error_function, param0, args=(self.experiment,), method='Nelder-Mead', callback=mycallback_nm, options=options, tol=eps)</span>
+<span class="c1">##        print('Nelder-Mead method took', (time.time()-iteration_start_time)/60., 'seconds')</span>
+<span class="c1">#</span>
+<span class="c1">#        print(xopt)</span>
+<span class="c1">#         return xopt, fopt</span>
+
+
+
+    
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

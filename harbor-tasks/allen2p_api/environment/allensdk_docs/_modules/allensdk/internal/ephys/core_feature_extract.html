@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.ephys.core_feature_extract &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.ephys.core_feature_extract</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.config.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">Manifest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_handler</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.nwb_data_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbDataSet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.ephys.extract_cell_features</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_cell_features</span><span class="p">,</span> <span class="n">extract_sweep_features</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.ephys.ephys_features</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.ephys.ephys_extractor</span><span class="w"> </span><span class="kn">import</span> <span class="n">reset_long_squares_start</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.ephys.plot_qc_figures</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plot_qc_figures</span>
+
+
+<span class="n">TEST_PULSE_DURATION_SEC</span> <span class="o">=</span> <span class="mf">0.4</span>
+
+<span class="n">LONG_SQUARE_COARSE</span> <span class="o">=</span> <span class="s1">'C1LSCOARSE'</span>
+<span class="n">LONG_SQUARE_FINE</span> <span class="o">=</span> <span class="s1">'C1LSFINEST'</span>
+<span class="n">SHORT_SQUARE</span> <span class="o">=</span> <span class="s1">'C1SSFINEST'</span>
+<span class="n">RAMP</span> <span class="o">=</span> <span class="s1">'C1RP25PR1S'</span>
+<span class="n">PASSED_SWEEP_STATES</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">'manual_passed'</span><span class="p">,</span> <span class="s1">'auto_passed'</span> <span class="p">]</span>
+<span class="n">ICLAMP_UNITS</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">'Amps'</span><span class="p">,</span> <span class="s1">'pA'</span> <span class="p">]</span>
+
+<div class="viewcode-block" id="filter_sweeps">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.filter_sweeps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_sweeps</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">passed_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">iclamp_only</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">passed_only</span><span class="p">:</span>
+        <span class="n">sweeps</span> <span class="o">=</span> <span class="p">[</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweeps</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'workflow_state'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">in</span> <span class="n">PASSED_SWEEP_STATES</span> <span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">iclamp_only</span><span class="p">:</span>
+        <span class="n">sweeps</span> <span class="o">=</span> <span class="p">[</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweeps</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">'stimulus_units'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">ICLAMP_UNITS</span> <span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">types</span><span class="p">:</span>
+        <span class="n">sweeps</span> <span class="o">=</span> <span class="p">[</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweeps</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">types</span> 
+                   <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s1">'ephys_stimulus'</span><span class="p">][</span><span class="s1">'description'</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">]</span>
+        
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="filtered_sweep_numbers">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.filtered_sweep_numbers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filtered_sweep_numbers</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">passed_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">iclamp_only</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span> <span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">filter_sweeps</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">types</span><span class="p">,</span> <span class="n">passed_only</span><span class="p">,</span> <span class="n">iclamp_only</span><span class="p">)</span> <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="find_stim_start">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.find_stim_start">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_stim_start</span><span class="p">(</span><span class="n">stim</span><span class="p">,</span> <span class="n">idx0</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" </span>
+<span class="sd">    Find the index of the first nonzero positive or negative jump in an array. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim: np.ndarray</span>
+<span class="sd">        Array to be searched</span>
+
+<span class="sd">    idx0: int</span>
+<span class="sd">        Start searching with this index (default: 0).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">    """</span>
+
+    <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">stim</span><span class="p">)</span>
+    <span class="n">idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">di</span><span class="p">)</span>
+    <span class="n">idxs</span> <span class="o">=</span> <span class="n">idxs</span><span class="p">[</span><span class="n">idxs</span> <span class="o">&gt;=</span> <span class="n">idx0</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+    
+    <span class="k">return</span> <span class="n">idxs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="find_sweep_stim_start">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.find_sweep_stim_start">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_sweep_stim_start</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_number</span><span class="p">):</span>
+    <span class="n">sweep</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">get_sweep</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+    <span class="n">sr</span> <span class="o">=</span> <span class="n">sweep</span><span class="p">[</span><span class="s1">'sampling_rate'</span><span class="p">]</span>
+    <span class="n">stim_start</span> <span class="o">=</span> <span class="n">find_stim_start</span><span class="p">(</span><span class="n">sweep</span><span class="p">[</span><span class="s1">'stimulus'</span><span class="p">],</span> <span class="n">TEST_PULSE_DURATION_SEC</span> <span class="o">*</span> <span class="n">sr</span><span class="p">)</span> <span class="o">/</span> <span class="n">sr</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Long square stims start at time </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">stim_start</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stim_start</span></div>
+
+ 
+<div class="viewcode-block" id="find_coarse_long_square_amp_delta">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.find_coarse_long_square_amp_delta">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_coarse_long_square_amp_delta</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Find the delta between amplitudes of coarse long square sweeps.  Includes failed sweeps.  """</span>
+    <span class="n">sweeps</span> <span class="o">=</span> <span class="n">filter_sweeps</span><span class="p">(</span><span class="n">sweeps</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span> <span class="n">LONG_SQUARE_COARSE</span> <span class="p">],</span> <span class="n">passed_only</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">amps</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="s1">'stimulus_amplitude'</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweeps</span><span class="p">])</span>
+    <span class="n">amps_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">amps</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="n">decimals</span><span class="p">)</span>
+
+    <span class="n">amps_diff</span> <span class="o">=</span> <span class="n">amps_diff</span><span class="p">[</span><span class="n">amps_diff</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># repeats are okay</span>
+    <span class="n">deltas</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">amps_diff</span><span class="p">))</span> <span class="c1"># unique nonzero deltas</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deltas</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+        
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">deltas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deltas</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Found multiple coarse long square amplitude step differences: </span><span class="si">%s</span><span class="s2">.  Using: </span><span class="si">%f</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">deltas</span><span class="p">),</span> <span class="n">delta</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">delta</span></div>
+
+
+<div class="viewcode-block" id="update_output_sweep_features">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.update_output_sweep_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_output_sweep_features</span><span class="p">(</span><span class="n">cell_features</span><span class="p">,</span> <span class="n">sweep_features</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">):</span>
+    <span class="c1"># add peak deflection for subthreshold long squares</span>
+    <span class="k">for</span> <span class="n">sweep_number</span><span class="p">,</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">sweep_index</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">pd</span> <span class="o">=</span> <span class="n">sweep_features</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">,{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'peak_deflect'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sweep</span><span class="p">[</span><span class="s1">'peak_deflection'</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+    <span class="c1"># update num_spikes</span>
+    <span class="k">for</span> <span class="n">sweep_num</span> <span class="ow">in</span> <span class="n">sweep_features</span><span class="p">:</span>
+        <span class="n">num_spikes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sweep_features</span><span class="p">[</span><span class="n">sweep_num</span><span class="p">][</span><span class="s1">'spikes'</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">num_spikes</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">num_spikes</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">sweep_index</span><span class="p">[</span><span class="n">sweep_num</span><span class="p">][</span><span class="s1">'num_spikes'</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_spikes</span></div>
+
+
+
+<div class="viewcode-block" id="nan_get">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.nan_get">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nan_get</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Return a value from a dictionary.  If it does not exist, return None.  If it is NaN, return None """</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span></div>
+
+
+<div class="viewcode-block" id="generate_output_cell_features">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.generate_output_cell_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_output_cell_features</span><span class="p">(</span><span class="n">cell_features</span><span class="p">,</span> <span class="n">sweep_features</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">):</span>
+    <span class="n">ephys_features</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># find hero and rheo sweeps in sweep table</span>
+    <span class="n">rheo_sweep_num</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">][</span><span class="s2">"rheobase_sweep"</span><span class="p">][</span><span class="s2">"id"</span><span class="p">]</span>
+    <span class="n">rheo_sweep_id</span> <span class="o">=</span> <span class="n">sweep_index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rheo_sweep_num</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rheo_sweep_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Could not find id of rheobase sweep number </span><span class="si">%d</span><span class="s2">."</span> <span class="o">%</span> <span class="n">rheo_sweep_num</span><span class="p">)</span>
+
+    <span class="n">hero_sweep</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">][</span><span class="s2">"hero_sweep"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">hero_sweep</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Could not find hero sweep"</span><span class="p">)</span>
+    
+    <span class="n">hero_sweep_num</span> <span class="o">=</span> <span class="n">hero_sweep</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
+    <span class="n">hero_sweep_id</span> <span class="o">=</span> <span class="n">sweep_index</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hero_sweep_num</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">hero_sweep_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Could not find id of hero sweep number </span><span class="si">%d</span><span class="s2">."</span> <span class="o">%</span> <span class="n">hero_sweep_num</span><span class="p">)</span>
+    
+    <span class="c1"># create a table of values </span>
+    <span class="c1"># this is a dictionary of ephys_features</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">]</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"rheobase_sweep_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rheo_sweep_id</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"rheobase_sweep_num"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rheo_sweep_num</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"thumbnail_sweep_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">hero_sweep_id</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"thumbnail_sweep_num"</span><span class="p">]</span> <span class="o">=</span> <span class="n">hero_sweep_num</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"vrest"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"v_baseline"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"ri"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"input_resistance"</span><span class="p">)</span>
+
+    <span class="c1"># change the base to hero sweep</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">][</span><span class="s2">"hero_sweep"</span><span class="p">]</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"adaptation"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"adapt"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"latency"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"latency"</span><span class="p">)</span>
+
+    <span class="c1"># convert to ms</span>
+    <span class="n">mean_isi</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"mean_isi"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"avg_isi"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">mean_isi</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">)</span> <span class="k">if</span> <span class="n">mean_isi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="c1"># now grab the rheo spike</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">][</span><span class="s2">"rheobase_sweep"</span><span class="p">][</span><span class="s2">"spikes"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"upstroke_downstroke_ratio_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"upstroke_downstroke_ratio"</span><span class="p">)</span> 
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_i_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_i"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_v_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_t_long_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_t"</span><span class="p">)</span>
+
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">]</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"sag"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"sag"</span><span class="p">)</span>
+    <span class="c1"># convert to ms</span>
+    <span class="n">tau</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"tau"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"tau"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">tau</span> <span class="o">*</span> <span class="mf">1e3</span><span class="p">)</span> <span class="k">if</span> <span class="n">tau</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span> 
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"vm_for_sag"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"vm_for_sag"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"has_burst"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="c1">#base.get("has_burst", None)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"has_pause"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="c1">#base.get("has_pause", None)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"has_delay"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="c1">#base.get("has_delay", None)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"f_i_curve_slope"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fi_fit_slope"</span><span class="p">)</span>
+
+    <span class="c1"># change the base to ramp</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"ramps"</span><span class="p">][</span><span class="s2">"mean_spike_0"</span><span class="p">]</span> <span class="c1"># mean feature of first spike for all of these</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"upstroke_downstroke_ratio_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"upstroke_downstroke_ratio"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_v_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_t_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_v_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_t_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_v_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_t_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_t"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_v_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_t_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_v_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_i_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_i"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_t_ramp"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_t"</span><span class="p">)</span>
+
+    <span class="c1"># change the base to short_square</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"short_squares"</span><span class="p">][</span><span class="s2">"mean_spike_0"</span><span class="p">]</span> <span class="c1"># mean feature of first spike for all of these</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"upstroke_downstroke_ratio_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"upstroke_downstroke_ratio"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_v_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"peak_t_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"peak_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_v_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"trough_t_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"trough_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_v_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"fast_trough_t_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"fast_trough_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_v_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_v"</span><span class="p">)</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"slow_trough_t_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"slow_trough_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_v_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_v"</span><span class="p">)</span>
+    <span class="c1">#ephys_features["threshold_i_short_square"] = nan_get(base, "threshold_i")</span>
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_t_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">"threshold_t"</span><span class="p">)</span>
+
+    <span class="n">ephys_features</span><span class="p">[</span><span class="s2">"threshold_i_short_square"</span><span class="p">]</span> <span class="o">=</span> <span class="n">nan_get</span><span class="p">(</span><span class="n">cell_features</span><span class="p">[</span><span class="s2">"short_squares"</span><span class="p">],</span> <span class="s2">"stimulus_amplitude"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ephys_features</span></div>
+
+
+<div class="viewcode-block" id="extract_data">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.extract_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nwb_file</span><span class="p">):</span>
+    <span class="c1">##########################################################</span>
+    <span class="c1">#### alings with ephys_sweep_qc_tool extract_features ####</span>
+    <span class="n">cell_specimen</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'specimens'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">sweep_list</span> <span class="o">=</span> <span class="n">cell_specimen</span><span class="p">[</span><span class="s1">'ephys_sweeps'</span><span class="p">]</span>
+    <span class="n">sweep_index</span> <span class="o">=</span> <span class="p">{</span> <span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">]:</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweep_list</span> <span class="p">}</span>
+
+    <span class="n">data_set</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">)</span>
+
+
+    <span class="c1"># extract sweep-level features</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing sweep features"</span><span class="p">)</span>
+    <span class="n">iclamp_sweep_list</span> <span class="o">=</span> <span class="n">filter_sweeps</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">,</span> <span class="n">iclamp_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">passed_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">iclamp_sweeps</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">iclamp_sweep_list</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stimulus_type_name</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">'ephys_stimulus'</span><span class="p">][</span><span class="s1">'ephys_stimulus_type'</span><span class="p">][</span><span class="s1">'name'</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Sweep </span><span class="si">%d</span><span class="s2"> has no ephys stimulus record in features JSON file: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">],</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">json_handler</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">stimulus_type_name</span> <span class="o">==</span> <span class="s2">"Unknown"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">((</span><span class="s2">"Sweep </span><span class="si">%d</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">) has 'Unknown' stimulus type."</span> <span class="o">+</span>
+                             <span class="s2">"Please update the EpysStimuli and EphysRawStimulusNames associations in LIMS."</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="s1">'ephys_stimulus'</span><span class="p">][</span><span class="s1">'description'</span><span class="p">]))</span>
+
+        <span class="n">iclamp_sweeps</span><span class="p">[</span><span class="n">stimulus_type_name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">])</span>
+
+    <span class="n">passed_iclamp_sweep_list</span> <span class="o">=</span> <span class="n">filter_sweeps</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">,</span> <span class="n">iclamp_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">passed_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">num_passed_sweeps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">passed_iclamp_sweep_list</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="s2"> of </span><span class="si">%d</span><span class="s2"> sweeps passed QC"</span><span class="p">,</span> 
+                 <span class="n">num_passed_sweeps</span><span class="p">,</span> 
+                 <span class="nb">len</span><span class="p">(</span><span class="n">iclamp_sweep_list</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">num_passed_sweeps</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">FeatureError</span><span class="p">(</span><span class="s2">"There are no QC-passed sweeps available to analyze"</span><span class="p">)</span>
+
+    <span class="c1"># compute sweep features</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Computing sweep features"</span><span class="p">)</span>
+    <span class="n">sweep_features</span> <span class="o">=</span> <span class="n">extract_sweep_features</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">iclamp_sweeps</span><span class="p">)</span>
+    <span class="n">cell_specimen</span><span class="p">[</span><span class="s1">'sweep_ephys_features'</span><span class="p">]</span> <span class="o">=</span> <span class="n">sweep_features</span>
+
+    <span class="c1"># extract cell-level features</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Computing cell features"</span><span class="p">)</span>
+    <span class="n">long_square_sweep_numbers</span> <span class="o">=</span> <span class="n">filtered_sweep_numbers</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">,</span> <span class="p">[</span> <span class="n">LONG_SQUARE_COARSE</span><span class="p">,</span> <span class="n">LONG_SQUARE_FINE</span> <span class="p">])</span>
+    <span class="n">short_square_sweep_numbers</span> <span class="o">=</span> <span class="n">filtered_sweep_numbers</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">,</span> <span class="p">[</span> <span class="n">SHORT_SQUARE</span> <span class="p">])</span>
+    <span class="n">ramp_sweep_numbers</span> <span class="o">=</span> <span class="n">filtered_sweep_numbers</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">,</span> <span class="p">[</span> <span class="n">RAMP</span> <span class="p">])</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"long square sweeps: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">long_square_sweep_numbers</span><span class="p">))</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"short square sweeps: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">short_square_sweep_numbers</span><span class="p">))</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"ramp sweeps: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ramp_sweep_numbers</span><span class="p">))</span>
+
+    <span class="c1"># PBS-262 -- have variable subthreshold minimum for human cells</span>
+    <span class="n">subthresh_min_amp</span> <span class="o">=</span> <span class="kc">None</span>    <span class="c1"># None means default (mouse) behavior</span>
+    <span class="n">long_square_amp_delta</span> <span class="o">=</span> <span class="n">find_coarse_long_square_amp_delta</span><span class="p">(</span><span class="n">sweep_list</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">long_square_amp_delta</span> <span class="o">!=</span> <span class="mf">20.0</span><span class="p">:</span>
+        <span class="n">subthresh_min_amp</span> <span class="o">=</span> <span class="o">-</span><span class="mi">200</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Long squares using </span><span class="si">%f</span><span class="s2">pA step size.  Using subthreshold minimum amplitude of </span><span class="si">%s</span><span class="s2">."</span><span class="p">,</span> 
+                 <span class="n">long_square_amp_delta</span><span class="p">,</span> 
+                 <span class="nb">str</span><span class="p">(</span><span class="n">subthresh_min_amp</span><span class="p">)</span> <span class="k">if</span> <span class="n">subthresh_min_amp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"[default]"</span><span class="p">)</span>
+
+    <span class="n">stim_start</span> <span class="o">=</span> <span class="n">find_sweep_stim_start</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">long_square_sweep_numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">stim_start</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"resetting long square start time to: </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">stim_start</span><span class="p">)</span>
+        <span class="n">reset_long_squares_start</span><span class="p">(</span><span class="n">stim_start</span><span class="p">)</span>
+
+    <span class="n">cell_features</span> <span class="o">=</span> <span class="n">extract_cell_features</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> 
+                                          <span class="n">ramp_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">short_square_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">long_square_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">subthresh_min_amp</span><span class="p">)</span>
+    <span class="c1"># shuffle peak deflection for the subthreshold long squares</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">cell_features</span><span class="p">[</span><span class="s2">"long_squares"</span><span class="p">][</span><span class="s2">"subthreshold_sweeps"</span><span class="p">]:</span>
+        <span class="n">sweep_features</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]][</span><span class="s1">'peak_deflect'</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="s1">'peak_deflect'</span><span class="p">]</span>
+
+    <span class="n">cell_specimen</span><span class="p">[</span><span class="s1">'cell_ephys_features'</span><span class="p">]</span> <span class="o">=</span> <span class="n">cell_features</span>
+
+    <span class="n">update_output_sweep_features</span><span class="p">(</span><span class="n">cell_features</span><span class="p">,</span> <span class="n">sweep_features</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">)</span>
+    <span class="n">ephys_features</span> <span class="o">=</span> <span class="n">generate_output_cell_features</span><span class="p">(</span><span class="n">cell_features</span><span class="p">,</span> <span class="n">sweep_features</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">out_ephys_features</span> <span class="o">=</span> <span class="n">cell_specimen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ephys_features'</span><span class="p">,[])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">out_ephys_features</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">ephys_features</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+        <span class="n">cell_specimen</span><span class="p">[</span><span class="s1">'ephys_features'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="n">ephys_features</span> <span class="p">]</span>
+
+    <span class="c1">#### breaks with ephys_sweep_qc_tool extract_features ####</span>
+    <span class="c1">##########################################################</span>
+    <span class="k">return</span> <span class="n">sweep_list</span><span class="p">,</span> <span class="n">sweep_features</span></div>
+
+
+<div class="viewcode-block" id="save_qc_figures">
+<a class="viewcode-back" href="../../../../allensdk.internal.ephys.core_feature_extract.html#allensdk.internal.ephys.core_feature_extract.save_qc_figures">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_qc_figures</span><span class="p">(</span><span class="n">qc_fig_dir</span><span class="p">,</span> <span class="n">nwb_file</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">plot_cell_figures</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">qc_fig_dir</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"removing existing qc figures directory: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">qc_fig_dir</span><span class="p">)</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">qc_fig_dir</span><span class="p">)</span>
+
+    <span class="n">Manifest</span><span class="o">.</span><span class="n">safe_mkdir</span><span class="p">(</span><span class="n">qc_fig_dir</span><span class="p">)</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"saving qc plot figures"</span><span class="p">)</span>
+    <span class="n">plot_qc_figures</span><span class="o">.</span><span class="n">make_sweep_page</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">qc_fig_dir</span><span class="p">)</span>
+    <span class="n">plot_qc_figures</span><span class="o">.</span><span class="n">make_cell_page</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">output_data</span><span class="p">,</span> <span class="n">qc_fig_dir</span><span class="p">,</span> <span class="n">plot_cell_figures</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

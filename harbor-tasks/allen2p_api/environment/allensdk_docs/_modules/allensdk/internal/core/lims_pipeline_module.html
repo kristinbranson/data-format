@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.core.lims_pipeline_module &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.core.lims_pipeline_module</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ju</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.config.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">Manifest</span>
+
+<span class="n">SHARED_PYTHON</span> <span class="o">=</span> <span class="s2">"/shared/utils.x86_64/python-2.7/bin/python"</span>
+<span class="n">SHARED_SDK</span> <span class="o">=</span> <span class="s2">"/shared/bioapps/infoapps/lims2_modules/lib/allensdk"</span>
+<span class="n">RUN_PYTHON</span> <span class="o">=</span> <span class="s2">"/shared/bioapps/infoapps/lims2_modules/lib/python/run_python.sh"</span>
+
+<div class="viewcode-block" id="PipelineModule">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_pipeline_module.html#allensdk.internal.core.lims_pipeline_module.PipelineModule">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PipelineModule</span><span class="p">(</span> <span class="nb">object</span> <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">parser</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">default_argument_parser</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">parser</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">_args</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">log_level</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2">:</span><span class="si">%(levelname)s</span><span class="s2">:</span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span>
+
+<div class="viewcode-block" id="PipelineModule.input_data">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_pipeline_module.html#allensdk.internal.core.lims_pipeline_module.PipelineModule.input_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">input_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">input_json</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"could not read input json: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">input_json</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+    
+<div class="viewcode-block" id="PipelineModule.write_output_data">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_pipeline_module.html#allensdk.internal.core.lims_pipeline_module.PipelineModule.write_output_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_output_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ju</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">output_json</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"could not write output json: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">output_json</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span> </div>
+</div>
+
+
+
+<div class="viewcode-block" id="default_argument_parser">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_pipeline_module.html#allensdk.internal.core.lims_pipeline_module.default_argument_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_argument_parser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'input_json'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'output_json'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--log-level'</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="run_module">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_pipeline_module.html#allensdk.internal.core.lims_pipeline_module.run_module">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_module</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">input_data</span><span class="p">,</span> <span class="n">storage_directory</span><span class="p">,</span> 
+               <span class="n">optional_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+               <span class="n">python</span><span class="o">=</span><span class="n">SHARED_PYTHON</span><span class="p">,</span>
+               <span class="n">sdk_path</span><span class="o">=</span><span class="n">SHARED_SDK</span><span class="p">,</span>
+               <span class="n">local</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">pbs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">PBS_TEMPLATE</span><span class="o">=</span><span class="s2">"""</span>
+<span class="s2">    export PYTHONPATH=</span><span class="si">%(sdk_path)s</span><span class="s2">:$PYTHONPATH</span>
+<span class="s2">    PYTHON=</span><span class="si">%(python)s</span>
+<span class="s2">    SCRIPT="</span><span class="si">%(module)s</span><span class="s2">"</span>
+<span class="s2">    $PYTHON $SCRIPT </span><span class="si">%(optional_args)s</span><span class="s2"> </span><span class="si">%(input_json)s</span><span class="s2"> </span><span class="si">%(output_json)s</span><span class="s2"> </span>
+<span class="s2">    """</span>
+
+    <span class="k">if</span> <span class="n">optional_args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">optional_args</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">input_json</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_directory</span><span class="p">,</span> <span class="s2">"input.json"</span><span class="p">)</span>
+    <span class="n">output_json</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_directory</span><span class="p">,</span> <span class="s2">"output.json"</span><span class="p">)</span>
+    <span class="n">pbs_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_directory</span><span class="p">,</span> <span class="s2">"run.pbs"</span><span class="p">)</span>
+
+    <span class="n">Manifest</span><span class="o">.</span><span class="n">safe_mkdir</span><span class="p">(</span><span class="n">storage_directory</span><span class="p">)</span>
+
+    <span class="n">pbs_headers</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="s1">'-j oe'</span><span class="p">),</span>
+                    <span class="p">(</span><span class="s1">'-o </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_directory</span><span class="p">,</span> <span class="s2">"run.log"</span><span class="p">))</span> <span class="p">]</span>
+    <span class="n">pbs</span> <span class="o">=</span> <span class="n">pbs</span> <span class="k">if</span> <span class="n">pbs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+
+    <span class="n">queue</span> <span class="o">=</span> <span class="n">pbs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'queue'</span><span class="p">,</span> <span class="s1">'braintv'</span><span class="p">)</span>
+    <span class="n">pbs_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'-q </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">queue</span><span class="p">)</span>
+
+    <span class="n">walltime</span> <span class="o">=</span> <span class="n">pbs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'walltime'</span><span class="p">,</span> <span class="s1">'3:00:00'</span><span class="p">)</span>
+    <span class="n">pbs_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'-l walltime=</span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">walltime</span><span class="p">)</span>
+
+    <span class="n">vmem</span> <span class="o">=</span> <span class="n">pbs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'vmem'</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+    <span class="n">pbs_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'-l vmem=</span><span class="si">%d</span><span class="s1">gb'</span> <span class="o">%</span> <span class="n">vmem</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">'job_name'</span> <span class="ow">in</span> <span class="n">pbs</span><span class="p">:</span>
+        <span class="n">pbs_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'-N </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">pbs</span><span class="p">[</span><span class="s1">'job_name'</span><span class="p">])</span>
+       
+    <span class="k">if</span> <span class="s1">'ncpus'</span> <span class="ow">in</span> <span class="n">pbs</span><span class="p">:</span>
+        <span class="n">pbs_headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'-l ncpus=</span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="n">pbs</span><span class="p">[</span><span class="s1">'ncpus'</span><span class="p">])</span>
+
+    <span class="n">pbs_headers</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">'#PBS </span><span class="si">%s</span><span class="s1">'</span> <span class="o">%</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">pbs_headers</span> <span class="p">]</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pbs_file</span><span class="p">,</span><span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pbs_headers</span><span class="p">)</span> <span class="o">+</span> <span class="n">PBS_TEMPLATE</span> <span class="o">%</span> <span class="p">{</span> 
+                <span class="s2">"python"</span><span class="p">:</span> <span class="n">python</span><span class="p">,</span>
+                <span class="s2">"sdk_path"</span><span class="p">:</span> <span class="n">sdk_path</span><span class="p">,</span>
+                <span class="s2">"module"</span><span class="p">:</span> <span class="n">module</span><span class="p">,</span>
+                <span class="s2">"input_json"</span><span class="p">:</span> <span class="n">input_json</span><span class="p">,</span>
+                <span class="s2">"output_json"</span><span class="p">:</span> <span class="n">output_json</span><span class="p">,</span>
+                <span class="s2">"optional_args"</span><span class="p">:</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">optional_args</span><span class="p">)</span>
+                <span class="p">})</span>
+
+
+
+    <span class="n">ju</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">input_json</span><span class="p">,</span> <span class="n">input_data</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">local</span><span class="p">:</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">'sh'</span><span class="p">,</span> <span class="n">pbs_file</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s1">'qsub'</span><span class="p">,</span> <span class="n">pbs_file</span><span class="p">])</span></div>
+
+    
+
+        
+        
+        
+        
+
+
+                                    
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

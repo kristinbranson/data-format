@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.ephys.extract_cell_features &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.ephys.extract_cell_features</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">ephys_extractor</span> <span class="k">as</span> <span class="n">efex</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">ephys_features</span> <span class="k">as</span> <span class="n">ft</span>
+
+<span class="n">HERO_MIN_AMP_OFFSET</span> <span class="o">=</span> <span class="mf">39.0</span>
+<span class="n">HERO_MAX_AMP_OFFSET</span> <span class="o">=</span> <span class="mf">61.0</span>
+
+<span class="n">SHORT_SQUARE_TYPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Short Square"</span><span class="p">,</span>
+                      <span class="s2">"Short Square - Triple"</span><span class="p">,</span>
+                      <span class="s2">"Short Square - Hold -60mv"</span><span class="p">,</span>
+                      <span class="s2">"Short Square - Hold -70mv"</span><span class="p">,</span>
+                      <span class="s2">"Short Square - Hold -80mv"</span><span class="p">]</span>
+
+<span class="n">SHORT_SQUARE_THRESH_FRAC_FLOOR</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<span class="n">MEAN_FEATURES</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">"upstroke_downstroke_ratio"</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">,</span> <span class="s2">"peak_t"</span><span class="p">,</span> <span class="s2">"trough_v"</span><span class="p">,</span> <span class="s2">"trough_t"</span><span class="p">,</span>
+                  <span class="s2">"fast_trough_v"</span><span class="p">,</span> <span class="s2">"fast_trough_t"</span><span class="p">,</span> <span class="s2">"slow_trough_v"</span><span class="p">,</span> <span class="s2">"slow_trough_t"</span><span class="p">,</span>
+                  <span class="s2">"threshold_v"</span><span class="p">,</span> <span class="s2">"threshold_i"</span><span class="p">,</span> <span class="s2">"threshold_t"</span><span class="p">,</span> <span class="s2">"peak_v"</span><span class="p">,</span> <span class="s2">"peak_t"</span> <span class="p">]</span>
+
+
+<div class="viewcode-block" id="extract_sweep_features">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.extract_sweep_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_sweep_features</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweeps_by_type</span><span class="p">):</span>
+    <span class="c1"># extract sweep-level features</span>
+    <span class="n">sweep_features</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">stimulus_type</span><span class="p">,</span> <span class="n">sweep_numbers</span> <span class="ow">in</span> <span class="n">sweeps_by_type</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"</span><span class="si">%s</span><span class="s2">:</span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">stimulus_type</span><span class="p">,</span> <span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">))))</span>
+
+        <span class="k">if</span> <span class="n">stimulus_type</span> <span class="o">==</span> <span class="s2">"Short Square - Triple"</span><span class="p">:</span>
+            <span class="n">tmp_ext</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">)</span>
+            <span class="n">t_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">t</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tmp_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+            <span class="n">v_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">v</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tmp_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+
+            <span class="c1"># IT-14530</span>
+            <span class="c1"># triple-sweeps to use different window</span>
+            <span class="n">win_start</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARE_TRIPLE_WINDOW_START</span>
+            <span class="n">win_end</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARE_TRIPLE_WINDOW_END</span>
+            <span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">estimate_adjusted_detection_parameters</span><span class="p">(</span>
+                                    <span class="n">v_set</span><span class="p">,</span> <span class="n">t_set</span><span class="p">,</span> <span class="n">win_start</span><span class="p">,</span> <span class="n">win_end</span><span class="p">)</span>
+            <span class="n">thresh_frac</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">SHORT_SQUARE_THRESH_FRAC_FLOOR</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="p">)</span>
+
+            <span class="n">fex</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">,</span>
+                                    <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stimulus_type</span> <span class="ow">in</span> <span class="n">SHORT_SQUARE_TYPES</span><span class="p">:</span>
+            <span class="n">tmp_ext</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">)</span>
+            <span class="n">t_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">t</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tmp_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+            <span class="n">v_set</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">v</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">tmp_ext</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()]</span>
+
+            <span class="n">win_start</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARES_WINDOW_START</span>
+            <span class="n">win_end</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARES_WINDOW_END</span>
+            <span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">estimate_adjusted_detection_parameters</span><span class="p">(</span>
+                                     <span class="n">v_set</span><span class="p">,</span> <span class="n">t_set</span><span class="p">,</span> <span class="n">win_start</span><span class="p">,</span> <span class="n">win_end</span><span class="p">)</span>
+            <span class="n">thresh_frac</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">SHORT_SQUARE_THRESH_FRAC_FLOOR</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="p">)</span>
+
+            <span class="n">fex</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">,</span>
+                                                <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fex</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">extractor_for_nwb_sweeps</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">)</span>
+
+        <span class="n">fex</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+
+        <span class="n">sweep_features</span><span class="o">.</span><span class="n">update</span><span class="p">({</span> <span class="n">f</span><span class="o">.</span><span class="n">id</span><span class="p">:</span><span class="n">f</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fex</span><span class="o">.</span><span class="n">sweeps</span><span class="p">()</span> <span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">sweep_features</span></div>
+
+
+<span class="c1"># if subthreshold minimum amplitude is known (e.g., for human cells) then</span>
+<span class="c1">#   specify it. otherwise the default value will be used</span>
+<div class="viewcode-block" id="extract_cell_features">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.extract_cell_features">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_cell_features</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span>
+                          <span class="n">ramp_sweep_numbers</span><span class="p">,</span>
+                          <span class="n">short_square_sweep_numbers</span><span class="p">,</span>
+                          <span class="n">long_square_sweep_numbers</span><span class="p">,</span>
+                          <span class="n">subthresh_min_amp</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">subthresh_min_amp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fex</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">cell_extractor_for_nwb</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span>
+                                          <span class="n">ramp_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">short_square_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">long_square_sweep_numbers</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fex</span> <span class="o">=</span> <span class="n">efex</span><span class="o">.</span><span class="n">cell_extractor_for_nwb</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span>
+                                          <span class="n">ramp_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">short_square_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">long_square_sweep_numbers</span><span class="p">,</span>
+                                          <span class="n">subthresh_min_amp</span><span class="p">)</span>
+
+    <span class="n">fex</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+
+    <span class="n">cell_features</span> <span class="o">=</span> <span class="n">fex</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span>
+
+    <span class="c1"># find hero sweep</span>
+    <span class="n">rheo_amp</span> <span class="o">=</span> <span class="n">cell_features</span><span class="p">[</span><span class="s1">'long_squares'</span><span class="p">][</span><span class="s1">'rheobase_i'</span><span class="p">]</span>
+    <span class="n">hero_min</span><span class="p">,</span> <span class="n">hero_max</span> <span class="o">=</span> <span class="n">rheo_amp</span> <span class="o">+</span> <span class="n">HERO_MIN_AMP_OFFSET</span><span class="p">,</span> <span class="n">rheo_amp</span> <span class="o">+</span> <span class="n">HERO_MAX_AMP_OFFSET</span>
+    <span class="n">hero_amp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+    <span class="n">hero_sweep</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">fex</span><span class="o">.</span><span class="n">long_squares_features</span><span class="p">(</span><span class="s2">"spiking"</span><span class="p">)</span><span class="o">.</span><span class="n">sweeps</span><span class="p">():</span>
+        <span class="n">nspikes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sweep</span><span class="o">.</span><span class="n">spikes</span><span class="p">())</span>
+        <span class="n">amp</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"stim_amp"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">nspikes</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">amp</span> <span class="o">&gt;</span> <span class="n">hero_min</span> <span class="ow">and</span> <span class="n">amp</span> <span class="o">&lt;</span> <span class="n">hero_max</span> <span class="ow">and</span> <span class="n">amp</span> <span class="o">&lt;</span> <span class="n">hero_amp</span><span class="p">:</span>
+            <span class="n">hero_amp</span> <span class="o">=</span> <span class="n">amp</span>
+            <span class="n">hero_sweep</span> <span class="o">=</span> <span class="n">sweep</span>
+
+    <span class="k">if</span> <span class="n">hero_sweep</span><span class="p">:</span>
+        <span class="n">hero_sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"adapt"</span><span class="p">)</span>
+        <span class="n">hero_sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"latency"</span><span class="p">)</span>
+        <span class="n">hero_sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"mean_isi"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ft</span><span class="o">.</span><span class="n">FeatureError</span><span class="p">(</span><span class="s2">"Could not find hero sweep."</span><span class="p">)</span>
+
+    <span class="c1"># find the mean features of the first spike for the ramps and short squares</span>
+    <span class="n">ramps_ms0</span> <span class="o">=</span> <span class="n">mean_features_spike_zero</span><span class="p">(</span><span class="n">fex</span><span class="o">.</span><span class="n">ramps_features</span><span class="p">()</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())</span>
+    <span class="n">ss_ms0</span> <span class="o">=</span> <span class="n">mean_features_spike_zero</span><span class="p">(</span><span class="n">fex</span><span class="o">.</span><span class="n">short_squares_features</span><span class="p">()</span><span class="o">.</span><span class="n">sweeps</span><span class="p">())</span>
+
+    <span class="c1"># compute baseline from all long square sweeps</span>
+    <span class="n">v_baseline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">fex</span><span class="o">.</span><span class="n">long_squares_features</span><span class="p">()</span><span class="o">.</span><span class="n">sweep_features</span><span class="p">(</span><span class="s1">'v_baseline'</span><span class="p">))</span>
+
+    <span class="n">cell_features</span><span class="p">[</span><span class="s1">'long_squares'</span><span class="p">][</span><span class="s1">'v_baseline'</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_baseline</span>
+    <span class="n">cell_features</span><span class="p">[</span><span class="s1">'long_squares'</span><span class="p">][</span><span class="s1">'hero_sweep'</span><span class="p">]</span> <span class="o">=</span> <span class="n">hero_sweep</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">hero_sweep</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">cell_features</span><span class="p">[</span><span class="s2">"ramps"</span><span class="p">][</span><span class="s2">"mean_spike_0"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ramps_ms0</span>
+    <span class="n">cell_features</span><span class="p">[</span><span class="s2">"short_squares"</span><span class="p">][</span><span class="s2">"mean_spike_0"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ss_ms0</span>
+
+    <span class="k">return</span> <span class="n">cell_features</span></div>
+
+
+<div class="viewcode-block" id="mean_features_spike_zero">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.mean_features_spike_zero">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mean_features_spike_zero</span><span class="p">(</span><span class="n">sweeps</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Compute mean feature values for the first spike in list of extractors """</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">mf</span> <span class="ow">in</span> <span class="n">MEAN_FEATURES</span><span class="p">:</span>
+        <span class="n">mfd</span> <span class="o">=</span> <span class="p">[</span> <span class="n">sweep</span><span class="o">.</span><span class="n">spikes</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="n">mf</span><span class="p">]</span> <span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">sweeps</span> <span class="k">if</span> <span class="n">sweep</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"avg_rate"</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">]</span>
+        <span class="n">output</span><span class="p">[</span><span class="n">mf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mfd</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="get_stim_characteristics">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.get_stim_characteristics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stim_characteristics</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">no_test_pulse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Identify the start time, duration, amplitude, start index, and</span>
+<span class="sd">    end index of a general stimulus.</span>
+<span class="sd">    This assumes that there is a test pulse followed by the stimulus square.</span>
+<span class="sd">    '''</span>
+
+    <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">diff_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">di</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff_idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># skip the first up/down</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">no_test_pulse</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># shift by one to compensate for diff()</span>
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="n">diff_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">end_idx</span> <span class="o">=</span> <span class="n">diff_idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">stim_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+    <span class="n">stim_dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">end_idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+    <span class="n">stim_amp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">stim_start</span><span class="p">,</span> <span class="n">stim_dur</span><span class="p">,</span> <span class="n">stim_amp</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_ramp_stim_characteristics">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.get_ramp_stim_characteristics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ramp_stim_characteristics</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Identify the start time and start index of a ramp sweep. '''</span>
+
+    <span class="c1"># Assumes that there is a test pulse followed by the stimulus ramp</span>
+    <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">up_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">di</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">start_idx</span> <span class="o">=</span> <span class="n">up_idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="c1"># shift by one to compensate for diff()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">start_idx</span><span class="p">],</span> <span class="n">start_idx</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_square_stim_characteristics">
+<a class="viewcode-back" href="../../../allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.get_square_stim_characteristics">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_square_stim_characteristics</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">no_test_pulse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    Identify the start time, duration, amplitude, start index, and</span>
+<span class="sd">    end index of a square stimulus.</span>
+<span class="sd">    This assumes that there is a test pulse followed by the stimulus square.</span>
+<span class="sd">    '''</span>
+
+    <span class="n">di</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">up_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">di</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">down_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">di</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">no_test_pulse</span> <span class="k">else</span> <span class="mi">1</span>
+
+    <span class="c1"># second square is the stimulus</span>
+    <span class="k">if</span> <span class="n">up_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">down_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]:</span> <span class="c1"># positive square</span>
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="n">up_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="c1"># shift by one to compensate for diff()</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="n">down_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># negative square</span>
+        <span class="n">start_idx</span> <span class="o">=</span> <span class="n">down_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">end_idx</span> <span class="o">=</span> <span class="n">up_idx</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">stim_start</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+    <span class="n">stim_dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">end_idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+    <span class="n">stim_amp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">start_idx</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">stim_start</span><span class="p">,</span> <span class="n">stim_dur</span><span class="p">,</span> <span class="n">stim_amp</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">,</span> <span class="n">end_idx</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

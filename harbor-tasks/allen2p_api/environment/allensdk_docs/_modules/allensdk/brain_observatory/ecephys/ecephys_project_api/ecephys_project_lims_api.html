@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">NamedTuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ecephys_project_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">EcephysProjectApi</span><span class="p">,</span> <span class="n">ArrayLike</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.http_engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">HttpEngine</span><span class="p">,</span> <span class="n">AsyncHttpEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">postgres_macros</span><span class="p">,</span> <span class="n">build_and_execute</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.authentication</span><span class="w"> </span><span class="kn">import</span> <span class="n">credential_injector</span><span class="p">,</span> <span class="n">DbCredentials</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcephysProjectLimsApi</span><span class="p">(</span><span class="n">EcephysProjectApi</span><span class="p">):</span>
+
+    <span class="n">STIMULUS_TEMPLATE_NAMESPACE</span> <span class="o">=</span> <span class="s2">"brain_observatory_1.1"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">postgres_engine</span><span class="p">,</span> <span class="n">app_engine</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Downloads extracellular ephys data from the Allen Institute's </span>
+<span class="sd">        internal Laboratory Information Management System (LIMS). If you are </span>
+<span class="sd">        on our network you can use this class to get bleeding-edge data into </span>
+<span class="sd">        an EcephysProjectCache. If not, it won't work at all</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        postgres_engine : </span>
+<span class="sd">            used for making queries against the LIMS postgres database. Must </span>
+<span class="sd">            implement:</span>
+<span class="sd">                select : takes a postgres query as a string. Returns a pandas </span>
+<span class="sd">                    dataframe of results</span>
+<span class="sd">                select_one : takes a postgres query as a string. If there is </span>
+<span class="sd">                    exactly one record in the response, returns that record as </span>
+<span class="sd">                    a dict. Otherwise returns an empty dict.</span>
+<span class="sd">        app_engine : </span>
+<span class="sd">            used for making queries agains the lims web application. Must </span>
+<span class="sd">            implement:</span>
+<span class="sd">                stream : takes a url as a string. Returns an iterable yielding </span>
+<span class="sd">                the response body as bytes.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        You almost certainly want to construct this class by calling </span>
+<span class="sd">        EcephysProjectLimsApi.default() rather than this constructor directly.</span>
+
+<span class="sd">        """</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span> <span class="o">=</span> <span class="n">postgres_engine</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app_engine</span> <span class="o">=</span> <span class="n">app_engine</span>
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_session_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_session_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">""" Download an NWB file containing detailed data for an ecephys </span>
+<span class="sd">        session.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_id : </span>
+<span class="sd">            Download an NWB file for this session</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An iterable yielding an NWB file as bytes.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">nwb_response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">            select wkf.id, wkf.filename, wkf.storage_directory, wkf.attachable_id from well_known_files wkf </span>
+<span class="sd">            join ecephys_analysis_runs ear on (</span>
+<span class="sd">                ear.id = wkf.attachable_id</span>
+<span class="sd">                and wkf.attachable_type = 'EcephysAnalysisRun'</span>
+<span class="sd">            )</span>
+<span class="sd">            join well_known_file_types wkft on wkft.id = wkf.well_known_file_type_id</span>
+<span class="sd">            where ear.current</span>
+<span class="sd">            and wkft.name = 'EcephysNwb'</span>
+<span class="sd">            and ear.ecephys_session_id = {{session_id}}</span>
+<span class="sd">        """</span><span class="p">,</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">nwb_response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly 1 current NWB file for session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">, "</span>
+                <span class="sa">f</span><span class="s2">"found </span><span class="si">{</span><span class="n">nwb_response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">nwb_response</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">nwb_id</span> <span class="o">=</span> <span class="n">nwb_response</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"well_known_files/download/</span><span class="si">{</span><span class="n">nwb_id</span><span class="si">}</span><span class="s2">?wkf_id=</span><span class="si">{</span><span class="n">nwb_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_probe_lfp_data">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_probe_lfp_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probe_lfp_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">""" Download an NWB file containing detailed data for the local field </span>
+<span class="sd">        potential recorded from an ecephys probe.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        probe_id : </span>
+<span class="sd">            Download an NWB file for this probe's LFP</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An iterable yielding an NWB file as bytes.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">nwb_response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">            select wkf.id from well_known_files wkf</span>
+<span class="sd">            join ecephys_analysis_run_probes earp on (</span>
+<span class="sd">                earp.id = wkf.attachable_id</span>
+<span class="sd">                and wkf.attachable_type = 'EcephysAnalysisRunProbe'</span>
+<span class="sd">            )</span>
+<span class="sd">            join ecephys_analysis_runs ear on ear.id = earp.ecephys_analysis_run_id</span>
+<span class="sd">            join well_known_file_types wkft on wkft.id = wkf.well_known_file_type_id</span>
+<span class="sd">            where wkft.name ~ 'EcephysLfpNwb'</span>
+<span class="sd">            and ear.current</span>
+<span class="sd">            and earp.ecephys_probe_id = {{probe_id}}</span>
+<span class="sd">            """</span><span class="p">,</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">nwb_response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"expected exactly 1 current LFP NWB file for probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">, "</span>
+                <span class="sa">f</span><span class="s2">"found </span><span class="si">{</span><span class="n">nwb_response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">nwb_response</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="n">nwb_id</span> <span class="o">=</span> <span class="n">nwb_response</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"well_known_files/download/</span><span class="si">{</span><span class="n">nwb_id</span><span class="si">}</span><span class="s2">?wkf_id=</span><span class="si">{</span><span class="n">nwb_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_units">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_units">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_units</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">unit_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">channel_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">probe_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">session_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""" Download a table of records describing sorted ecephys units.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_ids : </span>
+<span class="sd">            A collection of integer identifiers for sorted ecephys units. If </span>
+<span class="sd">            provided, only return records describing these units.</span>
+<span class="sd">        channel_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys channels. If </span>
+<span class="sd">            provided, results will be filtered to units recorded from these </span>
+<span class="sd">            channels.</span>
+<span class="sd">        probe_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys probes. If </span>
+<span class="sd">            provided, results will be filtered to units recorded from these </span>
+<span class="sd">            probes.</span>
+<span class="sd">        session_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys sessions. If </span>
+<span class="sd">            provided, results will be filtered to units recorded during</span>
+<span class="sd">            these sessions.</span>
+<span class="sd">        published_at : </span>
+<span class="sd">            A date (rendered as "YYYY-MM-DD"). If provided, only units </span>
+<span class="sd">            recorded during sessions published before this date will be </span>
+<span class="sd">            returned.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        a pd.DataFrame whose rows are ecephys channels.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">                {%- import 'postgres_macros' as pm -%}</span>
+<span class="sd">                {%- import 'macros' as m -%}</span>
+<span class="sd">                select </span>
+<span class="sd">                    eu.id, </span>
+<span class="sd">                    eu.ecephys_channel_id,</span>
+<span class="sd">                    eu.quality,</span>
+<span class="sd">                    eu.snr,</span>
+<span class="sd">                    eu.firing_rate,</span>
+<span class="sd">                    eu.isi_violations,</span>
+<span class="sd">                    eu.presence_ratio,</span>
+<span class="sd">                    eu.amplitude_cutoff,</span>
+<span class="sd">                    eu.isolation_distance,</span>
+<span class="sd">                    eu.l_ratio,</span>
+<span class="sd">                    eu.d_prime,</span>
+<span class="sd">                    eu.nn_hit_rate,</span>
+<span class="sd">                    eu.nn_miss_rate,</span>
+<span class="sd">                    eu.silhouette_score,</span>
+<span class="sd">                    eu.max_drift,</span>
+<span class="sd">                    eu.cumulative_drift,</span>
+<span class="sd">                    eu.epoch_name_quality_metrics,</span>
+<span class="sd">                    eu.epoch_name_waveform_metrics,</span>
+<span class="sd">                    eu.duration,</span>
+<span class="sd">                    eu.halfwidth,</span>
+<span class="sd">                    eu.\"PT_ratio\",</span>
+<span class="sd">                    eu.repolarization_slope,</span>
+<span class="sd">                    eu.recovery_slope,</span>
+<span class="sd">                    eu.amplitude,</span>
+<span class="sd">                    eu.spread,</span>
+<span class="sd">                    eu.velocity_above,</span>
+<span class="sd">                    eu.velocity_below</span>
+<span class="sd">                from ecephys_units eu</span>
+<span class="sd">                join ecephys_channels ec on ec.id = eu.ecephys_channel_id</span>
+<span class="sd">                join ecephys_probes ep on ep.id = ec.ecephys_probe_id</span>
+<span class="sd">                join ecephys_sessions es on es.id = ep.ecephys_session_id</span>
+<span class="sd">                where </span>
+<span class="sd">                    not es.habituation </span>
+<span class="sd">                    and ec.valid_data</span>
+<span class="sd">                    and ep.workflow_state != 'failed'</span>
+<span class="sd">                    and es.workflow_state != 'failed'</span>
+<span class="sd">                    {{pm.optional_not_null('es.published_at', published_at_not_null)}}</span>
+<span class="sd">                    {{pm.optional_le('es.published_at', published_at)}}</span>
+<span class="sd">                    {{pm.optional_contains('eu.id', unit_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('ec.id', channel_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('ep.id', probe_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('es.id', session_ids) -}}</span>
+<span class="sd">            """</span><span class="p">,</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">,</span>
+            <span class="n">channel_ids</span><span class="o">=</span><span class="n">channel_ids</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">_split_published_at</span><span class="p">(</span><span class="n">published_at</span><span class="p">)</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_channels">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_channels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channels</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">channel_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">probe_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">session_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""" Download a table of ecephys channel records.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        channel_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys channels. If </span>
+<span class="sd">            provided, results will be filtered to these channels.</span>
+<span class="sd">        probe_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys probes. If </span>
+<span class="sd">            provided, results will be filtered to channels on these probes.</span>
+<span class="sd">        session_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys sessions. If </span>
+<span class="sd">            provided, results will be filtered to channels recorded from during</span>
+<span class="sd">            these sessions.</span>
+<span class="sd">        published_at : </span>
+<span class="sd">            A date (rendered as "YYYY-MM-DD"). If provided, only channels </span>
+<span class="sd">            recorded from during sessions published before this date will be </span>
+<span class="sd">            returned.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        a pd.DataFrame whose rows are ecephys channels.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">                {%- import 'postgres_macros' as pm -%}</span>
+<span class="sd">                select </span>
+<span class="sd">                    ec.id, </span>
+<span class="sd">                    ec.ecephys_probe_id, </span>
+<span class="sd">                    ec.local_index,</span>
+<span class="sd">                    ec.probe_vertical_position,</span>
+<span class="sd">                    ec.probe_horizontal_position,</span>
+<span class="sd">                    ec.manual_structure_id as ecephys_structure_id,</span>
+<span class="sd">                    st.acronym as ecephys_structure_acronym,</span>
+<span class="sd">                    ec.anterior_posterior_ccf_coordinate,</span>
+<span class="sd">                    ec.dorsal_ventral_ccf_coordinate,</span>
+<span class="sd">                    ec.left_right_ccf_coordinate</span>
+<span class="sd">                from ecephys_channels ec</span>
+<span class="sd">                join ecephys_probes ep on ep.id = ec.ecephys_probe_id</span>
+<span class="sd">                join ecephys_sessions es on es.id = ep.ecephys_session_id</span>
+<span class="sd">                left join structures st on ec.manual_structure_id = st.id</span>
+<span class="sd">                where </span>
+<span class="sd">                    not es.habituation </span>
+<span class="sd">                    and valid_data</span>
+<span class="sd">                    and ep.workflow_state != 'failed'</span>
+<span class="sd">                    and es.workflow_state != 'failed'</span>
+<span class="sd">                    {{pm.optional_not_null('es.published_at', published_at_not_null)}}</span>
+<span class="sd">                    {{pm.optional_le('es.published_at', published_at)}}</span>
+<span class="sd">                    {{pm.optional_contains('ec.id', channel_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('ep.id', probe_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('es.id', session_ids) -}}</span>
+<span class="sd">            """</span><span class="p">,</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">channel_ids</span><span class="o">=</span><span class="n">channel_ids</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">_split_published_at</span><span class="p">(</span><span class="n">published_at</span><span class="p">)</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_probes">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_probes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">probe_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">session_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""" Download a table of ecephys probe records.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        probe_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys probes. If </span>
+<span class="sd">            provided, results will be filtered to these probes.</span>
+<span class="sd">        session_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys sessions. If </span>
+<span class="sd">            provided, results will be filtered to probes recorded from during</span>
+<span class="sd">            these sessions.</span>
+<span class="sd">        published_at : </span>
+<span class="sd">            A date (rendered as "YYYY-MM-DD"). If provided, only probes </span>
+<span class="sd">            recorded from during sessions published before this date will be </span>
+<span class="sd">            returned.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        a pd.DataFrame whose rows are ecephys probes.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">                {%- import 'postgres_macros' as pm -%}</span>
+<span class="sd">                select </span>
+<span class="sd">                    ep.id, </span>
+<span class="sd">                    ep.ecephys_session_id, </span>
+<span class="sd">                    ep.name, </span>
+<span class="sd">                    ep.global_probe_sampling_rate as sampling_rate, </span>
+<span class="sd">                    ep.global_probe_lfp_sampling_rate as lfp_sampling_rate,</span>
+<span class="sd">                    ep.phase,</span>
+<span class="sd">                    ep.air_channel_index,</span>
+<span class="sd">                    ep.surface_channel_index,</span>
+<span class="sd">                    ep.use_lfp_data as has_lfp_data,</span>
+<span class="sd">                    ep.temporal_subsampling_factor as lfp_temporal_subsampling_factor</span>
+<span class="sd">                from ecephys_probes ep</span>
+<span class="sd">                join ecephys_sessions es on es.id = ep.ecephys_session_id</span>
+<span class="sd">                where </span>
+<span class="sd">                    not es.habituation </span>
+<span class="sd">                    and ep.workflow_state != 'failed'</span>
+<span class="sd">                    and es.workflow_state != 'failed'</span>
+<span class="sd">                    {{pm.optional_not_null('es.published_at', published_at_not_null)}}</span>
+<span class="sd">                    {{pm.optional_le('es.published_at', published_at)}}</span>
+<span class="sd">                    {{pm.optional_contains('ep.id', probe_ids) -}}</span>
+<span class="sd">                    {{pm.optional_contains('es.id', session_ids) -}}</span>
+<span class="sd">            """</span><span class="p">,</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">probe_ids</span><span class="o">=</span><span class="n">probe_ids</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">_split_published_at</span><span class="p">(</span><span class="n">published_at</span><span class="p">)</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_sessions">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_sessions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sessions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">session_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""" Download a table of ecephys session records.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_ids : </span>
+<span class="sd">            A collection of integer identifiers for ecephys sessions. If </span>
+<span class="sd">            provided, results will be filtered to these sessions.</span>
+<span class="sd">        published_at : </span>
+<span class="sd">            A date (rendered as "YYYY-MM-DD"). If provided, only sessions </span>
+<span class="sd">            published before this date will be returned.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        a pd.DataFrame whose rows are ecephys sessions.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">                {%- import 'postgres_macros' as pm -%}</span>
+<span class="sd">                {%- import 'macros' as m -%}</span>
+<span class="sd">                select </span>
+<span class="sd">                    es.id, </span>
+<span class="sd">                    es.specimen_id, </span>
+<span class="sd">                    es.stimulus_name as session_type, </span>
+<span class="sd">                    es.isi_experiment_id, </span>
+<span class="sd">                    es.date_of_acquisition, </span>
+<span class="sd">                    es.published_at,  </span>
+<span class="sd">                    dn.full_genotype as genotype,</span>
+<span class="sd">                    gd.name as sex, </span>
+<span class="sd">                    ages.days as age_in_days,</span>
+<span class="sd">                    case </span>
+<span class="sd">                        when nwb_id is not null then true</span>
+<span class="sd">                        else false</span>
+<span class="sd">                    end as has_nwb</span>
+<span class="sd">                from ecephys_sessions es</span>
+<span class="sd">                join specimens sp on sp.id = es.specimen_id </span>
+<span class="sd">                join donors dn on dn.id = sp.donor_id </span>
+<span class="sd">                join genders gd on gd.id = dn.gender_id </span>
+<span class="sd">                join ages on ages.id = dn.age_id</span>
+<span class="sd">                left join (</span>
+<span class="sd">                    select ecephys_sessions.id as ecephys_session_id,</span>
+<span class="sd">                    wkf.id as nwb_id</span>
+<span class="sd">                    from ecephys_sessions </span>
+<span class="sd">                    join ecephys_analysis_runs ear on (</span>
+<span class="sd">                        ear.ecephys_session_id = ecephys_sessions.id</span>
+<span class="sd">                        and ear.current</span>
+<span class="sd">                    )</span>
+<span class="sd">                    join well_known_files wkf on (</span>
+<span class="sd">                        wkf.attachable_id = ear.id</span>
+<span class="sd">                        and wkf.attachable_type = 'EcephysAnalysisRun'</span>
+<span class="sd">                    )</span>
+<span class="sd">                    join well_known_file_types wkft on wkft.id = wkf.well_known_file_type_id</span>
+<span class="sd">                    where wkft.name = 'EcephysNwb'</span>
+<span class="sd">                ) nwb on es.id = nwb.ecephys_session_id</span>
+<span class="sd">                where </span>
+<span class="sd">                    not es.habituation </span>
+<span class="sd">                    and es.workflow_state != 'failed'</span>
+<span class="sd">                    {{pm.optional_contains('es.id', session_ids) -}}</span>
+<span class="sd">                    {{pm.optional_not_null('es.published_at', published_at_not_null)}}</span>
+<span class="sd">                    {{pm.optional_le('es.published_at', published_at)}}</span>
+<span class="sd">            """</span><span class="p">,</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">session_ids</span><span class="o">=</span><span class="n">session_ids</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">_split_published_at</span><span class="p">(</span><span class="n">published_at</span><span class="p">)</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+        <span class="p">)</span>
+        
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+        <span class="n">response</span><span class="p">[</span><span class="s2">"genotype"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s2">"wt"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_unit_analysis_metrics">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_unit_analysis_metrics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_analysis_metrics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">unit_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">ecephys_session_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">session_types</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">""" Fetch analysis metrics (stimulus set-specific characterizations of </span>
+<span class="sd">        unit response patterns) for ecephys units. Note that the metrics </span>
+<span class="sd">        returned depend on the stimuli that were presented during recording (</span>
+<span class="sd">        and thus on the session_type)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------</span>
+<span class="sd">        unit_ids :</span>
+<span class="sd">            integer identifiers for a set of ecephys units. If provided, the </span>
+<span class="sd">            response will only include metrics calculated for these units</span>
+<span class="sd">        ecephys_session_ids :</span>
+<span class="sd">            integer identifiers for a set of ecephys sessions. If provided, the </span>
+<span class="sd">            response will only include metrics calculated for units identified </span>
+<span class="sd">            during these sessions</span>
+<span class="sd">        session_types :</span>
+<span class="sd">            string names identifying ecephys session types (e.g. </span>
+<span class="sd">            "brain_observatory_1.1" or "functional_connectivity")</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        a pandas dataframe indexed by ecephys unit id whose columns are </span>
+<span class="sd">        metrics.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">            {%- import 'postgres_macros' as pm -%}</span>
+<span class="sd">            {%- import 'macros' as m -%}</span>
+<span class="sd">            select eumb.data, eumb.ecephys_unit_id from ecephys_unit_metric_bundles eumb</span>
+<span class="sd">            join ecephys_analysis_runs ear on eumb.ecephys_analysis_run_id = ear.id</span>
+<span class="sd">            join ecephys_units eu on eumb.ecephys_unit_id = eu.id</span>
+<span class="sd">            join ecephys_channels ec on eu.ecephys_channel_id = ec.id </span>
+<span class="sd">            join ecephys_probes ep on ec.ecephys_probe_id = ep.id</span>
+<span class="sd">            join ecephys_sessions es on es.id = ep.ecephys_session_id</span>
+<span class="sd">            where ear.current</span>
+<span class="sd">            {{pm.optional_contains('eumb.id', unit_ids) -}}</span>
+<span class="sd">            {{pm.optional_contains('es.id', ecephys_session_ids) -}}</span>
+<span class="sd">            {{pm.optional_contains('es.stimulus_name', session_types, True) -}}</span>
+<span class="sd">        """</span><span class="p">,</span>
+            <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+            <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">,</span>
+            <span class="n">ecephys_session_ids</span><span class="o">=</span><span class="n">ecephys_session_ids</span><span class="p">,</span>
+            <span class="n">session_types</span><span class="o">=</span><span class="n">session_types</span>
+        <span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">index</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_unit_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Identify the WellKnownFile record associated with a stimulus </span>
+<span class="sd">        template and stream its data if present.</span>
+<span class="sd">        """</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">well_known_file</span> <span class="o">=</span> <span class="n">build_and_execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">                select </span>
+<span class="s2">                    st.well_known_file_id</span>
+<span class="s2">                from stimuli st</span>
+<span class="s2">                join stimulus_namespaces sn on sn.id = st.stimulus_namespace_id</span>
+<span class="s2">                where</span>
+<span class="s2">                    st.name = '</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">'</span>
+<span class="s2">                    and sn.name = '</span><span class="si">{</span><span class="n">namespace</span><span class="si">}</span><span class="s2">'</span>
+<span class="s2">                """</span><span class="p">,</span>
+                <span class="n">base</span><span class="o">=</span><span class="n">postgres_macros</span><span class="p">(),</span>
+                <span class="n">engine</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">postgres_engine</span><span class="o">.</span><span class="n">select_one</span>
+            <span class="p">)</span>
+            <span class="n">wkf_id</span> <span class="o">=</span> <span class="n">well_known_file</span><span class="p">[</span><span class="s2">"well_known_file_id"</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"expected exactly 1 template for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">download_link</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"well_known_files/download/</span><span class="si">{</span><span class="n">wkf_id</span><span class="si">}</span><span class="s2">?wkf_id=</span><span class="si">{</span><span class="n">wkf_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">app_engine</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">download_link</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_natural_movie_template">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_natural_movie_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_movie_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">""" Download a template for the natural movie stimulus. This is the </span>
+<span class="sd">        actual movie that was shown during the recording session.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        number :</span>
+<span class="sd">            idenfifier for this movie (note that this is an integer, so to get </span>
+<span class="sd">            the template for natural_movie_three you should pass in 3)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An iterable yielding an npy file as bytes</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_template</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"natural_movie_</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">STIMULUS_TEMPLATE_NAMESPACE</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.get_natural_scene_template">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.get_natural_scene_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_scene_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">""" Download a template for the natural scene stimulus. This is the </span>
+<span class="sd">        actual image that was shown during the recording session.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        number :</span>
+<span class="sd">            idenfifier for this scene</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An iterable yielding a tiff file as bytes.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_template</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"natural_scene_</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">number</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">STIMULUS_TEMPLATE_NAMESPACE</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="EcephysProjectLimsApi.default">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.EcephysProjectLimsApi.default">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">lims_credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DbCredentials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                <span class="n">app_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">asynchronous</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Construct a "straightforward" lims api that can fetch data from </span>
+<span class="sd">        lims2.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lims_credentials : DbCredentials</span>
+<span class="sd">            Credentials and configuration for postgres queries against</span>
+<span class="sd">            the LIMS database. If left unspecified will attempt to provide</span>
+<span class="sd">            credentials from environment variables.</span>
+<span class="sd">        app_kwargs : dict</span>
+<span class="sd">            High-level configuration for http requests. See </span>
+<span class="sd">            allensdk.brain_observatory.ecephys.ecephys_project_api.http_engine.HttpEngine </span>
+<span class="sd">            and AsyncHttpEngine for details.</span>
+<span class="sd">        asynchronous : bool</span>
+<span class="sd">            If true, (http) queries will be made asynchronously.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        EcephysProjectLimsApi</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">_app_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"scheme"</span><span class="p">:</span> <span class="s2">"http"</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">:</span> <span class="s2">"lims2"</span><span class="p">,</span> <span class="s2">"asynchronous"</span><span class="p">:</span> <span class="n">asynchronous</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">app_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">"asynchronous"</span> <span class="ow">in</span> <span class="n">app_kwargs</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"please specify asynchronicity option at the api level rather than for the http engine"</span><span class="p">)</span>
+            <span class="n">_app_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">app_kwargs</span><span class="p">)</span>
+
+        <span class="n">app_engine_cls</span> <span class="o">=</span> <span class="n">AsyncHttpEngine</span> <span class="k">if</span> <span class="n">_app_kwargs</span><span class="p">[</span><span class="s2">"asynchronous"</span><span class="p">]</span> <span class="k">else</span> <span class="n">HttpEngine</span>
+        <span class="n">app_engine</span> <span class="o">=</span> <span class="n">app_engine_cls</span><span class="p">(</span><span class="o">**</span><span class="n">_app_kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">lims_credentials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pg_engine</span> <span class="o">=</span> <span class="n">PostgresQueryMixin</span><span class="p">(</span>
+                <span class="n">dbname</span><span class="o">=</span><span class="n">lims_credentials</span><span class="o">.</span><span class="n">dbname</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">lims_credentials</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">lims_credentials</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">lims_credentials</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+                <span class="n">port</span><span class="o">=</span><span class="n">lims_credentials</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Currying is equivalent to decorator syntactic sugar</span>
+            <span class="n">pg_engine</span> <span class="o">=</span> <span class="p">(</span><span class="n">credential_injector</span><span class="p">(</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span><span class="p">)</span>
+                         <span class="p">(</span><span class="n">PostgresQueryMixin</span><span class="p">)())</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">pg_engine</span><span class="p">,</span> <span class="n">app_engine</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SplitPublishedAt">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.ecephys_project_lims_api.html#allensdk.brain_observatory.ecephys.ecephys_project_api.SplitPublishedAt">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SplitPublishedAt</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">published_at_not_null</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_split_published_at</span><span class="p">(</span><span class="n">published_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">SplitPublishedAt</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">""" LIMS queries that filter on published_at need a couple of </span>
+<span class="sd">    reformattings of the argued date string.</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">SplitPublishedAt</span><span class="p">(</span>
+        <span class="n">published_at</span><span class="o">=</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">published_at</span><span class="si">}</span><span class="s2">'"</span> <span class="k">if</span> <span class="n">published_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">published_at_not_null</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">published_at</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">True</span>
+    <span class="p">)</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,1026 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Query Intracellular Electrophysiology Metadata &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Behavior Data" href="plot_behavior.html" />
+    <link rel="prev" title="Intracellular Electrophysiology" href="plot_icephys.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ecephys.html">Extracellular Electrophysiology Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ophys.html">Calcium Imaging Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Query Intracellular Electrophysiology Metadata</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#imports-used-in-the-tutorial">Imports used in the tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-setup">Example setup</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-the-icephys-metadata-tables">Accessing the ICEphys metadata tables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#converting-icephys-metadata-tables-to-pandas-dataframes">Converting ICEphys metadata tables to pandas DataFrames</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#useful-additional-data-preparations">Useful additional data preparations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#performing-common-metadata-queries">Performing common metadata queries</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_behavior.html">Behavior Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="images.html">Storing Image Data in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Query Intracellular Electrophysiology Metadata</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/plot_icephys_pandas.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-plot-icephys-pandas-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="query-intracellular-electrophysiology-metadata">
+<span id="icephys-pandas-tutorial"></span><span id="sphx-glr-tutorials-domain-plot-icephys-pandas-py"></span><h1>Query Intracellular Electrophysiology Metadata<a class="headerlink" href="#query-intracellular-electrophysiology-metadata" title="Link to this heading"></a></h1>
+<p>This tutorial focuses on using pandas to query experiment metadata for
+intracellular electrophysiology experiments using the metadata tables
+from the <a class="reference internal" href="../../pynwb.icephys.html#module-pynwb.icephys" title="pynwb.icephys"><code class="xref py py-meth docutils literal notranslate"><span class="pre">icephys</span></code></a> module. See the <a class="reference internal" href="plot_icephys.html#icephys-tutorial-new"><span class="std std-ref">Intracellular Electrophysiology</span></a>
+tutorial for an introduction to the intracellular electrophysiology metadata
+tables and how to create an NWBFile for intracellular electrophysiology data.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To enhance display of large pandas DataFrames, we save and render large tables
+as images in this tutorial. Simply click on the rendered table to view the
+full-size image.</p>
+</div>
+<section id="imports-used-in-the-tutorial">
+<h2>Imports used in the tutorial<a class="headerlink" href="#imports-used-in-the-tutorial" title="Link to this heading"></a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</pre></div>
+</div>
+<p>Settings for improving rendering of tables in the online tutorial</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">dataframe_image</span>
+
+<span class="c1"># Standard Python imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span>
+
+<span class="c1"># Get the path to the this tutorial</span>
+<span class="k">try</span><span class="p">:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">tutorial_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>  <span class="c1"># when running as a .py</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">tutorial_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;__file__&quot;</span><span class="p">)</span>  <span class="c1"># when running as a script or notebook</span>
+<span class="c1"># directory to save rendered dataframe images for display</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span>
+    <a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span>
+        <a href="https://docs.python.org/3.11/library/os.path.html#os.path.dirname" title="os.path.dirname" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">tutorial_path</span></a><span class="p">),</span> <span class="s2">&quot;../../source/tutorials/domain/images/&quot;</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="c1"># Create the image directory. This is necessary only for gallery tests on GitHub</span>
+<span class="c1"># but not for normal doc builds the output path already exists</span>
+<a href="https://docs.python.org/3.11/library/os.html#os.makedirs" title="os.makedirs" class="sphx-glr-backref-module-os sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">makedirs</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Set rendering options for tables</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_colwidth&quot;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_rows&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_columns&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.colheader_justify&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">)</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># Fontsize to use when rendering with dataframe_image</span>
+</pre></div>
+</div>
+</section>
+<section id="example-setup">
+<h2>Example setup<a class="headerlink" href="#example-setup" title="Link to this heading"></a></h2>
+<p>Generate a simple example NWBFile with dummy intracellular electrophysiology data.
+This example uses a utility function <a class="reference internal" href="../../pynwb.testing.icephys_testutils.html#pynwb.testing.icephys_testutils.create_icephys_testfile" title="pynwb.testing.icephys_testutils.create_icephys_testfile"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_icephys_testfile</span></code></a>
+to create a dummy NWB file with random icephys data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.testing.icephys_testutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_icephys_testfile</span>
+
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">test_filename</span></a> <span class="o">=</span> <span class="s2">&quot;icephys_pandas_testfile.nwb&quot;</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <span class="n">create_icephys_testfile</span><span class="p">(</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">test_filename</span></a><span class="p">,</span>  <span class="c1"># Write the file to disk for testing</span>
+    <span class="n">add_custom_columns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Add a custom column to each metadata table</span>
+    <span class="n">randomize_data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Randomize the data in the simulus and response</span>
+    <span class="n">with_missing_stimulus</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Don&#39;t include the stimulus for row 0 and 10</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-the-icephys-metadata-tables">
+<h2>Accessing the ICEphys metadata tables<a class="headerlink" href="#accessing-the-icephys-metadata-tables" title="Link to this heading"></a></h2>
+<section id="get-the-parent-metadata-table">
+<h3>Get the parent metadata table<a class="headerlink" href="#get-the-parent-metadata-table" title="Link to this heading"></a></h3>
+<p>The intracellular electrophysiology metadata consists of a hierarchy of DynamicTables, i.e.,
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a> –&gt;
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.RepetitionsTable" title="pynwb.icephys.RepetitionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepetitionsTable</span></code></a> –&gt;
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SequentialRecordingsTable" title="pynwb.icephys.SequentialRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialRecordingsTable</span></code></a> –&gt;
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> –&gt;
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>.
+However, in a given <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>, not all tables may exist - a user may choose
+to exclude tables from the top of the hierarchy (e.g., a file may only contain
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> and  <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>
+while omitting all of the other tables that are higher in the hierarchy).
+To provide a consistent interface for users, PyNWB allows us to easily locate the table
+that defines the root of the table hierarchy via the function
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_icephys_meta_parent_table" title="pynwb.file.NWBFile.get_icephys_meta_parent_table"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_icephys_meta_parent_table</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">root_table</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_icephys_meta_parent_table</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">root_table</span><span class="o">.</span><span class="n">neurodata_type</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>ExperimentalConditionsTable
+</pre></div>
+</div>
+</section>
+<section id="getting-a-specific-icephys-metadata-table">
+<h3>Getting a specific ICEphys metadata table<a class="headerlink" href="#getting-a-specific-icephys-metadata-table" title="Link to this heading"></a></h3>
+<p>We can retrieve any of the ICEphys metadata tables via the corresponding properties of NWBFile, i.e.,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.intracellular_recordings" title="pynwb.file.NWBFile.intracellular_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">intracellular_recordings</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.icephys_simultaneous_recordings" title="pynwb.file.NWBFile.icephys_simultaneous_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">icephys_simultaneous_recordings</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.icephys_sequential_recordings" title="pynwb.file.NWBFile.icephys_sequential_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">icephys_sequential_recordings</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.icephys_repetitions" title="pynwb.file.NWBFile.icephys_repetitions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">icephys_repetitions</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.icephys_experimental_conditions" title="pynwb.file.NWBFile.icephys_experimental_conditions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">icephys_experimental_conditions</span></code></a>.
+The property will be <code class="docutils literal notranslate"><span class="pre">None</span></code> if the file does not contain the corresponding table.
+As such we can also easily check if a NWBFile contains a particular ICEphys metadata table via, e.g.:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>True
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Always use the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> properties rather than the
+corresponding get methods if you only want to retrieve the ICEphys metadata tables.
+The get methods (e.g., <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_icephys_simultaneous_recordings" title="pynwb.file.NWBFile.get_icephys_simultaneous_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_icephys_simultaneous_recordings</span></code></a>)
+are designed to always return a corresponding ICEphys metadata table for the file and will
+automatically add the missing table (and all required tables that are lower in the hierarchy)
+to the file. This behavior is to ease populating the ICEphys metadata tables when creating
+or updating an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+</div>
+</section>
+<section id="inspecting-the-table-hierarchy">
+<h3>Inspecting the table hierarchy<a class="headerlink" href="#inspecting-the-table-hierarchy" title="Link to this heading"></a></h3>
+<p>For any given table we can further check if and which columns are foreign
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> columns pointing to other tables
+via the the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.has_foreign_columns" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">has_foreign_columns</span></code></a> and
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.get_foreign_columns" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_foreign_columns</span></code></a>, respectively.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Has Foreign Columns:&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.has_foreign_columns" title="hdmf.common.table.DynamicTable.has_foreign_columns" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">root_table</span><span class="o">.</span><span class="n">has_foreign_columns</span></a><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Foreign Columns:&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.get_foreign_columns" title="hdmf.common.table.DynamicTable.get_foreign_columns" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">root_table</span><span class="o">.</span><span class="n">get_foreign_columns</span></a><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Has Foreign Columns: True
+Foreign Columns: [&#39;repetitions&#39;]
+</pre></div>
+</div>
+<p>Using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.get_linked_tables" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_linked_tables</span></code></a> we can then also
+look at all links defined directly or indirectly from a given table to other tables.
+The result is a <code class="docutils literal notranslate"><span class="pre">list</span></code> of <code class="docutils literal notranslate"><span class="pre">typing.NamedTuple</span></code> objects containing, for each found link, the:</p>
+<ul class="simple">
+<li><p><em>“source_table”</em> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> object,</p></li>
+<li><p><em>“source_column”</em> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> column from the source table, and</p></li>
+<li><p><em>“target_table”</em> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> (which is the same as <em>source_column.table</em>).</p></li>
+</ul>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">linked_tables</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.get_linked_tables" title="hdmf.common.table.DynamicTable.get_linked_tables" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">root_table</span><span class="o">.</span><span class="n">get_linked_tables</span></a><span class="p">()</span>
+
+<span class="c1"># Print the links</span>
+<span class="k">for</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a><span class="p">,</span> <span class="n">link</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">linked_tables</span></a><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">) ----&gt; </span><span class="si">%s</span><span class="s2">&quot;</span>
+        <span class="o">%</span> <span class="p">(</span>
+            <span class="s2">&quot;    &quot;</span> <span class="o">*</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a><span class="p">,</span>
+            <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.name" title="hdmf.container.AbstractContainer.name" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">link</span><span class="o">.</span><span class="n">source_table</span><span class="o">.</span><span class="n">name</span></a><span class="p">,</span>
+            <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.name" title="hdmf.container.AbstractContainer.name" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">link</span><span class="o">.</span><span class="n">source_column</span><span class="o">.</span><span class="n">name</span></a><span class="p">,</span>
+            <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.name" title="hdmf.container.AbstractContainer.name" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">link</span><span class="o">.</span><span class="n">target_table</span><span class="o">.</span><span class="n">name</span></a><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(experimental_conditions, repetitions) ----&gt; repetitions
+    (repetitions, sequential_recordings) ----&gt; sequential_recordings
+        (sequential_recordings, simultaneous_recordings) ----&gt; simultaneous_recordings
+            (simultaneous_recordings, recordings) ----&gt; intracellular_recordings
+</pre></div>
+</div>
+</section>
+</section>
+<section id="converting-icephys-metadata-tables-to-pandas-dataframes">
+<h2>Converting ICEphys metadata tables to pandas DataFrames<a class="headerlink" href="#converting-icephys-metadata-tables-to-pandas-dataframes" title="Link to this heading"></a></h2>
+<section id="using-nested-dataframes">
+<h3>Using nested DataFrames<a class="headerlink" href="#using-nested-dataframes" title="Link to this heading"></a></h3>
+<p>Using the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a> method we can easily convert tables
+to pandas <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrames</a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">exp_cond_df</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="hdmf.common.table.DynamicTable.to_dataframe" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">root_table</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">()</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">exp_cond_df</span></a>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>repetitions</th>
+      <th>temperature</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>100000</th>
+      <td>sequential_...</td>
+      <td>32.0</td>
+    </tr>
+    <tr>
+      <th>100001</th>
+      <td>sequential_...</td>
+      <td>24.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>By default, the method will resolve <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>
+references and include the rows that are referenced in related tables as
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a> objects,
+resulting in a hierarchically nested <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a>. For example, looking at a single cell of the
+<code class="docutils literal notranslate"><span class="pre">repetitions</span></code> column of our <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a> table,
+we get the corresponding subset of repetitions from the py:class:<cite>~pynwb.icephys.RepetitionsTable</cite>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.iloc.html#pandas.DataFrame.iloc" title="pandas.DataFrame.iloc" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-property"><span class="n">exp_cond_df</span><span class="o">.</span><span class="n">iloc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequential_recordings</th>
+      <th>type</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10000</th>
+      <td>simultaneous_r...</td>
+      <td>R1</td>
+    </tr>
+    <tr>
+      <th>10001</th>
+      <td>simultaneous_r...</td>
+      <td>R2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>In contrast to the other ICEphys metadata tables, the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> does not contain any
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> columns, but it is a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.alignedtable.html#hdmf.common.alignedtable.AlignedDynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlignedDynamicTable</span></code></a> which contains sub-tables for
+<code class="docutils literal notranslate"><span class="pre">electrodes</span></code>, <code class="docutils literal notranslate"><span class="pre">stimuli</span></code>, and <code class="docutils literal notranslate"><span class="pre">responses</span></code>. For convenience, the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable.to_dataframe" title="pynwb.icephys.IntracellularRecordingsTable.to_dataframe"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a> of the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> provides a few
+additional optional parameters to ignore the ids of the category tables
+(via <code class="docutils literal notranslate"><span class="pre">ignore_category_ids=True</span></code>) or to convert the electrode, stimulus, and
+response references to ObjectIds. For example:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ir_df</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span>
+    <span class="n">ignore_category_ids</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">electrode_refs_as_objectids</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">stimulus_refs_as_objectids</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">response_refs_as_objectids</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># save the table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ir_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;intracellular_recordings_dataframe.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/intracellular_recordings_dataframe.png"><img alt="intracellular_recordings_dataframe.png" class="align-center" src="../../_images/intracellular_recordings_dataframe.png" style="width: 100%;" />
+</a>
+</section>
+<section id="using-indexed-dataframes">
+<h3>Using indexed DataFrames<a class="headerlink" href="#using-indexed-dataframes" title="Link to this heading"></a></h3>
+<p>Depending on the particular analysis, we may be interested only in a particular table and do not
+want to recursively load and resolve all the linked tables. By setting <code class="docutils literal notranslate"><span class="pre">index=True</span></code> when
+converting the table <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">to_dataframe</span></code></a> the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> links will be represented as
+lists of integers indicating the rows in the target table (without loading data from
+the referenced table).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.to_dataframe" title="hdmf.common.table.DynamicTable.to_dataframe" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">root_table</span><span class="o">.</span><span class="n">to_dataframe</span></a><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>repetitions</th>
+      <th>temperature</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>100000</th>
+      <td>[0, 1]</td>
+      <td>32.0</td>
+    </tr>
+    <tr>
+      <th>100001</th>
+      <td>[2, 3]</td>
+      <td>24.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>To resolve links related to a set of rows, we can then simply use the corresponding
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> column from our original table, e.g.:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">root_table</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">][</span>
+    <span class="mi">0</span>
+<span class="p">]</span>  <span class="c1"># Look-up the repetitions for the first experimental condition</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequential_recordings</th>
+      <th>type</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10000</th>
+      <td>simultaneous_r...</td>
+      <td>R1</td>
+    </tr>
+    <tr>
+      <th>10001</th>
+      <td>simultaneous_r...</td>
+      <td>R2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><p>We can also naturally resolve links ourselves by looking up the relevant table and
+then accessing elements of the table directly.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># All DynamicTableRegion columns in the ICEphys table are indexed so we first need to</span>
+<span class="c1"># follow the &quot;.target&quot; to the VectorData and then look up the table via &quot;.table&quot;</span>
+<span class="n">target_table</span> <span class="o">=</span> <span class="n">root_table</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span>
+<span class="n">target_table</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequential_recordings</th>
+      <th>type</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10000</th>
+      <td>[0]</td>
+      <td>R1</td>
+    </tr>
+    <tr>
+      <th>10001</th>
+      <td>[1, 2]</td>
+      <td>R2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We can also explicitly exclude the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> columns
+(or any other column) from the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a> using e.g., <code class="docutils literal notranslate"><span class="pre">root_table.to_dataframe(exclude={'repetitions',</span> <span class="pre">})</span></code>.</p>
+</div>
+</section>
+<section id="using-a-single-hierarchical-dataframe">
+<h3>Using a single, hierarchical DataFrame<a class="headerlink" href="#using-a-single-hierarchical-dataframe" title="Link to this heading"></a></h3>
+<p>To gain a more direct overview of all metadata at once and avoid iterating across levels of nested
+DataFrames during analysis, it can be useful to flatten (or unnest) nested DataFrames, expanding the
+nested DataFrames by adding their columns to the main table, and expanding the corresponding rows in
+the parent table by duplicating the data from the existing columns across the new rows.
+For example, an experimental condition represented by a single row in the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a> containing 5 repetitions would be expanded
+to 5 rows, each containing a copy of the metadata from the experimental condition along with the
+metadata of one of the repetitions. Repeating this process recursively, a single row in the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a> will then ultimately expand to the total
+number of intracellular recordings from the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>
+that belong to the experimental conditions table.</p>
+<p>HDMF povides several convenience functions to help with this process. Using the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.to_hierarchical_dataframe" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_hierarchical_dataframe</span></code></a> method, we can transform
+our hierarchical table into a single pandas <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a>.
+To avoid duplication of data in the display, the hierarchy is represented as a pandas
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.MultiIndex.html">MultiIndex</a> on
+the rows so that only the data from the last table in our hierarchy (i.e. here the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>) is represented as columns.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.common.hierarchicaltable</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.to_hierarchical_dataframe" title="hdmf.common.hierarchicaltable.to_hierarchical_dataframe" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">to_hierarchical_dataframe</span></a>
+
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.to_hierarchical_dataframe" title="hdmf.common.hierarchicaltable.to_hierarchical_dataframe" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">to_hierarchical_dataframe</span></a><span class="p">(</span><span class="n">root_table</span><span class="p">)</span>
+
+<span class="c1"># save table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;icephys_meta_dataframe.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/icephys_meta_dataframe.png"><img alt="icephys_meta_dataframe.png" class="align-center" src="../../_images/icephys_meta_dataframe.png" style="width: 100%;" />
+</a>
+<p>Depending on the analysis, it can be useful to further process our <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a>. Using the standard
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reset_index.html">reset_index</a>
+function, we can turn the data from the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.MultiIndex.html">MultiIndex</a> to columns of the table itself,
+effectively denormalizing the display by repeating all data across rows. HDMF then also
+provides: 1) <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.drop_id_columns" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">drop_id_columns</span></code></a> to remove all “id” columns
+and 2) <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.flatten_column_index" title="(in HDMF v6.2.0)"><code class="xref py py-func docutils literal notranslate"><span class="pre">flatten_column_index</span></code></a> to turn the
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.MultiIndex.html">MultiIndex</a> on the columns of the table into a regular
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Index.html">Index</a> of tuples.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Dropping <code class="docutils literal notranslate"><span class="pre">id</span></code> columns is often useful for visualization purposes while for
+query and analysis it is often useful to maintain the <code class="docutils literal notranslate"><span class="pre">id</span></code> columns to facilitate
+lookups and correlation of information.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.common.hierarchicaltable</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.drop_id_columns" title="hdmf.common.hierarchicaltable.drop_id_columns" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">drop_id_columns</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.flatten_column_index" title="hdmf.common.hierarchicaltable.flatten_column_index" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">flatten_column_index</span></a>
+
+<span class="c1"># Reset the index of the dataframe and turn the values into columns instead</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.reset_index.html#pandas.DataFrame.reset_index" title="pandas.DataFrame.reset_index" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-method"><span class="n">icephys_meta_df</span><span class="o">.</span><span class="n">reset_index</span></a><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Flatten the column-index, turning the pandas.MultiIndex into a pandas.Index of tuples</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.flatten_column_index" title="hdmf.common.hierarchicaltable.flatten_column_index" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">flatten_column_index</span></a><span class="p">(</span><span class="n">dataframe</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span> <span class="n">max_levels</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># Remove the id columns. By setting inplace=False allows us to visualize the result of this</span>
+<span class="c1"># action while keeping the id columns in our main icephys_meta_df table</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">drid_icephys_meta_df</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.hierarchicaltable.html#hdmf.common.hierarchicaltable.drop_id_columns" title="hdmf.common.hierarchicaltable.drop_id_columns" class="sphx-glr-backref-module-hdmf-common-hierarchicaltable sphx-glr-backref-type-py-function"><span class="n">drop_id_columns</span></a><span class="p">(</span><span class="n">dataframe</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># save the table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">drid_icephys_meta_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;icephys_meta_dataframe_drop_id.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/icephys_meta_dataframe_drop_id.png"><img alt="icephys_meta_dataframe_drop_id.png" class="align-center" src="../../_images/icephys_meta_dataframe_drop_id.png" style="width: 100%;" />
+</a>
+</section>
+</section>
+<section id="useful-additional-data-preparations">
+<h2>Useful additional data preparations<a class="headerlink" href="#useful-additional-data-preparations" title="Link to this heading"></a></h2>
+<section id="expanding-timeseriesreference-columns">
+<h3>Expanding TimeSeriesReference columns<a class="headerlink" href="#expanding-timeseriesreference-columns" title="Link to this heading"></a></h3>
+<p>For query purposes it can be useful to expand the stimulus and response columns to separate the
+<code class="docutils literal notranslate"><span class="pre">(start,</span> <span class="pre">count,</span> <span class="pre">timeseries)</span></code> values in separate columns. This is primarily useful if we want to
+perform queries on these components directly, otherwise it is usually best to keep the stimulus/response
+references around as <cite>:py:class:`~pynwb.base.TimeSeriesReference</cite>, which provides additional features
+to inspect and validate the references and load data. We, therefore, here keep the data in both forms
+in the table</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Expand the (&#39;stimuli&#39;, &#39;stimulus&#39;) to a DataFrame with 3 columns</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stimulus_df</span></a> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class"><span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span></a><span class="p">(</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;stimulus&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;idx_start&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;timeseries&quot;</span><span class="p">)],</span>
+    <span class="n">index</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.RangeIndex.html#pandas.RangeIndex" title="pandas.RangeIndex" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span><span class="o">.</span><span class="n">index</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># If we want to remove the original (&#39;stimuli&#39;, &#39;stimulus&#39;) from the dataframe we can call</span>
+<span class="c1"># icephys_meta_df.drop(labels=[(&#39;stimuli&#39;, &#39;stimulus&#39;), ], axis=1, inplace=True)</span>
+<span class="c1"># Add our expanded columns to the icephys_meta_df dataframe</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.concat.html#pandas.concat" title="pandas.concat" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">concat</span></a><span class="p">([</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stimulus_df</span></a><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># save the table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;icephys_meta_dataframe_expand_tsr.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/icephys_meta_dataframe_expand_tsr.png"><img alt="icephys_meta_dataframe_expand_tsr.png" class="align-center" src="../../_images/icephys_meta_dataframe_expand_tsr.png" style="width: 100%;" />
+</a>
+<p>We can then easily expand also the <code class="docutils literal notranslate"><span class="pre">(responses,</span> <span class="pre">response)</span></code> column in the same way</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">response_df</span></a> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class"><span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span></a><span class="p">(</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;response&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;idx_start&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;timeseries&quot;</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">index</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.RangeIndex.html#pandas.RangeIndex" title="pandas.RangeIndex" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span><span class="o">.</span><span class="n">index</span></a><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.concat.html#pandas.concat" title="pandas.concat" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">concat</span></a><span class="p">([</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">response_df</span></a><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-stimulus-response-metadata">
+<h3>Adding Stimulus/Response Metadata<a class="headerlink" href="#adding-stimulus-response-metadata" title="Link to this heading"></a></h3>
+<p>With all TimeSeries stimuli and responses listed in the table, we can easily iterate over the
+TimeSeries to expand our table with additional columns with information from the TimeSeries, e.g.,
+the <code class="docutils literal notranslate"><span class="pre">neurodata_type</span></code> or <code class="docutils literal notranslate"><span class="pre">name</span></code> or any other properties we may wish to extract from our
+stimulus and response TimeSeries (e.g., <code class="docutils literal notranslate"><span class="pre">rate</span></code>, <code class="docutils literal notranslate"><span class="pre">starting_time</span></code>, <code class="docutils literal notranslate"><span class="pre">gain</span></code> etc.).
+Here we show a few examples.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add a column with the name of the stimulus TimeSeries object.</span>
+<span class="c1"># Note: We use getattr here to easily deal with missing values,</span>
+<span class="c1">#       i.e., here the cases where no stimulus is present</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;timeseries&quot;</span><span class="p">)]</span>
+<span class="p">]</span>
+
+<span class="c1"># Often we can easily do this in a bulk-fashion by specifying</span>
+<span class="c1"># the collection of fields of interest</span>
+<span class="k">for</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;neurodata_type&quot;</span><span class="p">,</span> <span class="s2">&quot;gain&quot;</span><span class="p">,</span> <span class="s2">&quot;rate&quot;</span><span class="p">,</span> <span class="s2">&quot;starting_time&quot;</span><span class="p">,</span> <span class="s2">&quot;object_id&quot;</span><span class="p">]:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">)</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span> <span class="s2">&quot;timeseries&quot;</span><span class="p">)]</span>
+    <span class="p">]</span>
+<span class="c1"># save the table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;icephys_meta_dataframe_add_stimres.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">max_cols</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/icephys_meta_dataframe_add_stimres.png"><img alt="icephys_meta_dataframe_add_stimres.png" class="align-center" src="../../_images/icephys_meta_dataframe_add_stimres.png" style="width: 100%;" />
+</a>
+<p>Naturally we can again do the same also for our response columns</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;neurodata_type&quot;</span><span class="p">,</span> <span class="s2">&quot;gain&quot;</span><span class="p">,</span> <span class="s2">&quot;rate&quot;</span><span class="p">,</span> <span class="s2">&quot;starting_time&quot;</span><span class="p">,</span> <span class="s2">&quot;object_id&quot;</span><span class="p">]:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">)</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;timeseries&quot;</span><span class="p">)]</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>And we can use the same process to also gather additional metadata about the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularElectrode" title="pynwb.icephys.IntracellularElectrode"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularElectrode</span></code></a>, <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> and others</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;device&quot;</span><span class="p">,</span> <span class="s2">&quot;object_id&quot;</span><span class="p">]:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;electrodes&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">)</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">col</span></a><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">field</span></a><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;electrodes&quot;</span><span class="p">,</span> <span class="s2">&quot;electrode&quot;</span><span class="p">)]</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>This basic approach allows us to easily collect all data needed for query in a convenient
+spreadsheet for display, query, and analysis.</p>
+</section>
+</section>
+<section id="performing-common-metadata-queries">
+<h2>Performing common metadata queries<a class="headerlink" href="#performing-common-metadata-queries" title="Link to this heading"></a></h2>
+<p>With regard to the experiment metadata tables, many of the queries we identified based on
+feedback from the community follow the model of: <em>“Given X return Y”</em>, e.g.:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Given a particular stimulus return:</dt><dd><ul>
+<li><p>the corresponding response</p></li>
+<li><p>the corresponding electrode</p></li>
+<li><p>the stimulus type</p></li>
+<li><p>all stimuli/responses recorded at the same time (i.e., during the same simultaneous recording)</p></li>
+<li><p>all stimuli/responses recorded during the same sequential recording</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given a particular response return:</dt><dd><ul>
+<li><p>the corresponding stimulus</p></li>
+<li><p>the corresponding electrode</p></li>
+<li><p>all stimuli/responses recorded at the same time (i.e., during the same simultaneous recording)</p></li>
+<li><p>all stimuli/responses recorded during the same sequential recording</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given an electrode return:</dt><dd><ul>
+<li><p>all responses (and stimuli) related to the electrode</p></li>
+<li><p>all sequential recordings (a.k.a., sweeps) recorded with the electrode</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given a stimulus type return:</dt><dd><ul>
+<li><p>all related stimulus/response recordings</p></li>
+<li><p>all the repetitions in which it is present</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given a stimulus type and a repetition return:</dt><dd><ul>
+<li><p>all the responses</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given a simultaneous recording (a.k.a., sweep) return:</dt><dd><ul>
+<li><p>the repetition/condition/sequential recording it belongs to</p></li>
+<li><p>all other simultaneous recordings that are part of the same repetition</p></li>
+<li><p>the experimental condition the simultaneous recording is part of</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given a repetition return:</dt><dd><ul>
+<li><p>the experimental condition the simultaneous recording is part of</p></li>
+<li><p>all sequential- and/or simultaneous recordings within that repetition</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Given an experimental condition return:</dt><dd><ul>
+<li><p>All corresponding repetitions or sequential/simultaneous/intracellular recordings</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p>Get the list of all stimulus types</p></li>
+</ul>
+<p>More complex analytics will then commonly combine multiple such query constraints to further process
+the corresponding data, e.g.,</p>
+<ul class="simple">
+<li><p>Given a stimulus and a condition, return all simultaneous recordings (a.k.a., sweeps) across repetitions
+and average the responses</p></li>
+</ul>
+<p>Generally, many of the queries involve looking up a piece of information in on table (e.g., finding
+a stimulus type in <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SequentialRecordingsTable" title="pynwb.icephys.SequentialRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialRecordingsTable</span></code></a>) and then querying for
+related information in child tables (by following the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> links
+included in the corresponding rows) to look up more specific information (e.g., all recordings related to
+the stimulus type) or alternatively querying for related information in parent tables (by finding rows in the
+parent table that link to our rows) and then looking up more general information (e.g., information about the
+experimental condition). Using this approach, we can resolve the above queries using the individual
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a> objects directly, while loading only the data that is
+absolutely necessary into memory.</p>
+<p>With the bulk data stored usually in some form of <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.PatchClampSeries" title="pynwb.icephys.PatchClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">PatchClampSeries</span></code></a>, the
+ICEphys metadata tables will usually be comparatively small (in terms of total memory). Once we have created
+our integrated <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html">DataFrame</a> as shown above, performing the queries described above becomes quite simple
+as all links between tables have already been resolved and all data has been expanded across all rows.
+In general, resolving queries on our “denormalized” table amounts to evaluating one or more conditions
+on one or more columns and then retrieving the rows that match our conditions form the table.</p>
+<p>Once we have all metadata in a single table, we can also easily sort the rows of our table based on
+a flexible set of conditions or even cluster rows to compute more advanced groupings of intracellular recordings.</p>
+<p>Below we show just a few simple examples:</p>
+<section id="given-a-response-get-the-stimulus">
+<h3>Given a response, get the stimulus<a class="headerlink" href="#given-a-response-get-the-stimulus" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a response &#39;vcs_9&#39; from the file</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;vcs_9&quot;</span><span class="p">)</span>
+<span class="c1"># Return all data related to that response, including the stimulus</span>
+<span class="c1"># as part of (&#39;stimuli&#39;, &#39;stimulus&#39;) column</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;object_id&quot;</span><span class="p">)]</span> <span class="o">==</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.object_id" title="hdmf.container.AbstractContainer.object_id" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">response</span><span class="o">.</span><span class="n">object_id</span></a><span class="p">]</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>(experimental_conditions, id)</th>
+      <th>(experimental_conditions, temperature)</th>
+      <th>(repetitions, id)</th>
+      <th>...</th>
+      <th>(electrodes, name)</th>
+      <th>(electrodes, device)</th>
+      <th>(electrodes, object_id)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>9</th>
+      <td>100000</td>
+      <td>32.0</td>
+      <td>10001</td>
+      <td>...</td>
+      <td>elec1</td>
+      <td>Heka ITC-1600 pynwb.device...</td>
+      <td>6c8068a1-74f8-4495-bc72-9a...</td>
+    </tr>
+  </tbody>
+</table>
+<p>1 rows × 38 columns</p>
+</div>
+</div>
+<br />
+<br /></section>
+<section id="given-a-response-load-the-associated-data">
+<h3>Given a response load the associated data<a class="headerlink" href="#given-a-response-load-the-associated-data" title="Link to this heading"></a></h3>
+<p>References to timeseries are stored in the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> via
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a> columns which return the references to the stimulus/response
+via <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> objects. Using <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> we can
+easily inspect the selected data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ref</span> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;responses&quot;</span><span class="p">,</span> <span class="s2">&quot;response&quot;</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Get the TimeSeriesReference</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">isvalid</span><span class="p">()</span>  <span class="c1"># Is the reference valid</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ref</span><span class="o">.</span><span class="n">idx_start</span></a>  <span class="c1"># Get the start index</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ref</span><span class="o">.</span><span class="n">count</span></a>  <span class="c1"># Get the count</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.name" title="hdmf.container.AbstractContainer.name" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-property"><span class="n">ref</span><span class="o">.</span><span class="n">timeseries</span><span class="o">.</span><span class="n">name</span></a>  <span class="c1"># Get the timeseries</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">timestamps</span>  <span class="c1"># Get the selected timestamps</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ref_data</span></a> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">data</span>  <span class="c1"># Get the selected recorded response data values</span>
+<span class="c1"># Print the data values just as an example</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;data = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ref_data</span></a><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>data = [0.88220018 0.45257704 0.98249255 0.79671482 0.09381776 0.39510813
+ 0.58907637 0.84900853 0.9329518  0.04768943]
+</pre></div>
+</div>
+</section>
+<section id="get-a-list-of-all-stimulus-types">
+<h3>Get a list of all stimulus types<a class="headerlink" href="#get-a-list-of-all-stimulus-types" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">unique_stimulus_types</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.unique.html#numpy.unique" title="numpy.unique" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">unique</span></a><span class="p">(</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">,</span> <span class="s2">&quot;stimulus_type&quot;</span><span class="p">)]</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">unique_stimulus_types</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;StimType_1&#39; &#39;StimType_2&#39; &#39;StimType_3&#39;]
+</pre></div>
+</div>
+</section>
+<section id="given-a-stimulus-type-get-all-corresponding-intracellular-recordings">
+<h3>Given a stimulus type, get all corresponding intracellular recordings<a class="headerlink" href="#given-a-stimulus-type-get-all-corresponding-intracellular-recordings" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">query_res_df</span></a> <span class="o">=</span> <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[</span>
+    <a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">icephys_meta_df</span></a><span class="p">[(</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">,</span> <span class="s2">&quot;stimulus_type&quot;</span><span class="p">)]</span> <span class="o">==</span> <span class="s2">&quot;StimType_1&quot;</span>
+<span class="p">]</span>
+
+<span class="c1"># save the table as image to display in the docs</span>
+<span class="n">dataframe_image</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+    <span class="n">obj</span><span class="o">=</span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="pandas.DataFrame" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">query_res_df</span></a><span class="p">,</span>
+    <span class="n">filename</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">df_basedir</span></a><span class="p">,</span> <span class="s2">&quot;icephys_meta_query_result_dataframe.png&quot;</span><span class="p">),</span>
+    <span class="n">table_conversion</span><span class="o">=</span><span class="s2">&quot;matplotlib&quot;</span><span class="p">,</span>
+    <span class="n">max_cols</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">fontsize</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dfi_fontsize</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../../_images/icephys_meta_query_result_dataframe.png"><img alt="icephys_meta_query_result_dataframe.png" class="align-center" src="../../_images/icephys_meta_query_result_dataframe.png" style="width: 100%;" />
+</a>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-plot-icephys-pandas-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/c1b4d2ad435866f3b2898961e5464969/plot_icephys_pandas.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_icephys_pandas.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/9fdb0747ca4332290bd7abaff4ddddc0/plot_icephys_pandas.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_icephys_pandas.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2ad68766b9681d08993d2d6f896a5048/plot_icephys_pandas.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_icephys_pandas.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_icephys.html" class="btn btn-neutral float-left" title="Intracellular Electrophysiology" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_behavior.html" class="btn btn-neutral float-right" title="Behavior Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

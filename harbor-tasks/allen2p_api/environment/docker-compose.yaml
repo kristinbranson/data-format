@@ -1,0 +1,15 @@
+services:
+  main:
+    volumes:
+      - "${DATA_ROOT:?DATA_ROOT must be set - run via harbor-scripts/run_harbor.sh}/allen2p/visual-behavior-ophys-1.1.0:/app/data/visual-behavior-ophys-1.1.0:ro"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            # Name the GPU id rather than asking for "a GPU". podman-compose satisfies
+            # `count: 1` with physical index 0, which on a multi-GPU node may not be
+            # assigned to this job. HARBOR_GPU_ID is the physical index, which harbor-scripts/gpu_ids.py
+            # resolves from the card's PCI address
+            - driver: nvidia
+              device_ids: ["${HARBOR_GPU_ID:-0}"]
+              capabilities: [gpu]

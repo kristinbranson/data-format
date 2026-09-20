@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_files.stimulus_file &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_files.stimulus_file</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">abc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.pickle_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_and_sanitize_pickle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_system_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cachetools</span><span class="w"> </span><span class="kn">import</span> <span class="n">LRUCache</span><span class="p">,</span> <span class="n">cached</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cachetools.keys</span><span class="w"> </span><span class="kn">import</span> <span class="n">hashkey</span>
+
+<span class="c1"># Query returns path to StimulusPickle file for given behavior session</span>
+<span class="n">BEHAVIOR_STIMULUS_FILE_QUERY_TEMPLATE</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">        wkf.storage_directory || wkf.filename AS stim_file</span>
+<span class="s2">    FROM</span>
+<span class="s2">        well_known_files wkf</span>
+<span class="s2">    WHERE</span>
+<span class="s2">        wkf.attachable_id = </span><span class="si">{behavior_session_id}</span>
+<span class="s2">        AND wkf.attachable_type = 'BehaviorSession'</span>
+<span class="s2">        AND wkf.well_known_file_type_id IN (</span>
+<span class="s2">            SELECT id</span>
+<span class="s2">            FROM well_known_file_types</span>
+<span class="s2">            WHERE name = 'StimulusPickle');</span>
+<span class="s2">"""</span>
+
+
+<div class="viewcode-block" id="from_json_cache_key">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.from_json_cache_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_json_cache_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hashkey</span><span class="p">(</span><span class="n">stimulus_file_path</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="from_lims_cache_key">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.from_lims_cache_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_lims_cache_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hashkey</span><span class="p">(</span><span class="n">behavior_session_id</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">())</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_StimulusFile</span><span class="p">(</span><span class="n">DataFile</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A DataFile which contains methods for accessing and loading visual</span>
+<span class="sd">    behavior stimulus *.pkl files.</span>
+
+<span class="sd">    This file type contains a number of parameters collected during a behavior</span>
+<span class="sd">    session including information about stimulus presentations, rewards,</span>
+<span class="sd">    trials, and timing for all of the above.</span>
+<span class="sd">    """</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_path_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The key in the dict_repr that maps to the path</span>
+<span class="sd">        to this StimulusFile's pickle file on disk.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"_StimulusFile"</span><span class="p">:</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">dict_repr</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_json</span><span class="p">(</span><span class="n">stimulus_file_path</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@cached</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">LRUCache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">from_json_cache_key</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"_StimulusFile"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">stimulus_file_path</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@cached</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">LRUCache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">from_lims_cache_key</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"_StimulusFile"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">safe_system_path</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">load_and_sanitize_pickle</span><span class="p">(</span><span class="n">pickle_path</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the number of frames associated with this StimulusFile</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"intervalsms"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+
+
+<div class="viewcode-block" id="BehaviorStimulusFile">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.BehaviorStimulusFile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BehaviorStimulusFile</span><span class="p">(</span><span class="n">_StimulusFile</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BehaviorStimulusFile.file_path_key">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.BehaviorStimulusFile.file_path_key">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_path_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"behavior_stimulus_file"</span></div>
+
+
+<div class="viewcode-block" id="BehaviorStimulusFile.from_lims">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.BehaviorStimulusFile.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="nd">@cached</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">LRUCache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">from_lims_cache_key</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorStimulusFile"</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">BEHAVIOR_STIMULUS_FILE_QUERY_TEMPLATE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+        <span class="p">)</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchone</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">filepath</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_frame_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Make sure that self.data['intervalsms'] does not exist and that</span>
+<span class="sd">        self.data['items']['behavior']['intervalsms'] does exist.</span>
+<span class="sd">        """</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="s2">"intervalsms"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"self.data['intervalsms'] present; did not expect that</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="s2">"items"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"self.data['items'] not present</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">"behavior"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"self.data['items']['behavior'] not present</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">"intervalsms"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">]:</span>
+                    <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s2">"self.data['items']['behavior']['intervalsms'] "</span>
+                        <span class="s2">"not present</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">full_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"When getting num_frames from </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="n">full_msg</span> <span class="o">+=</span> <span class="n">msg</span>
+            <span class="n">full_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">filepath: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="si">}</span><span class="s2">"</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">full_msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">behavior_session_uuid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return the behavior session UUID either from the uuid field</span>
+<span class="sd">        or foraging_id field.</span>
+<span class="sd">        """</span>
+        <span class="n">bs_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"session_uuid"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bs_uuid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">bs_uuid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_from_params</span><span class="p">(</span><span class="s2">"foraging_id"</span><span class="p">)[</span><span class="s2">"value"</span><span class="p">]</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+                <span class="n">bs_uuid</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">bs_uuid</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">bs_uuid</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">bs_uuid</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">bs_uuid</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">bs_uuid</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">date_of_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the date_of_acquisition as a datetime.datetime.</span>
+
+<span class="sd">        This will be read from self.data['start_time']</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"start_time"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="s2">"No 'start_time' listed in pickle file "</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mouse_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retrieve the mouse_id value from the stimulus pickle file.</span>
+
+<span class="sd">        This can be read either from:</span>
+
+<span class="sd">        data['items']['behavior']['params']['stage']</span>
+<span class="sd">        or</span>
+<span class="sd">        data['items']['behavior']['cl_params']['stage']</span>
+
+<span class="sd">        if both are present and they disagree, raise an exception.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_from_params</span><span class="p">(</span><span class="s2">"mouse_id"</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the number of frames associated with this StimulusFile</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_frame_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"intervalsms"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the session type as read from the pickle file. This can</span>
+<span class="sd">        be read either from</span>
+
+<span class="sd">        data['items']['behavior']['params']['stage']</span>
+<span class="sd">        or</span>
+<span class="sd">        data['items']['behavior']['cl_params']['stage']</span>
+
+<span class="sd">        if both are present and they disagree, raise an exception</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_from_params</span><span class="p">(</span><span class="s2">"stage"</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get the image stimulus name by parsing the file path of the image set.</span>
+
+<span class="sd">        If no image set, check for gratings and return "behavior" if not found.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_file : BehaviorStimulusFile</span>
+<span class="sd">            Stimulus pickle file to parse.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        stimulus_name : str</span>
+<span class="sd">            Name of the image stimulus from the image file path set shown to</span>
+<span class="sd">            the mouse.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stimulus_name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stimuli</span><span class="p">[</span><span class="s2">"images"</span><span class="p">][</span><span class="s2">"image_set"</span><span class="p">]</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># if we can't find the images key in the stimuli, check for the</span>
+            <span class="c1"># name ``grating`` as the stimulus. If not add generic</span>
+            <span class="c1"># ``behavior``.</span>
+            <span class="k">if</span> <span class="s2">"grating"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimuli</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">stimulus_name</span> <span class="o">=</span> <span class="s2">"grating"</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stimulus_name</span> <span class="o">=</span> <span class="s2">"behavior"</span>
+        <span class="k">return</span> <span class="n">stimulus_name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_retrieve_from_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Retrieve data from either data['items']['behavior']['params'] or</span>
+<span class="sd">        data['items']['behavior']['cl_params'].</span>
+
+<span class="sd">        Test for conflicts or missing data and raise if issues found.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key_name : str</span>
+<span class="sd">            Name of data to attempt to retrieve from the behavior stimulus</span>
+<span class="sd">            file data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        value : various</span>
+<span class="sd">            Value from the stimulus file.</span>
+<span class="sd">        """</span>
+        <span class="n">param_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">"params"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"params"</span><span class="p">]:</span>
+                <span class="n">param_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"params"</span><span class="p">][</span>
+                    <span class="n">key_name</span>
+                <span class="p">]</span>
+
+        <span class="n">cl_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">"cl_params"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"cl_params"</span><span class="p">]:</span>
+                <span class="n">cl_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"cl_params"</span><span class="p">][</span>
+                    <span class="n">key_name</span>
+                <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">cl_value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Could not find </span><span class="si">{</span><span class="n">key_name</span><span class="si">}</span><span class="s2"> in pickle file "</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">param_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cl_value</span>
+
+        <span class="k">if</span> <span class="n">cl_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">param_value</span>
+
+        <span class="k">if</span> <span class="n">cl_value</span> <span class="o">!=</span> <span class="n">param_value</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Conflicting </span><span class="si">{</span><span class="n">key_name</span><span class="si">}</span><span class="s2"> values in pickle file "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"cl_params: </span><span class="si">{</span><span class="n">cl_value</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"params: </span><span class="si">{</span><span class="n">param_value</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">param_value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Gets session duration in seconds</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        session duration in seconds</span>
+<span class="sd">        """</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
+        <span class="n">stop_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"stop_time"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stop_time</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+            <span class="n">stop_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stop_time</span><span class="p">)</span>
+
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">stop_time</span> <span class="o">-</span> <span class="n">start_time</span>
+
+        <span class="k">return</span> <span class="n">delta</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimuli</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Stimuli shown during session</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        stimuli:</span>
+<span class="sd">            (stimulus type ('Image' or 'Grating'),</span>
+<span class="sd">             stimulus descriptor (image_name or orientation of grating in</span>
+<span class="sd">                degrees),</span>
+<span class="sd">             nonsynced time of display,</span>
+<span class="sd">             display frame (frame that stimuli was displayed))</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># TODO implement return value as class (i.e. Image, Grating)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"stimuli"</span><span class="p">]</span>
+
+<div class="viewcode-block" id="BehaviorStimulusFile.validate">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.BehaviorStimulusFile.validate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorStimulusFile"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"items"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">or</span> <span class="s2">"behavior"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">MalformedStimulusFileError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">'Expected to find key "behavior" in "items" dict. '</span>
+                <span class="sa">f</span><span class="s1">'Found </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s1">'</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ReplayStimulusFile">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.ReplayStimulusFile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReplayStimulusFile</span><span class="p">(</span><span class="n">_StimulusFile</span><span class="p">):</span>
+<div class="viewcode-block" id="ReplayStimulusFile.file_path_key">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.ReplayStimulusFile.file_path_key">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_path_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"replay_stimulus_file"</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MappingStimulusFile">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.MappingStimulusFile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MappingStimulusFile</span><span class="p">(</span><span class="n">_StimulusFile</span><span class="p">):</span>
+<div class="viewcode-block" id="MappingStimulusFile.file_path_key">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.MappingStimulusFile.file_path_key">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_path_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"mapping_stimulus_file"</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StimulusFileReadableInterface">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.StimulusFileReadableInterface">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StimulusFileReadableInterface</span><span class="p">(</span><span class="n">abc</span><span class="o">.</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Marks a data object as readable from stimulus file"""</span>
+
+<div class="viewcode-block" id="StimulusFileReadableInterface.from_stimulus_file">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.StimulusFileReadableInterface.from_stimulus_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stimulus_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"DataObject"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Populate a DataObject from the stimulus file</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataObject:</span>
+<span class="sd">            An instantiated DataObject which has `name` and `value` properties</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StimulusFileLookup">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.StimulusFileLookup">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StimulusFileLookup</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A container class to carry around the StimulusFile(s) associated</span>
+<span class="sd">    with a BehaviorSession</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">behavior_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BehaviorStimulusFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"behavior"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"This StimulusFileLookup has no "</span> <span class="s2">"BehaviorStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"behavior"</span><span class="p">]</span>
+
+    <span class="nd">@behavior_stimulus_file</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">behavior_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">BehaviorStimulusFile</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Trying to set behavior_stimulus_file to "</span>
+                <span class="sa">f</span><span class="s2">"value of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">; type should "</span>
+                <span class="s2">"be BehaviorStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"behavior"</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replay_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReplayStimulusFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"replay"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"This StimulusFileLookup has no "</span> <span class="s2">"ReplayStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"replay"</span><span class="p">]</span>
+
+    <span class="nd">@replay_stimulus_file</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replay_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">ReplayStimulusFile</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ReplayStimulusFile</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Trying to set replay_stimulus_file to "</span>
+                <span class="sa">f</span><span class="s2">"value of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">; type should "</span>
+                <span class="s2">"be ReplayStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"replay"</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mapping_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MappingStimulusFile</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"mapping"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"This StimulusFileLookup has no "</span> <span class="s2">"MappingStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"mapping"</span><span class="p">]</span>
+
+    <span class="nd">@mapping_stimulus_file</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mapping_stimulus_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">MappingStimulusFile</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">MappingStimulusFile</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Trying to set mapping_stimulus_file to "</span>
+                <span class="sa">f</span><span class="s2">"value of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">; type should "</span>
+                <span class="s2">"be MappingStimulusFile"</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">[</span><span class="s2">"mapping"</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+
+<div class="viewcode-block" id="stimulus_lookup_from_json">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.stimulus_lookup_from_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stimulus_lookup_from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StimulusFileLookup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Load a lookup table of the stimulus files associated with a</span>
+<span class="sd">    BehaviorSession from the dict representation of that session's</span>
+<span class="sd">    session_data</span>
+<span class="sd">    """</span>
+    <span class="n">lookup_table</span> <span class="o">=</span> <span class="n">StimulusFileLookup</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">()</span> <span class="ow">in</span> <span class="n">dict_repr</span><span class="p">:</span>
+        <span class="n">stim</span> <span class="o">=</span> <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+        <span class="n">lookup_table</span><span class="o">.</span><span class="n">behavior_stimulus_file</span> <span class="o">=</span> <span class="n">stim</span>
+    <span class="k">if</span> <span class="n">MappingStimulusFile</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">()</span> <span class="ow">in</span> <span class="n">dict_repr</span><span class="p">:</span>
+        <span class="n">stim</span> <span class="o">=</span> <span class="n">MappingStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+        <span class="n">lookup_table</span><span class="o">.</span><span class="n">mapping_stimulus_file</span> <span class="o">=</span> <span class="n">stim</span>
+    <span class="k">if</span> <span class="n">ReplayStimulusFile</span><span class="o">.</span><span class="n">file_path_key</span><span class="p">()</span> <span class="ow">in</span> <span class="n">dict_repr</span><span class="p">:</span>
+        <span class="n">stim</span> <span class="o">=</span> <span class="n">ReplayStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+        <span class="n">lookup_table</span><span class="o">.</span><span class="n">replay_stimulus_file</span> <span class="o">=</span> <span class="n">stim</span>
+    <span class="k">return</span> <span class="n">lookup_table</span></div>
+
+
+
+<div class="viewcode-block" id="MalformedStimulusFileError">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.data_files.stimulus_file.html#allensdk.brain_observatory.behavior.data_files.stimulus_file.MalformedStimulusFileError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MalformedStimulusFileError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Malformed stimulus file"""</span>
+
+    <span class="k">pass</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

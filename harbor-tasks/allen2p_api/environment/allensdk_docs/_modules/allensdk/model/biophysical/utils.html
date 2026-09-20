@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.model.biophysical.utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.model.biophysical.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2015-2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">gcd</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.nwb_data_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbDataSet</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">files</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skimage.measure</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_reduce</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..biophys_sim.neuron.hoc_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HocUtils</span>
+
+<span class="n">PERISOMATIC_TYPE</span> <span class="o">=</span> <span class="s2">"Biophysical - perisomatic"</span>
+<span class="n">ALL_ACTIVE_TYPE</span> <span class="o">=</span> <span class="s2">"Biophysical - all active"</span>
+
+
+<div class="viewcode-block" id="create_utils">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.create_utils">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_utils</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">model_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Factory method to create a Utils subclass.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    description : Config instance</span>
+<span class="sd">        used to initialize Utils subclass</span>
+
+<span class="sd">    model_type : string</span>
+<span class="sd">        Must be one of [PERISOMATIC_TYPE, ALL_ACTIVE_TYPE].  If none, defaults</span>
+<span class="sd">        to PERISOMATIC_TYPE</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Utils instance</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">model_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">model_type</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"biophys"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"model_type"</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Could not infer model type from description"</span><span class="p">)</span>
+
+    <span class="n">axon_type</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"biophys"</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s2">"axon_type"</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="n">PERISOMATIC_TYPE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Utils</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_type</span> <span class="o">==</span> <span class="n">ALL_ACTIVE_TYPE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">AllActiveUtils</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">axon_type</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Utils">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Utils</span><span class="p">(</span><span class="n">HocUtils</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A helper class for NEURON functionality needed for</span>
+<span class="sd">    biophysical simulations.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h : object</span>
+<span class="sd">        The NEURON hoc object.</span>
+<span class="sd">    nrn : object</span>
+<span class="sd">        The NEURON python object.</span>
+<span class="sd">    neuron : module</span>
+<span class="sd">        The NEURON module.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_default_cell_hoc</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Utils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">simulation_sampling_rate</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_sampling_rate</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_vec_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="Utils.update_default_cell_hoc">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.update_default_cell_hoc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_default_cell_hoc</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">default_cell_hoc</span><span class="o">=</span><span class="s2">"cell.hoc"</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""replace the default 'cell.hoc' path in the manifest with 'cell.hoc'</span>
+<span class="sd">        packaged within AllenSDK if it does not exist"""</span>
+
+        <span class="n">hoc_files</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"neuron"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"hoc"</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">hfi</span> <span class="o">=</span> <span class="n">hoc_files</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">default_cell_hoc</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">default_cell_hoc</span><span class="p">):</span>
+                <span class="n">abspath_ch</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="n">__package__</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">default_cell_hoc</span><span class="p">))</span>
+                <span class="n">hoc_files</span><span class="p">[</span><span class="n">hfi</span><span class="p">]</span> <span class="o">=</span> <span class="n">abspath_ch</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">abspath_ch</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">"cell.hoc does not exist!"</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">"Using cell.hoc from the following location: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">abspath_ch</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Utils.generate_morphology">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.generate_morphology">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_morphology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">morph_filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Load a swc-format cell morphology file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        morph_filename : string</span>
+<span class="sd">            Path to swc.</span>
+<span class="sd">        """</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span>
+
+        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_SWC_read</span><span class="p">()</span>
+        <span class="n">swc</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">morph_filename</span><span class="p">)</span>
+        <span class="n">imprt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_GUI</span><span class="p">(</span><span class="n">swc</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">"objref this"</span><span class="p">)</span>
+        <span class="n">imprt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">"soma[0] area(0.5)"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mf">40.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sec</span><span class="o">.</span><span class="n">name</span><span class="p">()[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"axon"</span><span class="p">:</span>
+                <span class="n">h</span><span class="o">.</span><span class="n">delete_section</span><span class="p">(</span><span class="n">sec</span><span class="o">=</span><span class="n">sec</span><span class="p">)</span>
+        <span class="n">h</span><span class="p">(</span><span class="s2">"create axon[2]"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">:</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">diam</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mf">40.0</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="n">h</span><span class="o">.</span><span class="n">define_shape</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Utils.load_cell_parameters">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.load_cell_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_cell_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Configure a neuron after the cell morphology has been loaded."""</span>
+        <span class="n">passive</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">genome</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"genome"</span><span class="p">]</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"conditions"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">"access soma"</span><span class="p">)</span>
+
+        <span class="c1"># Set fixed passive properties</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">Ra</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"ra"</span><span class="p">]</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">"pas"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">sec</span><span class="p">:</span>
+                <span class="n">seg</span><span class="o">.</span><span class="n">pas</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"e_pas"</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"cm"</span><span class="p">]:</span>
+            <span class="n">h</span><span class="p">(</span><span class="s1">'forsec "'</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'" { cm = </span><span class="si">%g</span><span class="s1"> }'</span> <span class="o">%</span> <span class="n">c</span><span class="p">[</span><span class="s2">"cm"</span><span class="p">])</span>
+
+        <span class="c1"># Insert channels and set parameters</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">genome</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"glob"</span><span class="p">:</span>  <span class="c1"># global parameter</span>
+                <span class="n">h</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">+</span> <span class="s2">" = </span><span class="si">%g</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                    <span class="n">h</span><span class="p">(</span>
+                        <span class="s1">'forsec "'</span>
+                        <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="s1">'" { insert '</span>
+                        <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="s2">" }"</span>
+                    <span class="p">)</span>
+                <span class="n">h</span><span class="p">(</span>
+                    <span class="s1">'forsec "'</span>
+                    <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="s1">'" { '</span>
+                    <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="s2">" = </span><span class="si">%g</span><span class="s2"> }"</span> <span class="o">%</span> <span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Set reversal potentials</span>
+        <span class="k">for</span> <span class="n">erev</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">"erev"</span><span class="p">]:</span>
+            <span class="n">h</span><span class="p">(</span><span class="s1">'forsec "'</span> <span class="o">+</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'" { ek = </span><span class="si">%g</span><span class="s1"> }'</span> <span class="o">%</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"ek"</span><span class="p">])</span>
+            <span class="n">h</span><span class="p">(</span><span class="s1">'forsec "'</span> <span class="o">+</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span> <span class="o">+</span> <span class="s1">'" { ena = </span><span class="si">%g</span><span class="s1"> }'</span> <span class="o">%</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"ena"</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Utils.setup_iclamp">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.setup_iclamp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_iclamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_path</span><span class="p">,</span> <span class="n">sweep</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Assign a current waveform as input stimulus.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_path : string</span>
+<span class="sd">            NWB file name</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">IClamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="mf">0.5</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">amp</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># just set to be really big; doesn't need to match the waveform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="mf">1e12</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_stimulus</span><span class="p">(</span><span class="n">stimulus_path</span><span class="p">,</span> <span class="n">sweep</span><span class="o">=</span><span class="n">sweep</span><span class="p">)</span>
+
+        <span class="c1"># NEURON's dt is in milliseconds</span>
+        <span class="n">simulation_dt</span> <span class="o">=</span> <span class="mf">1.0e3</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation_sampling_rate</span>
+        <span class="n">stimulus_dt</span> <span class="o">=</span> <span class="mf">1.0e3</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_sampling_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">"Using simulation dt </span><span class="si">%f</span><span class="s2">, stimulus dt </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">simulation_dt</span><span class="p">,</span>
+            <span class="n">stimulus_dt</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">simulation_dt</span>
+        <span class="n">stim_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span><span class="p">)</span>
+        <span class="n">stim_vec</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">_ref_amp</span><span class="p">,</span> <span class="n">stimulus_dt</span><span class="p">)</span>
+
+        <span class="n">stimulus_stop_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">tstop</span> <span class="o">=</span> <span class="n">stimulus_stop_index</span> <span class="o">*</span> <span class="n">stimulus_dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_vec_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stim_vec</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Utils.read_stimulus">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.read_stimulus">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_stimulus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_path</span><span class="p">,</span> <span class="n">sweep</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Load current values for a specific experiment sweep and setup</span>
+<span class="sd">        simulation and stimulus sampling rates.</span>
+
+<span class="sd">        NOTE: NEURON only allows simulation timestamps of multiples of 40KHz.</span>
+<span class="sd">        To avoid aliasing, we set the simulation sampling rate to the least</span>
+<span class="sd">        common multiple of the stimulus sampling rate and 40KHz.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus path : string</span>
+<span class="sd">            NWB file name</span>
+<span class="sd">        sweep : integer, optional</span>
+<span class="sd">            sweep index</span>
+<span class="sd">        """</span>
+        <span class="n">Utils</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">"reading stimulus path: </span><span class="si">%s</span><span class="s2">, sweep </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">stimulus_path</span><span class="p">,</span> <span class="n">sweep</span>
+        <span class="p">)</span>
+
+        <span class="n">stimulus_data</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">stimulus_path</span><span class="p">)</span>
+        <span class="n">sweep_data</span> <span class="o">=</span> <span class="n">stimulus_data</span><span class="o">.</span><span class="n">get_sweep</span><span class="p">(</span><span class="n">sweep</span><span class="p">)</span>
+
+        <span class="c1"># convert to nA for NEURON</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span> <span class="o">=</span> <span class="n">sweep_data</span><span class="p">[</span><span class="s2">"stimulus"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0e9</span>
+
+        <span class="c1"># convert from Hz</span>
+        <span class="n">hz</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sweep_data</span><span class="p">[</span><span class="s2">"sampling_rate"</span><span class="p">])</span>
+        <span class="n">neuron_hz</span> <span class="o">=</span> <span class="n">Utils</span><span class="o">.</span><span class="n">nearest_neuron_sampling_rate</span><span class="p">(</span><span class="n">hz</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">simulation_sampling_rate</span> <span class="o">=</span> <span class="n">neuron_hz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_sampling_rate</span> <span class="o">=</span> <span class="n">hz</span>
+
+        <span class="k">if</span> <span class="n">hz</span> <span class="o">!=</span> <span class="n">neuron_hz</span><span class="p">:</span>
+            <span class="n">Utils</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">"changing sampling rate from </span><span class="si">%d</span><span class="s2"> to </span><span class="si">%d</span><span class="s2"> to avoid NEURON "</span>
+                <span class="s2">"aliasing"</span><span class="p">,</span>
+                <span class="n">hz</span><span class="p">,</span>
+                <span class="n">neuron_hz</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Utils.record_values">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.record_values">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set up output voltage recording."""</span>
+        <span class="n">vec</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"v"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">(),</span> <span class="s2">"t"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">()}</span>
+
+        <span class="n">vec</span><span class="p">[</span><span class="s2">"v"</span><span class="p">]</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">_ref_v</span><span class="p">)</span>
+        <span class="n">vec</span><span class="p">[</span><span class="s2">"t"</span><span class="p">]</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">_ref_t</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vec</span></div>
+
+
+<div class="viewcode-block" id="Utils.get_recorded_data">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.get_recorded_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_recorded_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vec</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Extract recorded voltages and timestamps given the recorded Vector</span>
+<span class="sd">        instance.</span>
+<span class="sd">        If self.stimulus_sampling_rate is smaller than</span>
+<span class="sd">        self.simulation_sampling_rate, resample to self.stimulus_sampling_rate.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vec : neuron.Vector</span>
+<span class="sd">           constructed by self.record_values</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict with two keys: 'v' = numpy.ndarray with voltages,</span>
+<span class="sd">            't' = numpy.ndarray with timestamps</span>
+
+<span class="sd">        """</span>
+        <span class="n">junction_potential</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span>
+            <span class="s2">"junction_potential"</span>
+        <span class="p">]</span>
+
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="s2">"v"</span><span class="p">])</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vec</span><span class="p">[</span><span class="s2">"t"</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_sampling_rate</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation_sampling_rate</span><span class="p">:</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">simulation_sampling_rate</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_sampling_rate</span>
+            <span class="p">)</span>
+
+            <span class="n">Utils</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"subsampling recorded traces by </span><span class="si">%d</span><span class="s2">X"</span><span class="p">,</span> <span class="n">factor</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="n">factor</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)[:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span><span class="p">)]</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="n">factor</span><span class="p">,),</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">)[:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span><span class="p">)]</span>
+
+        <span class="n">mV</span> <span class="o">=</span> <span class="mf">1.0e-3</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">junction_potential</span><span class="p">)</span> <span class="o">*</span> <span class="n">mV</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"v"</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span> <span class="s2">"t"</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Utils.nearest_neuron_sampling_rate">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.Utils.nearest_neuron_sampling_rate">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nearest_neuron_sampling_rate</span><span class="p">(</span><span class="n">hz</span><span class="p">,</span> <span class="n">target_hz</span><span class="o">=</span><span class="mi">40000</span><span class="p">):</span>
+        <span class="n">div</span> <span class="o">=</span> <span class="n">gcd</span><span class="p">(</span><span class="n">hz</span><span class="p">,</span> <span class="n">target_hz</span><span class="p">)</span>
+        <span class="n">new_hz</span> <span class="o">=</span> <span class="n">hz</span> <span class="o">*</span> <span class="n">target_hz</span> <span class="o">/</span> <span class="n">div</span>
+        <span class="k">return</span> <span class="n">new_hz</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AllActiveUtils">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.AllActiveUtils">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AllActiveUtils</span><span class="p">(</span><span class="n">Utils</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">axon_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        description : Config</span>
+<span class="sd">            Configuration to run the simulation</span>
+<span class="sd">        axon_type : string</span>
+<span class="sd">                truncated - diameter of the axon segments is read from .swc</span>
+<span class="sd">                    (default)</span>
+<span class="sd">                stub - diameter of axon segments is 1 micron</span>
+<span class="sd">            How the axon is replaced within NEURON</span>
+
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AllActiveUtils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axon_type</span> <span class="o">=</span> <span class="n">axon_type</span>
+
+<div class="viewcode-block" id="AllActiveUtils.generate_morphology">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.AllActiveUtils.generate_morphology">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_morphology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">morph_filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Load a neurolucida or swc-format cell morphology file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        morph_filename : string</span>
+<span class="sd">            Path to morphology.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axon_type</span> <span class="o">==</span> <span class="s2">"stub"</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">"Replacing axon with a stub : length 60 micron, diameter 1 "</span>
+                <span class="s2">"micron"</span>
+            <span class="p">)</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">AllActiveUtils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">generate_morphology</span><span class="p">(</span><span class="n">morph_filename</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">"Legacy model - Truncating reconstructed axon after 60 micron"</span>
+        <span class="p">)</span>
+        <span class="n">morph_basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">morph_filename</span><span class="p">)</span>
+        <span class="n">morph_extension</span> <span class="o">=</span> <span class="n">morph_basename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">morph_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"swc"</span><span class="p">:</span>
+            <span class="n">morph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_SWC_read</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">morph_extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"asc"</span><span class="p">:</span>
+            <span class="n">morph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_Neurolucida3</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Unknown filetype: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="n">morph_extension</span><span class="p">)</span>
+
+        <span class="n">morph</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">morph_filename</span><span class="p">)</span>
+        <span class="n">imprt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_GUI</span><span class="p">(</span><span class="n">morph</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="s2">"objref this"</span><span class="p">)</span>
+        <span class="n">imprt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mf">40.0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="s2">"soma[0] area(0.5)"</span><span class="p">)</span>
+        <span class="n">axon_diams</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">diam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">diam</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">sec</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sec</span><span class="o">.</span><span class="n">name</span><span class="p">()[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"axon"</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sec</span><span class="o">=</span><span class="n">sec</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+                    <span class="n">axon_diams</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">sec</span><span class="o">.</span><span class="n">diam</span>
+                    <span class="k">break</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">sec</span><span class="o">.</span><span class="n">name</span><span class="p">()[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"axon"</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">delete_section</span><span class="p">(</span><span class="n">sec</span><span class="o">=</span><span class="n">sec</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="s2">"create axon[2]"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">sec</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">):</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">diam</span> <span class="o">=</span> <span class="n">axon_diams</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mf">40.0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="c1"># make sure diam reflects 3d points</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sec</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="AllActiveUtils.load_cell_parameters">
+<a class="viewcode-back" href="../../../../allensdk.model.biophysical.utils.html#allensdk.model.biophysical.utils.AllActiveUtils.load_cell_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_cell_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Configure a neuron after the cell morphology has been loaded."""</span>
+        <span class="n">passive</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">genome</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"genome"</span><span class="p">]</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"conditions"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span>
+
+        <span class="n">h</span><span class="p">(</span><span class="s2">"access soma"</span><span class="p">)</span>
+
+        <span class="c1"># Set fixed passive properties</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">allsec</span><span class="p">():</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">Ra</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"ra"</span><span class="p">]</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">"pas"</span><span class="p">)</span>
+            <span class="c1"># for seg in sec:</span>
+            <span class="c1">#     seg.pas.e = passive["e_pas"]</span>
+
+        <span class="c1"># for c in passive["cm"]:</span>
+        <span class="c1">#     h('forsec "' + c["section"] + '" { cm = %g }' % c["cm"])</span>
+
+        <span class="c1"># Insert channels and set parameters</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">genome</span><span class="p">:</span>
+            <span class="n">section_array</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span>
+            <span class="n">mechanism</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+            <span class="n">param_name</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+            <span class="n">param_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">section_array</span> <span class="o">==</span> <span class="s2">"glob"</span><span class="p">:</span>  <span class="c1"># global parameter</span>
+                <span class="n">h</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">+</span> <span class="s2">" = </span><span class="si">%g</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">p</span><span class="p">[</span><span class="s2">"value"</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">section_array</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">mechanism</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="s2">"Adding mechanism </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">"</span>
+                            <span class="o">%</span> <span class="p">(</span><span class="n">mechanism</span><span class="p">,</span> <span class="n">section_array</span><span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">section_array</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">ismembrane</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mechanism</span><span class="p">),</span> <span class="n">sec</span><span class="o">=</span><span class="n">section</span><span class="p">)</span>
+                                <span class="o">!=</span> <span class="mi">1</span>
+                            <span class="p">):</span>
+                                <span class="n">section</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">mechanism</span><span class="p">)</span>
+
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="s2">"Setting </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%.6g</span><span class="s2"> in </span><span class="si">%s</span><span class="s2">"</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">section_array</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">section_array</span><span class="p">):</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">)</span>
+
+        <span class="c1"># Set reversal potentials</span>
+        <span class="k">for</span> <span class="n">erev</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">"erev"</span><span class="p">]:</span>
+            <span class="n">erev_section_array</span> <span class="o">=</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]</span>
+            <span class="n">ek</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">erev</span><span class="p">[</span><span class="s2">"ek"</span><span class="p">])</span>
+            <span class="n">ena</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">erev</span><span class="p">[</span><span class="s2">"ena"</span><span class="p">])</span>
+
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">"Setting ek to </span><span class="si">%.6g</span><span class="s2"> and ena to </span><span class="si">%.6g</span><span class="s2"> in </span><span class="si">%s</span><span class="s2">"</span>
+                <span class="o">%</span> <span class="p">(</span><span class="n">ek</span><span class="p">,</span> <span class="n">ena</span><span class="p">,</span> <span class="n">erev_section_array</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">erev_section_array</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">erev_section_array</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">ismembrane</span><span class="p">(</span><span class="s2">"k_ion"</span><span class="p">,</span> <span class="n">sec</span><span class="o">=</span><span class="n">section</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="s2">"ek"</span><span class="p">,</span> <span class="n">ek</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">ismembrane</span><span class="p">(</span><span class="s2">"na_ion"</span><span class="p">,</span> <span class="n">sec</span><span class="o">=</span><span class="n">section</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="s2">"ena"</span><span class="p">,</span> <span class="n">ena</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">"Warning: can't set erev for </span><span class="si">%s</span><span class="s2">, "</span>
+                    <span class="s2">"section array doesn't exist"</span> <span class="o">%</span> <span class="n">erev_section_array</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">v_init</span> <span class="o">=</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">"v_init"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">celsius</span> <span class="o">=</span> <span class="n">conditions</span><span class="p">[</span><span class="s2">"celsius"</span><span class="p">]</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

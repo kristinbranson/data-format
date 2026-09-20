@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.ASGLM &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.ASGLM</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.GLM</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">GLM</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<div class="viewcode-block" id="ASGLM_pairwise">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.ASGLM.html#allensdk.internal.model.glif.ASGLM.ASGLM_pairwise">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ASGLM_pairwise</span><span class="p">(</span><span class="n">ks_int</span><span class="p">,</span> <span class="n">I_stim</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">spike_ind</span><span class="p">,</span> <span class="n">cinit</span><span class="p">,</span> <span class="n">tauinit</span><span class="p">,</span> <span class="n">SCL</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">resting_potential</span><span class="p">,</span> 
+                   <span class="n">SHORT_RUN</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Calculate the resistance and amplitude of the afterspike currents for </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        ks_int: list </span>
+<span class="sd">            initial possible k's (k=1/tau, where tau is the time constant of the exponential decay)</span>
+<span class="sd">        I_stim: list of arrays</span>
+<span class="sd">            input stimulus traces of sweeps</span>
+<span class="sd">        voltage: list of arrays</span>
+<span class="sd">            voltage of cell as a result of I_stim</span>
+<span class="sd">        spike_ind: list of arrays</span>
+<span class="sd">            each array contains the index of the spikes</span>
+<span class="sd">        cinit: float </span>
+<span class="sd">            membrane capacitance</span>
+<span class="sd">        tauinit: float</span>
+<span class="sd">            time constant of membrane</span>
+<span class="sd">        SCL: float</span>
+<span class="sd">            number of indicies that should be cut after a spike</span>
+<span class="sd">        dt: float </span>
+<span class="sd">            size of time step of injected current</span>
+<span class="sd">        Returns</span>
+<span class="sd">        '''</span>
+
+    <span class="c1">#Initialize post-spike filter parameters (MOST OF THESE ARE HARD-CODED currently)</span>
+    <span class="n">nkt</span> <span class="o">=</span> <span class="mi">8000</span>                  <span class="c1"># arbitrary length of filter  WANT FILTER TO COVER A LENGTH OF TIME, WANT FILTER TO BE LONGER THAN LONGEST LENGTH ASC </span>
+    <span class="n">DTsim</span> <span class="o">=</span> <span class="n">dt</span>                  <span class="c1">#DTsim = dt means filter is nkt*dt = 100 ms long in this case THIS SHOULD INDEED BE THE SAMPLE WIDTH</span>
+    <span class="n">neye</span> <span class="o">=</span> <span class="mi">0</span>                    <span class="c1">#no of identity basis vectors DELTA</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="o">/</span><span class="n">dt</span>                 <span class="c1">#pre-factor for getting time units correct for bases</span>
+
+    <span class="n">taus_int</span><span class="o">=</span><span class="p">[</span><span class="mf">1000.</span><span class="o">/</span><span class="n">kk</span> <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="n">ks_int</span><span class="p">]</span> <span class="c1">#converting to ms</span>
+    <span class="n">taus_filter</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">*</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">taus_int</span><span class="p">]</span>     <span class="c1">#convert ms time to filter time units 1/(dt*ks)</span>
+    <span class="n">ks_list</span> <span class="o">=</span> <span class="p">[(</span><span class="mf">1.0</span><span class="o">/</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">taus_filter</span><span class="p">]</span>        <span class="c1">#use peak positions of rcos bumps as time-scales for exponential bases</span>
+    <span class="n">ncos</span> <span class="o">=</span> <span class="mi">2</span>                    <span class="c1">#no of bases!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+    <span class="n">flag_exp</span> <span class="o">=</span> <span class="mi">1</span>                <span class="c1">#flag_exp = 1 means use exponential bases, else use raised-cosine bumps </span>
+    <span class="n">vL</span> <span class="o">=</span> <span class="n">resting_potential</span>
+    
+    <span class="c1"># GLM fit with post-spike currents</span>
+    <span class="n">tst</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1">#190000#355000    #time-step to start</span>
+    <span class="n">npcut</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">SCL</span><span class="p">)</span>  <span class="c1"># no of points to cut after each spike-initiation</span>
+    
+    <span class="c1"># Collect spikes between tst and tend  </span>
+    <span class="n">t0_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mm</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">I_stim</span><span class="p">)):</span>
+        <span class="n">tend</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">I_stim</span><span class="p">[</span><span class="n">mm</span><span class="p">])</span>
+        <span class="n">t0</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">mm</span><span class="p">])):</span>  
+            <span class="k">if</span> <span class="n">spike_ind</span><span class="p">[</span><span class="n">mm</span><span class="p">][</span><span class="n">jj</span><span class="p">]</span><span class="o">&gt;</span><span class="n">tst</span> <span class="ow">and</span> <span class="n">spike_ind</span><span class="p">[</span><span class="n">mm</span><span class="p">][</span><span class="n">jj</span><span class="p">]</span><span class="o">&lt;</span><span class="n">tend</span><span class="p">:</span>
+                <span class="n">t0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">mm</span><span class="p">][</span><span class="n">jj</span><span class="p">])</span>
+        
+        <span class="n">t0_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t0</span><span class="p">)</span>
+    
+    <span class="c1">#Create a list of pairs of ks </span>
+    <span class="n">ks_pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">ks_list</span><span class="p">,</span><span class="n">ncos</span><span class="p">))</span> 
+    <span class="n">ks_pairs_in_SI_units</span><span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">ks_int</span><span class="p">,</span> <span class="n">ncos</span><span class="p">))</span>   
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ks_pairs</span><span class="p">)</span><span class="o">!=</span><span class="mi">10</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">'figure subplots will need to be changed as there is a different number than 10 ks_pairs.'</span><span class="p">)</span>
+    
+    <span class="c1">#Initialize list to hold charge dump values and amp-vectors</span>
+    <span class="c1">#Iterate over all pairs</span>
+    <span class="k">if</span> <span class="n">SHORT_RUN</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"You are not doing all the ks pairs in ASGLM_pairwise"</span><span class="p">)</span>
+        <span class="n">ks_pairs</span><span class="o">=</span><span class="p">[</span><span class="n">ks_pairs</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">R_for_all_ks_pairs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">asc_amp_for_all_ks_pairs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">llh_for_all_ks_pairs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ks_ind</span><span class="p">,</span> <span class="p">(</span><span class="n">ks_fit_units</span><span class="p">,</span> <span class="n">ks_SI_units</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">ks_pairs</span><span class="p">,</span> <span class="n">ks_pairs_in_SI_units</span><span class="p">)):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'ks_fit_units'</span><span class="p">,</span> <span class="n">ks_fit_units</span><span class="p">)</span>
+        <span class="c1">#Create basis IPSPs</span>
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">78</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+        <span class="n">basis_IPSP_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rr</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">I_stim</span><span class="p">)):</span> <span class="c1">#loop over repeats</span>
+            <span class="c1">#find the basis of the entire trace</span>
+            <span class="n">basis_IPSP</span><span class="p">,</span> <span class="n">gg0</span> <span class="o">=</span> <span class="n">GLM</span><span class="o">.</span><span class="n">create_basis_IPSP</span><span class="p">(</span><span class="n">neye</span><span class="p">,</span><span class="n">ncos</span><span class="p">,</span><span class="n">taus_filter</span><span class="p">,</span><span class="n">ks_fit_units</span><span class="p">,</span><span class="n">DTsim</span><span class="p">,</span><span class="n">t0_list</span><span class="p">[</span><span class="n">rr</span><span class="p">],</span><span class="n">I_stim</span><span class="p">[</span><span class="n">rr</span><span class="p">],</span><span class="n">nkt</span><span class="p">,</span><span class="n">flag_exp</span><span class="p">,</span><span class="n">npcut</span><span class="p">)</span>
+            <span class="n">basis_IPSP_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">basis_IPSP</span><span class="p">)</span> 
+            <span class="c1">#--Plot basis IPSPs between si and se    </span>
+            <span class="n">si</span> <span class="o">=</span> <span class="n">t0_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">10</span>   <span class="c1">#plot start_ind</span>
+            <span class="n">se</span> <span class="o">=</span> <span class="n">si</span><span class="o">+</span><span class="n">nkt</span><span class="o">+</span><span class="mi">10</span>  <span class="c1">#plot end_ind</span>
+            <span class="n">tvec</span> <span class="o">=</span> <span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">si</span><span class="o">-</span><span class="n">tst</span><span class="p">,</span><span class="n">se</span><span class="o">-</span><span class="n">tst</span><span class="p">)</span>   <span class="c1">#convert time-steps to real time (in sec)        </span>
+            <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">78</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">ks_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mf">1e3</span><span class="o">*</span><span class="n">tvec</span><span class="p">,</span><span class="n">basis_IPSP</span><span class="p">[</span><span class="n">si</span><span class="p">:</span><span class="n">se</span><span class="p">,:],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">rr</span><span class="p">))</span> <span class="c1">#1e3 plots time on x-axis in ms</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time (ms)'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"k's "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ks_SI_units</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">'ASGLM (fit asc and R): AScurrent basis'</span><span class="p">,</span>
+                         <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="mf">.4</span><span class="p">,</span> <span class="mf">.985</span><span class="p">),</span>
+                         <span class="n">xycoords</span><span class="o">=</span><span class="s1">'figure fraction'</span><span class="p">,</span>
+                         <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">'top'</span><span class="p">,</span>
+                         <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+                
+        <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">BLOCK</span><span class="p">)</span>                                      
+        
+        <span class="c1"># cut spikes out of dv, v, i, and b_ipsp and put the different sweeps in lists</span>
+        <span class="n">i_all_swps_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">b_ipsp_all_swps_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">v_all_swps_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">dv_all_swps_list</span> <span class="o">=</span> <span class="p">[]</span>        
+        <span class="k">for</span> <span class="n">ss</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">I_stim</span><span class="p">)):</span> <span class="c1">#loop over repeats</span>
+            <span class="n">tend</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">I_stim</span><span class="p">[</span><span class="n">ss</span><span class="p">])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">I_stim</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">tst</span><span class="p">:</span><span class="n">tend</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">b_ipsp</span> <span class="o">=</span> <span class="n">basis_IPSP_list</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">tst</span><span class="p">:</span><span class="n">tend</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            
+            <span class="n">v</span> <span class="o">=</span> <span class="n">voltage</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">tst</span><span class="p">:</span><span class="n">tend</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>    
+            <span class="n">vs</span> <span class="o">=</span> <span class="n">voltage</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">tst</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">tend</span><span class="p">]</span>
+            <span class="n">dv</span> <span class="o">=</span> <span class="p">(</span><span class="n">vs</span><span class="o">-</span><span class="n">v</span><span class="p">)</span><span class="o">/</span><span class="n">dt</span>                  <span class="c1">#derivative of voltage</span>
+            
+            <span class="c1">#delete npcut points after spike from each qty    </span>
+            <span class="n">delpts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t0_list</span><span class="p">[</span><span class="n">ss</span><span class="p">])):</span>
+                <span class="n">delpts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t0_list</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">kk</span><span class="p">])</span><span class="o">-</span><span class="n">tst</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">t0_list</span><span class="p">[</span><span class="n">ss</span><span class="p">][</span><span class="n">kk</span><span class="p">])</span><span class="o">-</span><span class="n">tst</span><span class="o">+</span><span class="n">npcut</span><span class="p">))</span>
+            
+            <span class="n">dv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">dv</span><span class="p">,</span><span class="n">delpts</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">delpts</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">delpts</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">b_ipsp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">b_ipsp</span><span class="p">,</span><span class="n">delpts</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+            
+            <span class="n">v_all_swps_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">dv_all_swps_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dv</span><span class="p">)</span>
+            <span class="n">i_all_swps_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">b_ipsp_all_swps_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b_ipsp</span><span class="p">)</span>
+            
+            <span class="n">tvec</span> <span class="o">=</span> <span class="n">dt</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+        
+        <span class="c1"># Compute amplitude each basis AS current using a GLM</span>
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">79</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+        <span class="n">R_for_each_sweep</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">asc_amp_for_each_sweep</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">llh_for_each_sweep</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kkk</span><span class="p">,</span> <span class="p">(</span><span class="n">v_spike_deleted</span><span class="p">,</span> <span class="n">dv_spike_deleted</span><span class="p">,</span> <span class="n">i_spike_deleted</span><span class="p">,</span> <span class="n">b_ipsp_spikes_deleted</span><span class="p">)</span> <span class="ow">in</span> \
+            <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">v_all_swps_list</span><span class="p">,</span> <span class="n">dv_all_swps_list</span><span class="p">,</span> <span class="n">i_all_swps_list</span><span class="p">,</span> <span class="n">b_ipsp_all_swps_list</span><span class="p">)):</span>
+        
+            <span class="c1">#--fitting afterspike current amplitudes and resistance</span>
+            <span class="n">inp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">i_spike_deleted</span><span class="p">),</span><span class="n">ncos</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">inp</span><span class="p">[:,</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">ncos</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">cinit</span><span class="p">)</span><span class="o">*</span><span class="n">b_ipsp_spikes_deleted</span><span class="p">[:,</span><span class="nb">range</span><span class="p">(</span><span class="n">ncos</span><span class="p">)]</span>
+            <span class="n">inp</span><span class="p">[:,</span><span class="n">ncos</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">v_spike_deleted</span><span class="o">-</span><span class="n">vL</span><span class="p">)</span><span class="o">/</span><span class="n">tauinit</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">dv_spike_deleted</span> <span class="o">-</span><span class="n">i_spike_deleted</span><span class="o">/</span><span class="n">cinit</span><span class="c1">#+ (v-vL)/tauinit - i/cinit</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">glm_fit</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">GLM</span><span class="p">(</span><span class="n">out</span><span class="p">,</span><span class="n">inp</span><span class="p">,</span><span class="n">family</span><span class="o">=</span><span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">(</span><span class="n">sm</span><span class="o">.</span><span class="n">families</span><span class="o">.</span><span class="n">links</span><span class="o">.</span><span class="n">identity</span><span class="p">))</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">glm_fit</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+                <span class="n">fitprs</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">params</span>  <span class="c1">#fitprs has [AMP OF ASC, TAU]             </span>
+
+                <span class="n">llh</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">llf</span>
+                <span class="n">fit_R</span><span class="o">=</span><span class="n">tauinit</span><span class="o">/</span><span class="p">(</span><span class="n">fitprs</span><span class="p">[</span><span class="n">ncos</span><span class="p">]</span><span class="o">*</span><span class="n">cinit</span><span class="p">)</span>
+                <span class="n">fit_asc_amp</span><span class="o">=</span><span class="n">fitprs</span><span class="p">[:</span><span class="n">ncos</span><span class="p">]</span>
+                <span class="c1">#Compute and plot post-spike current (essentially multiply basis functions with correct amplitudes from GLM fit)</span>
+                <span class="n">ipsc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">b_ipsp_spikes_deleted</span><span class="p">[:,</span><span class="mi">0</span><span class="p">:</span><span class="n">ncos</span><span class="p">]</span><span class="o">*</span><span class="n">fit_asc_amp</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>  <span class="c1">#THIS IS TOTAL POSTSPIKE CURRENT</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"fit didn't work: "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="n">llh</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="n">fit_R</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="n">fit_asc_amp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ncos</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                <span class="n">ipsc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">b_ipsp_spikes_deleted</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]))</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                
+            <span class="n">R_for_each_sweep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fit_R</span><span class="p">)</span>
+            <span class="n">asc_amp_for_each_sweep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fit_asc_amp</span><span class="p">)</span>
+            <span class="n">llh_for_each_sweep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llh</span><span class="p">)</span>
+            
+            <span class="c1">#Plot a single instance of AS current as function of time (in ms)</span>
+            <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">79</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">ks_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">plot_inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">t0_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">tst</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">t0_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">-</span><span class="n">tst</span><span class="o">+</span><span class="n">nkt</span><span class="p">)</span> <span class="c1">#plot just after first spike</span>
+                <span class="n">tvec</span> <span class="o">=</span> <span class="n">dt</span><span class="o">*</span><span class="n">plot_inds</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tvec</span><span class="p">,</span><span class="n">ipsc</span><span class="p">[</span><span class="n">plot_inds</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'llh='</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">llh</span><span class="p">))</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time (s)'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'current (A)'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"k's "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ks_SI_units</span><span class="p">))</span>
+                
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">80</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">ks_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ASC</span><span class="p">,</span> <span class="n">KS</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fit_asc_amp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ks_SI_units</span><span class="p">)):</span>
+                <span class="c1">#TODO: MAKE SURE I SHOULD BE USING SI UNITS HERE {I think this is correct as it is what I am returning from the function]</span>
+                <span class="c1">#TODO: MAKE SURE THE SIGNS OF K ARE OK</span>
+                    <span class="n">t_plot</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span>
+                    <span class="n">single_asc_trace</span><span class="o">=</span><span class="n">ASC</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">KS</span><span class="o">*</span><span class="n">t_plot</span><span class="p">)</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_plot</span><span class="p">,</span> <span class="n">single_asc_trace</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">'sweep '</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">kkk</span><span class="p">))</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time (s)'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'current (A)'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">"k's "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">ks_SI_units</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">79</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">'ASGLM (fit asc and R): Sum fit after spike currents'</span><span class="p">,</span>
+                         <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="mf">.3</span><span class="p">,</span> <span class="mf">.985</span><span class="p">),</span>
+                         <span class="n">xycoords</span><span class="o">=</span><span class="s1">'figure fraction'</span><span class="p">,</span>
+                         <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">'top'</span><span class="p">,</span>
+                         <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+            
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">80</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">'ASGLM (fit asc and R): Individual Currents'</span><span class="p">,</span>
+                         <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="mf">.3</span><span class="p">,</span> <span class="mf">.985</span><span class="p">),</span>
+                         <span class="n">xycoords</span><span class="o">=</span><span class="s1">'figure fraction'</span><span class="p">,</span>
+                         <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span> <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">'top'</span><span class="p">,</span>
+                         <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        
+<span class="c1">#        #BELOW IS OVER EVERY PAIR</span>
+        <span class="n">R_for_all_ks_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">R_for_each_sweep</span><span class="p">)</span>
+        <span class="n">asc_amp_for_all_ks_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asc_amp_for_each_sweep</span><span class="p">)</span>
+        <span class="n">llh_for_all_ks_pairs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">llh_for_each_sweep</span><span class="p">)</span>
+
+        <span class="c1">#!!!!!!!!!!!!!we multiplied ks by dt for SI!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!     </span>
+    <span class="n">ave_llh_for_each_pair</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">llh_for_all_ks_pairs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">best_ks_pair_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">ave_llh_for_each_pair</span><span class="p">)</span><span class="o">==</span><span class="n">ave_llh_for_each_pair</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">best_k_pair</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ks_pairs</span><span class="p">[</span><span class="n">best_ks_pair_ind</span><span class="p">])</span><span class="o">/</span><span class="n">dt</span>
+    <span class="n">best_asc_amp</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">asc_amp_for_all_ks_pairs</span><span class="p">[</span><span class="n">best_ks_pair_ind</span><span class="p">])</span>
+    <span class="n">best_R</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">R_for_all_ks_pairs</span><span class="p">[</span><span class="n">best_ks_pair_ind</span><span class="p">])</span>
+    <span class="n">best_llh</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">llh_for_all_ks_pairs</span><span class="p">[</span><span class="n">best_ks_pair_ind</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'**********from ASGLM_pairwise******************************************'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'best_ks_pair_ind'</span><span class="p">,</span> <span class="n">best_ks_pair_ind</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'best_asc_amp'</span><span class="p">,</span> <span class="n">best_asc_amp</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'best_k_pair'</span><span class="p">,</span> <span class="n">best_k_pair</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'best_R'</span><span class="p">,</span> <span class="n">best_R</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'best_llh'</span><span class="p">,</span> <span class="n">best_llh</span><span class="p">)</span>
+        
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'**********done with ASGLM_pairwise***********************************'</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">best_k_pair</span><span class="p">,</span> <span class="n">best_asc_amp</span><span class="p">,</span> <span class="n">best_R</span><span class="p">,</span> <span class="n">best_llh</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

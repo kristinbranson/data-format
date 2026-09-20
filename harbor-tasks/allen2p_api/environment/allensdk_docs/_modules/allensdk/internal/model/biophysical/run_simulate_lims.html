@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.biophysical.run_simulate_lims &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.biophysical.run_simulate_lims</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging.config</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">files</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.biophysical.run_simulate</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunSimulate</span>
+
+
+<div class="viewcode-block" id="RunSimulateLims">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.run_simulate_lims.html#allensdk.internal.model.biophysical.run_simulate_lims.RunSimulateLims">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RunSimulateLims</span><span class="p">(</span><span class="n">RunSimulate</span><span class="p">):</span>
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'allensdk.internal.model.biophysical.run_simulate_lims'</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">input_json</span><span class="p">,</span> 
+                 <span class="n">output_json</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RunSimulateLims</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RunSimulateLims.generate_manifest_rma">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.run_simulate_lims.html#allensdk.internal.model.biophysical.run_simulate_lims.RunSimulateLims.generate_manifest_rma">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_manifest_rma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="n">neuronal_model_run_id</span><span class="p">,</span>
+                              <span class="n">manifest_path</span><span class="p">,</span>
+                              <span class="n">api_url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''</span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Other necessary files are also written.</span>
+<span class="sd">        '''</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.biophysical_module_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiophysicalModuleApi</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.biophysical_module_reader</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiophysicalModuleReader</span>
+
+        <span class="n">bma</span> <span class="o">=</span> <span class="n">BiophysicalModuleApi</span><span class="p">(</span><span class="n">api_url</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">bma</span><span class="o">.</span><span class="n">get_neuronal_model_runs</span><span class="p">(</span><span class="n">neuronal_model_run_id</span><span class="p">)</span>
+
+        <span class="n">lr</span> <span class="o">=</span> <span class="n">BiophysicalModuleReader</span><span class="p">()</span>
+        <span class="n">lr</span><span class="o">.</span><span class="n">read_lims_message</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">'lims_message.json'</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">'lims_message.json'</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">lr</span><span class="o">.</span><span class="n">to_manifest</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)</span> </div>
+
+
+<div class="viewcode-block" id="RunSimulateLims.generate_manifest_lims">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.run_simulate_lims.html#allensdk.internal.model.biophysical.run_simulate_lims.RunSimulateLims.generate_manifest_lims">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_manifest_lims</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                               <span class="n">lims_data_path</span><span class="p">,</span>
+                               <span class="n">manifest_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''</span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Other necessary files are also written.</span>
+<span class="sd">        '''</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.biophysical_module_reader</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiophysicalModuleReader</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lims_json</span> <span class="o">=</span> <span class="n">lims_data_path</span>
+
+        <span class="n">lr</span> <span class="o">=</span> <span class="n">BiophysicalModuleReader</span><span class="p">()</span>
+        <span class="n">lr</span><span class="o">.</span><span class="n">read_lims_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lims_json</span><span class="p">)</span>
+        
+        <span class="n">lr</span><span class="o">.</span><span class="n">to_manifest</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunSimulateLims.copy_local">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.run_simulate_lims.html#allensdk.internal.model.biophysical.run_simulate_lims.RunSimulateLims.copy_local">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_local</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">()</span>
+
+        <span class="n">modfile_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'MODFILE_DIR'</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">modfile_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">modfile_dir</span><span class="p">)</span>
+
+        <span class="n">workdir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'WORKDIR'</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">workdir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">workdir</span><span class="p">)</span>
+
+        <span class="n">modfiles</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">info</span>
+                    <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">path_info</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="s1">'format'</span> <span class="ow">in</span> <span class="n">info</span> <span class="ow">and</span> <span class="n">info</span><span class="p">[</span><span class="s1">'format'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'MODFILE'</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">from_file</span> <span class="ow">in</span> <span class="n">modfiles</span><span class="p">:</span>             
+            <span class="n">RunSimulate</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"copying </span><span class="si">%s</span><span class="s2"> to </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">from_file</span><span class="p">,</span> <span class="n">modfile_dir</span><span class="p">))</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">from_file</span><span class="p">,</span> <span class="n">modfile_dir</span><span class="p">)</span>
+        
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'fit_parameters'</span><span class="p">),</span>
+                    <span class="n">workdir</span><span class="p">)</span>
+        
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'stimulus_path'</span><span class="p">),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'output_path'</span><span class="p">))</span>
+        
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="s1">'allensdk.model.biophysical'</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">'cell.hoc'</span><span class="p">)),</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">curdir</span><span class="p">)</span></div>
+</div>
+
+    
+    
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.run_simulate_lims.html#allensdk.internal.model.biophysical.run_simulate_lims.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">lims_strategy_json</span><span class="p">,</span> <span class="n">lims_response_json</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Entry point for module.</span>
+<span class="sd">        :param command: select behavior, nrnivmodl or simulate</span>
+<span class="sd">        :type command: string    </span>
+<span class="sd">        :param lims_strategy_json: path to json file output from lims.</span>
+<span class="sd">        :type lims_strategy_json: string</span>
+<span class="sd">        :param lims_response_json: path to json file returned to lims.</span>
+<span class="sd">        :type lims_response_json: string</span>
+<span class="sd">    '''</span>
+    <span class="n">rs</span> <span class="o">=</span> <span class="n">RunSimulateLims</span><span class="p">(</span><span class="n">lims_strategy_json</span><span class="p">,</span>
+                     <span class="n">lims_response_json</span><span class="p">)</span>
+
+    <span class="n">RunSimulateLims</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"command: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">command</span><span class="p">))</span>
+    <span class="n">RunSimulateLims</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"lims strategy json: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">lims_strategy_json</span><span class="p">))</span>
+    <span class="n">RunSimulateLims</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"lims upload json: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">lims_response_json</span><span class="p">))</span>
+        
+    <span class="n">log_config</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">(</span><span class="s1">'allensdk.model.biophysical'</span><span class="p">)</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">'logging.conf'</span><span class="p">))</span>
+    <span class="n">lc</span><span class="o">.</span><span class="n">fileConfig</span><span class="p">(</span><span class="n">log_config</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'LOG_CFG'</span><span class="p">]</span> <span class="o">=</span> <span class="n">log_config</span>
+    
+    <span class="k">if</span> <span class="s1">'nrnivmodl'</span> <span class="o">==</span> <span class="n">command</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">nrnivmodl</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="s1">'copy_local'</span> <span class="o">==</span> <span class="n">command</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">copy_local</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="s1">'generate_manifest_rma'</span> <span class="o">==</span> <span class="n">command</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">generate_manifest_rma</span><span class="p">(</span><span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">'generate_manifest_lims'</span> <span class="o">==</span> <span class="n">command</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">generate_manifest_lims</span><span class="p">(</span><span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">'generate_manifest_lims'</span> <span class="o">==</span> <span class="n">command</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">generate_manifest_lims</span><span class="p">(</span><span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">simulate</span><span class="p">()</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">command</span><span class="p">,</span> <span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">main</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">input_json</span><span class="p">,</span> <span class="n">output_json</span><span class="p">)</span>
+        <span class="n">RunSimulateLims</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"success"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">RunSimulate</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

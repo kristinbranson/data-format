@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.sync_stim_aligner &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.sync_stim_aligner</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Here we will define a class for aligning the timesteps in a sync</span>
+<span class="c1"># file with the frames listed in a stimulus pickle file.</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory</span><span class="w"> </span><span class="kn">import</span> <span class="n">sync_dataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_system_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_StimulusFile</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_choose_line</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">sync_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Scan through sync_lines in order. Select the first one</span>
+<span class="sd">    that is present in the sync file. Raise an exception if</span>
+<span class="sd">    none are present.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: sync_dataset.Dataset</span>
+
+<span class="sd">    sync_lines: Union[str, Tuple[str]]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    chosen_line: str</span>
+<span class="sd">        The first line in sync_lines that is present in</span>
+<span class="sd">        the sync file.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sync_lines</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">sync_lines</span> <span class="o">=</span> <span class="p">(</span><span class="n">sync_lines</span><span class="p">,</span> <span class="p">)</span>
+
+    <span class="n">chosen_line</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">this_line</span> <span class="ow">in</span> <span class="n">sync_lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">this_line</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">line_labels</span><span class="p">:</span>
+            <span class="n">chosen_line</span> <span class="o">=</span> <span class="n">this_line</span>
+            <span class="k">break</span>
+
+    <span class="k">if</span> <span class="n">chosen_line</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Could not find one of "</span>
+               <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sync_lines</span><span class="si">}</span><span class="s2"> in sync dataset. "</span>
+               <span class="sa">f</span><span class="s2">"available lines:</span><span class="se">\n</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">line_labels</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">chosen_line</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_rising_times</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">sync_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get the timestamps, in seconds, associated with the rising</span>
+<span class="sd">    edges in a specific line in a sync file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: sync_dataset.Dataset</span>
+
+<span class="sd">    sync_lines: Union[str, Tuple[str]]</span>
+<span class="sd">        The line to look for in the sync file.</span>
+<span class="sd">        If a str, return the rising edges in that line.</span>
+<span class="sd">        If a Tuple, work through the tuple **in order** until</span>
+<span class="sd">        a line is found that is present in the sync file. That</span>
+<span class="sd">        is the line for which timestamps will be returned.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    timestamps: np.ndarray</span>
+<span class="sd">        The times, in seconds, associated with the rising edges</span>
+<span class="sd">        of the chosen line.</span>
+<span class="sd">    """</span>
+    <span class="n">chosen_line</span> <span class="o">=</span> <span class="n">_choose_line</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">sync_lines</span><span class="o">=</span><span class="n">sync_lines</span><span class="p">)</span>
+
+    <span class="n">timestamps</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_rising_edges</span><span class="p">(</span>
+                        <span class="n">line</span><span class="o">=</span><span class="n">chosen_line</span><span class="p">,</span>
+                        <span class="n">units</span><span class="o">=</span><span class="s1">'seconds'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">timestamps</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_falling_times</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">sync_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get the timestamps, in seconds, associated with the falling</span>
+<span class="sd">    edges in a specific line in a sync file.</span>
+
+<span class="sd">    Note: only falling edges that occur after rising edges are</span>
+<span class="sd">    returned. This is a quality control measure.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: sync_dataset.Dataset</span>
+
+<span class="sd">    sync_lines: Union[str, Tuple[str]]</span>
+<span class="sd">        The line to look for in the sync file.</span>
+<span class="sd">        If a str, return the falling edges in that line.</span>
+<span class="sd">        If a Tuple, work through the tuple **in order** until</span>
+<span class="sd">        a line is found that is present in the sync file. That</span>
+<span class="sd">        is the line for which timestamps will be returned.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    timestamps: np.ndarray</span>
+<span class="sd">        The times, in seconds, associated with the rising edges</span>
+<span class="sd">        of the chosen line.</span>
+<span class="sd">    """</span>
+
+    <span class="n">chosen_line</span> <span class="o">=</span> <span class="n">_choose_line</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">sync_lines</span><span class="o">=</span><span class="n">sync_lines</span><span class="p">)</span>
+
+    <span class="n">rising_edges</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_rising_edges</span><span class="p">(</span>
+                        <span class="n">line</span><span class="o">=</span><span class="n">chosen_line</span><span class="p">,</span>
+                        <span class="n">units</span><span class="o">=</span><span class="s1">'seconds'</span><span class="p">)</span>
+
+    <span class="n">falling_edges</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_falling_edges</span><span class="p">(</span>
+                        <span class="n">line</span><span class="o">=</span><span class="n">chosen_line</span><span class="p">,</span>
+                        <span class="n">units</span><span class="o">=</span><span class="s1">'seconds'</span><span class="p">)</span>
+
+    <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span><span class="n">falling_edges</span> <span class="o">&gt;</span> <span class="n">rising_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">falling_edges</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_line_starts_and_ends</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">sync_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: sync_dataset.Dataset</span>
+
+<span class="sd">    sync_lines: Union[str, Tuple[str]]</span>
+<span class="sd">        The line to look for in the sync file.</span>
+<span class="sd">        If a str, return the falling edges in that line.</span>
+<span class="sd">        If a Tuple, work through the tuple **in order** until</span>
+<span class="sd">        a line is found that is present in the sync file. That</span>
+<span class="sd">        is the line for which timestamps will be returned.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    (start_times, end_times): Tuple[np.ndarray, np.ndarray]</span>
+<span class="sd">        np.ndarrays of times (in seconds) that the given</span>
+<span class="sd">        line turns on (rises) and turns off (falls).</span>
+<span class="sd">    """</span>
+    <span class="n">start_times</span> <span class="o">=</span> <span class="n">_get_rising_times</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">sync_lines</span><span class="o">=</span><span class="n">sync_lines</span><span class="p">)</span>
+
+    <span class="n">end_times</span> <span class="o">=</span> <span class="n">_get_falling_times</span><span class="p">(</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">sync_lines</span><span class="o">=</span><span class="n">sync_lines</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">start_times</span><span class="p">,</span> <span class="n">end_times</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_start_frames</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">raw_frame_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">stimulus_frame_counts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Find the start frames for a series of stimuli that need to be</span>
+<span class="sd">    registered to a single sync file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data: sync_dataset.Dataset</span>
+<span class="sd">        A representation of the sync file being registered</span>
+<span class="sd">    raw_frame_times: np.ndarray</span>
+<span class="sd">        The timestamps (in seconds) of the events being registered</span>
+<span class="sd">    stimulus_frame_counts: List[int]</span>
+<span class="sd">        The number of events occuring during each stimulus</span>
+<span class="sd">        as read from the pickle file, **in the order** that</span>
+<span class="sd">        the stimuli were run.</span>
+<span class="sd">    tolerance: float</span>
+<span class="sd">        The tolerance within which the length of an epoch</span>
+<span class="sd">        and an element of stimulus_frame_counts will be</span>
+<span class="sd">        considered the same.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    start_frames: List[int]</span>
+<span class="sd">        The global index of the starting frames associated with the</span>
+<span class="sd">        stimuli represented by stimulus_frame_counts</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Ideally, the vsync_stim line in the sync file represents when</span>
+<span class="sd">    frames from a stimulus are presented to the mouse. Unfortunately,</span>
+<span class="sd">    they do not carry any information about which stimulus block</span>
+<span class="sd">    the frames correspond to (behavior, mapping, or replay in a fiducial</span>
+<span class="sd">    VBN session). The stim_running line, however, can be used to find</span>
+<span class="sd">    the dividing times between the three stimulus presentations.</span>
+<span class="sd">    stim_running is high when a stimulus block is being presented</span>
+<span class="sd">    and low when it is not. What this method does is:</span>
+
+<span class="sd">    1) Take a list of raw frame times as input (probably the falling</span>
+<span class="sd">    edges of the vsync_stim line, but possibly the rising edges,</span>
+<span class="sd">    depending on our use case)</span>
+
+<span class="sd">    2) Find the timestamps associated with the rising and falling</span>
+<span class="sd">    edges of stim_running. These are taken to be the breaks between</span>
+<span class="sd">    stimulus blocks.</span>
+
+<span class="sd">    3) Divide the raw frame times into blocks that fall between the</span>
+<span class="sd">    stimulus block start/end times from (2).</span>
+
+<span class="sd">    4) Try to match the blocks of frame times against the expected</span>
+<span class="sd">    number of frames in each block as specified in stimulus_frame_counts.</span>
+
+<span class="sd">    See discussion here</span>
+<span class="sd">    http://confluence.corp.alleninstitute.org/pages/viewpage.action?spaceKey=IT&amp;title=Addressing+variable+monitor+lag+in+sync+data+for+Visual+Behavior+Neuropixels</span>
+
+<span class="sd">    This is a modified copy of a method originally implemented in</span>
+<span class="sd">    ecephys_etl_pipelines/.../vbn_create_stimulus_table/create_stim_table.py</span>
+<span class="sd">    The purpose of the modified copy is to allow us to use rising *or* falling</span>
+<span class="sd">    edges as raw_stim_times, depending on the use case.</span>
+<span class="sd">    """</span>
+
+    <span class="n">frame_count_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stimulus_frame_counts</span><span class="p">)</span>
+
+    <span class="n">stim_starts</span><span class="p">,</span> <span class="n">stim_ends</span> <span class="o">=</span> <span class="n">_get_line_starts_and_ends</span><span class="p">(</span>
+                                   <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                                   <span class="n">sync_lines</span><span class="o">=</span><span class="p">(</span><span class="s1">'stim_running'</span><span class="p">,</span> <span class="s1">'sweep'</span><span class="p">))</span>
+
+    <span class="c1"># break raw_frame_times into epochs based on stim_starts and stim_ends</span>
+    <span class="n">epoch_frame_counts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">epoch_start_frames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">stim_starts</span><span class="p">,</span> <span class="n">stim_ends</span><span class="p">):</span>
+        <span class="c1"># Inner expression returns a bool array where conditions are True</span>
+        <span class="c1"># np.where evaluates bool array to return indices where bool array True</span>
+        <span class="n">epoch_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">raw_frame_times</span> <span class="o">&gt;=</span> <span class="n">start</span><span class="p">)</span>
+                                <span class="o">&amp;</span> <span class="p">(</span><span class="n">raw_frame_times</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">epoch_frame_counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">epoch_frames</span><span class="p">))</span>
+        <span class="n">epoch_start_frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">epoch_frames</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">epoch_frame_counts</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_count_arr</span><span class="p">):</span>
+        <span class="c1"># There is a 1:1 mapping between the epochs found by sub-dividing</span>
+        <span class="c1"># the stim_running line and the stimulus blocks expected based on</span>
+        <span class="c1"># the stimulus pickle files.</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">frame_count_arr</span><span class="p">,</span> <span class="n">epoch_frame_counts</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Number of frames derived from sync file "</span>
+                <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">epoch_frame_counts</span><span class="si">}</span><span class="s2">)for each epoch not matching up with "</span>
+                <span class="sa">f</span><span class="s2">"frame counts derived from pkl files (</span><span class="si">{</span><span class="n">frame_count_arr</span><span class="si">}</span><span class="s2">)!"</span>
+            <span class="p">)</span>
+        <span class="n">start_frames</span> <span class="o">=</span> <span class="n">epoch_start_frames</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">epoch_frame_counts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_count_arr</span><span class="p">):</span>
+        <span class="c1"># There were, for some reason, more epochs found by sub-dividing the</span>
+        <span class="c1"># stim_running line than there were expected based on the stimulus</span>
+        <span class="c1"># pickle files.</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Number of stim presentations obtained from sync "</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">epoch_frame_counts</span><span class="p">)</span><span class="si">}</span><span class="s2">) higher than number expected "</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frame_count_arr</span><span class="p">)</span><span class="si">}</span><span class="s2">). Inferring start frames."</span>
+        <span class="p">)</span>
+
+        <span class="n">start_frames</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">stim_idx</span><span class="p">,</span> <span class="n">fc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">frame_count_arr</span><span class="p">):</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Finding stim start for stim with index: </span><span class="si">{</span><span class="n">stim_idx</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="c1"># Get index of stimulus whose frame counts most closely match</span>
+            <span class="c1"># the expected number of frames</span>
+            <span class="n">best_match</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">efc</span> <span class="o">-</span> <span class="n">fc</span><span class="p">)</span> <span class="k">for</span> <span class="n">efc</span> <span class="ow">in</span> <span class="n">epoch_frame_counts</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">lower_tol</span> <span class="o">=</span> <span class="n">fc</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">tolerance</span><span class="p">)</span>
+            <span class="n">upper_tol</span> <span class="o">=</span> <span class="n">fc</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">tolerance</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lower_tol</span> <span class="o">&lt;=</span> <span class="n">epoch_frame_counts</span><span class="p">[</span><span class="n">best_match</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper_tol</span><span class="p">:</span>
+                <span class="n">_</span> <span class="o">=</span> <span class="n">epoch_frame_counts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">best_match</span><span class="p">)</span>
+                <span class="n">start_frame</span> <span class="o">=</span> <span class="n">epoch_start_frames</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">best_match</span><span class="p">)</span>
+                <span class="n">start_frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">start_frame</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Found stim start for stim with index (</span><span class="si">{</span><span class="n">stim_idx</span><span class="si">}</span><span class="s2">)"</span>
+                    <span class="sa">f</span><span class="s2">"at vsync (</span><span class="si">{</span><span class="n">start_frame</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">"Could not find matching sync frames "</span>
+                    <span class="sa">f</span><span class="s2">"for stim: </span><span class="si">{</span><span class="n">stim_idx</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"expected n_frames </span><span class="si">{</span><span class="n">fc</span><span class="si">}</span><span class="s2">; "</span>
+                    <span class="sa">f</span><span class="s2">"best_match </span><span class="si">{</span><span class="n">epoch_frame_counts</span><span class="p">[</span><span class="n">best_match</span><span class="p">]</span><span class="si">}</span><span class="s2">; "</span>
+                    <span class="sa">f</span><span class="s2">"tolerance </span><span class="si">{</span><span class="n">tolerance</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Do not know how to handle more pkl frame count entries "</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">frame_count_arr</span><span class="si">}</span><span class="s2">) than sync derived epoch frame count "</span>
+            <span class="sa">f</span><span class="s2">"entries (</span><span class="si">{</span><span class="n">epoch_frame_counts</span><span class="si">}</span><span class="s2">)!"</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">start_frames</span>
+
+
+<div class="viewcode-block" id="get_stim_timestamps_from_stimulus_blocks">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.sync_stim_aligner.html#allensdk.brain_observatory.sync_stim_aligner.get_stim_timestamps_from_stimulus_blocks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stim_timestamps_from_stimulus_blocks</span><span class="p">(</span>
+        <span class="n">stimulus_files</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">_StimulusFile</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">_StimulusFile</span><span class="p">]],</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">],</span>
+        <span class="n">raw_frame_time_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">raw_frame_time_direction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">frame_count_tolerance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Find the timestamps associated a set of stimulus blocks</span>
+<span class="sd">    that have to be aligned with a single sync file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stimulus_files: Union[_StimulusFile, List[_StimulusFile]]</span>
+<span class="sd">        The _StimulusFile objects being registered to the sync file</span>
+<span class="sd">    sync_file: Union[str, pathlib.Path]</span>
+<span class="sd">        The path to the sync file</span>
+<span class="sd">    raw_frame_time_lines: Union[str, List[str]]</span>
+<span class="sd">        The line to be used to find raw frame times (usually 'vsync_stim').</span>
+<span class="sd">        If a list, the code will scan the list in order until a line</span>
+<span class="sd">        that is present in the sync file is found. That line will be used.</span>
+<span class="sd">    raw_frame_time_direction: str</span>
+<span class="sd">        Either 'rising' or 'falling' indicating which edge to use in finding</span>
+<span class="sd">        the raw frame times</span>
+<span class="sd">    frame_count_tolerance: float</span>
+<span class="sd">        The tolerance to within two blocks of frame counts are considered</span>
+<span class="sd">        equal</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dict in which</span>
+
+<span class="sd">    "timestamps" -&gt; List[np.ndarray]</span>
+<span class="sd">        The list of timestamp arrays corresponding to the provided</span>
+<span class="sd">        _StimulusFiles.</span>
+
+<span class="sd">    "start_frames" -&gt; List[int]</span>
+<span class="sd">        The list of starting frames for the provided _StimulusFiles</span>
+
+<span class="sd">     **The order of stimulus_files will dictate the order of these</span>
+<span class="sd">     lists.**</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This method operates by finding the start frames associated</span>
+<span class="sd">    with each stimulus block according to _get_start_frames and</span>
+<span class="sd">    then assigning the timestamps associated with</span>
+<span class="sd">    stimulus_block.num_frames to each stimulus block.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">raw_frame_time_direction</span> <span class="o">==</span> <span class="s1">'rising'</span><span class="p">:</span>
+        <span class="n">frame_time_fn</span> <span class="o">=</span> <span class="n">_get_rising_times</span>
+    <span class="k">elif</span> <span class="n">raw_frame_time_direction</span> <span class="o">==</span> <span class="s1">'falling'</span><span class="p">:</span>
+        <span class="n">frame_time_fn</span> <span class="o">=</span> <span class="n">_get_falling_times</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Cannot parse raw_frame_time_direction = "</span>
+               <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">raw_frame_time_direction</span><span class="si">}</span><span class="s2">'</span><span class="se">\n</span><span class="s2">"</span>
+               <span class="s2">"must be either 'rising' or 'falling'"</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stimulus_files</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">stimulus_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">stimulus_files</span><span class="p">,</span> <span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sync_file</span><span class="p">,</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">):</span>
+        <span class="n">str_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sync_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">absolute</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">str_path</span> <span class="o">=</span> <span class="n">sync_file</span>
+    <span class="n">safe_sync_path</span> <span class="o">=</span> <span class="n">safe_system_path</span><span class="p">(</span><span class="n">file_name</span><span class="o">=</span><span class="n">str_path</span><span class="p">)</span>
+
+    <span class="n">list_of_timestamps</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">sync_dataset</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">safe_sync_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">sync_data</span><span class="p">:</span>
+        <span class="n">raw_frame_times</span> <span class="o">=</span> <span class="n">frame_time_fn</span><span class="p">(</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">sync_data</span><span class="p">,</span>
+                            <span class="n">sync_lines</span><span class="o">=</span><span class="n">raw_frame_time_lines</span><span class="p">)</span>
+
+        <span class="n">frame_count_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">num_frames</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stimulus_files</span><span class="p">]</span>
+        <span class="n">start_frames</span> <span class="o">=</span> <span class="n">_get_start_frames</span><span class="p">(</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">sync_data</span><span class="p">,</span>
+                            <span class="n">raw_frame_times</span><span class="o">=</span><span class="n">raw_frame_times</span><span class="p">,</span>
+                            <span class="n">stimulus_frame_counts</span><span class="o">=</span><span class="n">frame_count_list</span><span class="p">,</span>
+                            <span class="n">tolerance</span><span class="o">=</span><span class="n">frame_count_tolerance</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">f0</span><span class="p">,</span> <span class="n">nf</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_frames</span><span class="p">,</span> <span class="n">frame_count_list</span><span class="p">):</span>
+            <span class="n">this_array</span> <span class="o">=</span> <span class="n">raw_frame_times</span><span class="p">[</span><span class="n">f0</span><span class="p">:</span><span class="n">f0</span><span class="o">+</span><span class="n">nf</span><span class="p">]</span>
+            <span class="n">list_of_timestamps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_array</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"timestamps"</span><span class="p">:</span> <span class="n">list_of_timestamps</span><span class="p">,</span>
+            <span class="s2">"start_frames"</span><span class="p">:</span> <span class="n">start_frames</span><span class="p">}</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

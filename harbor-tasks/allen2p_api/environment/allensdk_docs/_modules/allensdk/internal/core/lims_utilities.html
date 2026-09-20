@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.core.lims_utilities &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.core.lims_utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_url_get</span>
+
+<span class="n">HDF5_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">306905526</span>
+<span class="n">NWB_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">475137571</span>
+<span class="n">NWB_UNCOMPRESSED_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">478840678</span>
+<span class="n">NWB_DOWNLOAD_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">481007198</span>
+<span class="n">METHOD_CONFIG_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">324440685</span>
+<span class="n">MODEL_PARAMETERS_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">329230374</span>
+<span class="n">BIOPHYS_MODEL_PARAMETERS_FILE_TYPE_ID</span> <span class="o">=</span> <span class="mi">329230374</span>
+
+
+<div class="viewcode-block" id="get_well_known_files_by_type">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.get_well_known_files_by_type">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_well_known_files_by_type</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">wkf_type_id</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wkf</span><span class="p">[</span><span class="s1">'storage_directory'</span><span class="p">],</span> <span class="n">wkf</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">])</span>
+           <span class="k">for</span> <span class="n">wkf</span> <span class="ow">in</span> <span class="n">wkfs</span>
+           <span class="k">if</span> <span class="n">wkf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'well_known_file_type_id'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="n">wkf_type_id</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+            <span class="s2">"Could not find well known files with type </span><span class="si">%d</span><span class="s2">."</span> <span class="o">%</span> <span class="n">wkf_type_id</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="get_well_known_file_by_type">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.get_well_known_file_by_type">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_well_known_file_by_type</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">wkf_type_id</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">get_well_known_files_by_type</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">wkf_type_id</span><span class="p">)</span>
+
+    <span class="n">nout</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nout</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+            <span class="s2">"Expected single well known file with type </span><span class="si">%d</span><span class="s2">. Got </span><span class="si">%d</span><span class="s2">."</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">wkf_type_id</span><span class="p">,</span> <span class="n">nout</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_well_known_files_by_name">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.get_well_known_files_by_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_well_known_files_by_name</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wkf</span><span class="p">[</span><span class="s1">'storage_directory'</span><span class="p">],</span> <span class="n">wkf</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">])</span>
+           <span class="k">for</span> <span class="n">wkf</span> <span class="ow">in</span> <span class="n">wkfs</span>
+           <span class="k">if</span> <span class="n">wkf</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">]</span> <span class="o">==</span> <span class="n">filename</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+            <span class="s2">"Could not find well known files with name </span><span class="si">%s</span><span class="s2">."</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="get_well_known_file_by_name">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.get_well_known_file_by_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_well_known_file_by_name</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">get_well_known_files_by_name</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+    <span class="n">nout</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">nout</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span>
+            <span class="s2">"Expected single well known file with name </span><span class="si">%s</span><span class="s2">. Got </span><span class="si">%d</span><span class="s2">."</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">filename</span><span class="p">,</span> <span class="n">nout</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="append_well_known_file">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.append_well_known_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">append_well_known_file</span><span class="p">(</span><span class="n">wkfs</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">wkf_type_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">content_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">'filename'</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+        <span class="s1">'storage_directory'</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">wkf_type_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">record</span><span class="p">[</span><span class="s1">'well_known_file_type_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">wkf_type_id</span>
+
+    <span class="k">if</span> <span class="n">content_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">record</span><span class="p">[</span><span class="s1">'content_type'</span><span class="p">]</span> <span class="o">=</span> <span class="n">content_type</span>
+
+    <span class="k">for</span> <span class="n">wkf</span> <span class="ow">in</span> <span class="n">wkfs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">wkf</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">]</span> <span class="o">==</span> <span class="n">record</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">]:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">"found existing well known file record for </span><span class="si">%s</span><span class="s2">, updating"</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+            <span class="n">wkf</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+            <span class="k">return</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">"could not find existing well known file record for </span><span class="si">%s</span><span class="s2">, appending"</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">)</span>
+    <span class="n">wkfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_connect</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="s2">"limsreader"</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"limsdb2"</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">"lims2"</span><span class="p">,</span>
+             <span class="n">password</span><span class="o">=</span><span class="s2">"limsro"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5432</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pg8000</span>
+
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">pg8000</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="n">database</span><span class="p">,</span>
+                          <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">conn</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_select</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">d</span>
+               <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+
+
+<div class="viewcode-block" id="select">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.select">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">select</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">DeprecationWarning</span><span class="p">(</span>
+        <span class="s2">"lims_utilities.select is deprecated.  Please use "</span>
+        <span class="s2">"lims_utilities.query instead."</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="connect">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.connect">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="s2">"limsreader"</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"limsdb2"</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">"lims2"</span><span class="p">,</span>
+            <span class="n">password</span><span class="o">=</span><span class="s2">"limsro"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5432</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">DeprecationWarning</span><span class="p">(</span>
+        <span class="s2">"lims_utilities.connect is deprecated.  Please use "</span>
+        <span class="s2">"lims_utilities.query instead."</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="query">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.query">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s2">"limsreader"</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"limsdb2"</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">"lims2"</span><span class="p">,</span>
+          <span class="n">password</span><span class="o">=</span><span class="s2">"limsro"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">5432</span><span class="p">):</span>
+    <span class="n">conn</span><span class="p">,</span> <span class="n">cursor</span> <span class="o">=</span> <span class="n">_connect</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">database</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span>
+
+    <span class="c1"># Guard against non-ascii characters in query</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s1">''</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">i</span> <span class="k">if</span> <span class="nb">ord</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">128</span> <span class="k">else</span> <span class="s1">' '</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">query</span><span class="p">])</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">_select</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+
+<div class="viewcode-block" id="safe_system_path">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.safe_system_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_system_path</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"Windows"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">linux_to_windows</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">convert_from_titan_linux</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">file_name</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="convert_from_titan_linux">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.convert_from_titan_linux">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_from_titan_linux</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+    <span class="c1"># Lookup table mapping project to program</span>
+    <span class="n">project_to_program</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"neuralcoding"</span><span class="p">:</span> <span class="s2">"braintv"</span><span class="p">,</span>
+        <span class="s1">'0378'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'conn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'ctyconn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'humancelltypes'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'mousecelltypes'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'shotconn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'synapticphys'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'whbi'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'wijem'</span><span class="p">:</span> <span class="s2">"celltypes"</span>
+    <span class="p">}</span>
+    <span class="c1"># Tough intermediary state where we have old paths</span>
+    <span class="c1"># being translated to new paths</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">'/projects/([^/]+)/vol1/(.*)'</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s1">'/allen'</span><span class="p">,</span>
+            <span class="s1">'programs'</span><span class="p">,</span>
+            <span class="n">project_to_program</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="s1">'undefined'</span><span class="p">),</span>
+            <span class="s1">'production'</span><span class="p">,</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">newpath</span>
+    <span class="k">return</span> <span class="n">file_name</span></div>
+
+
+
+<div class="viewcode-block" id="linux_to_windows">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.linux_to_windows">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">linux_to_windows</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+    <span class="c1"># Lookup table mapping project to program</span>
+    <span class="n">project_to_program</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"neuralcoding"</span><span class="p">:</span> <span class="s2">"braintv"</span><span class="p">,</span>
+        <span class="s1">'0378'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'conn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'ctyconn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'humancelltypes'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'mousecelltypes'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'shotconn'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'synapticphys'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'whbi'</span><span class="p">:</span> <span class="s2">"celltypes"</span><span class="p">,</span>
+        <span class="s1">'wijem'</span><span class="p">:</span> <span class="s2">"celltypes"</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Simple case for new world order</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">'/allen'</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span> <span class="o">+</span> <span class="n">file_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'/'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\\</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="c1"># /data/ paths are being retained (for now)</span>
+    <span class="c1"># this will need to be extended to map directories to</span>
+    <span class="c1"># /allen/{programs,aibs}/workgroups/foo</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">'/data/([^/]+)/(.*)'</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">'</span><span class="se">\\\\</span><span class="s1">aibsdata'</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)))</span>
+
+    <span class="c1"># Tough intermediary state where we have old paths</span>
+    <span class="c1"># being translated to new paths</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">'/projects/([^/]+)/vol1/(.*)'</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="n">newpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="s1">'</span><span class="se">\\\\</span><span class="s1">allen'</span><span class="p">,</span>
+            <span class="s1">'programs'</span><span class="p">,</span>
+            <span class="n">project_to_program</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="s1">'undefined'</span><span class="p">),</span>
+            <span class="s1">'production'</span><span class="p">,</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">newpath</span>
+
+    <span class="c1"># No matches found.  Clean up and return path given to us</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_input_json">
+<a class="viewcode-back" href="../../../../allensdk.internal.core.lims_utilities.html#allensdk.internal.core.lims_utilities.get_input_json">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_input_json</span><span class="p">(</span><span class="n">object_id</span><span class="p">,</span> <span class="n">object_class</span><span class="p">,</span> <span class="n">strategy_class</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"lims2"</span><span class="p">,</span>
+                   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">query_string</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"http://</span><span class="si">{}</span><span class="s2">/InputJsons?strategy_class=</span><span class="si">{}</span><span class="s2">"</span>
+                    <span class="s2">"&amp;object_class=</span><span class="si">{}</span><span class="s2">&amp;object_id=</span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">host</span><span class="p">,</span>
+                                                            <span class="n">strategy_class</span><span class="p">,</span>
+                                                            <span class="n">object_class</span><span class="p">,</span>
+                                                            <span class="n">object_id</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">query_string</span> <span class="o">+=</span> <span class="s2">"&amp;</span><span class="si">{}</span><span class="s2">=</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">read_url_get</span><span class="p">(</span><span class="n">query_string</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">ProcessingModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbWritableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusTimestamps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+    <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+    <span class="n">MappingStimulusFile</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">get_running_df</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.</span>\
+    <span class="n">running_speed</span><span class="o">.</span><span class="n">multi_stim_running_processing</span> <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+        <span class="n">_get_multi_stim_running_df</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RunningAcquisition">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.RunningAcquisition">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RunningAcquisition</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span>
+                         <span class="n">NwbReadableInterface</span><span class="p">,</span>
+                         <span class="n">NwbWritableInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A DataObject which contains properties and methods to load, process,</span>
+<span class="sd">    and represent running acquisition data.</span>
+
+<span class="sd">    Running aquisition data is represented as:</span>
+
+<span class="sd">    Pandas Dataframe with an index of timestamps and the following columns:</span>
+<span class="sd">        "dx": Angular change, computed during data collection</span>
+<span class="sd">        "v_sig": Voltage signal from the encoder</span>
+<span class="sd">        "v_in": The theoretical maximum voltage that the encoder</span>
+<span class="sd">            will reach prior to "wrapping". This should</span>
+<span class="sd">            theoretically be 5V (after crossing 5V goes to 0V, or</span>
+<span class="sd">            vice versa). In practice the encoder does not always</span>
+<span class="sd">            reach this value before wrapping, which can cause</span>
+<span class="sd">            transient spikes in speed at the voltage "wraps".</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">running_acquisition</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BehaviorStimulusFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stimulus_timestamps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StimulusTimestamps</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"running_acquisition"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">running_acquisition</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">stimulus_timestamps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">monitor_delay</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">"Running acquisition timestamps have montior delay "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">monitor_delay</span><span class="si">}</span><span class="s2">; there "</span>
+                    <span class="s2">"should be no monitor delay applied to the timestamps "</span>
+                    <span class="s2">"associated with running acquisition"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_file</span> <span class="o">=</span> <span class="n">stimulus_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span> <span class="o">=</span> <span class="n">stimulus_timestamps</span>
+
+<div class="viewcode-block" id="RunningAcquisition.from_stimulus_file">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.RunningAcquisition.from_stimulus_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stimulus_file</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"RunningAcquisition"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        sync_file is used for generating timestamps. If None, timestamps</span>
+<span class="sd">        will be generated from the stimulus file.</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">sync_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_sync_file</span><span class="p">(</span>
+                                        <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                                        <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                                        <span class="n">stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                                        <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="n">running_acq_df</span> <span class="o">=</span> <span class="n">get_running_df</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">time</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">running_acq_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">"speed"</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">running_acquisition</span><span class="o">=</span><span class="n">running_acq_df</span><span class="p">,</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunningAcquisition.from_multiple_stimulus_files">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.RunningAcquisition.from_multiple_stimulus_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_multiple_stimulus_files</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+            <span class="n">mapping_stimulus_file</span><span class="p">:</span> <span class="n">MappingStimulusFile</span><span class="p">,</span>
+            <span class="n">replay_stimulus_file</span><span class="p">:</span> <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="p">:</span> <span class="n">SyncFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"RunningAcquisition"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        sync_file is used for generating timestamps.</span>
+
+<span class="sd">        Stimulus blocks are assumed to be presented in the order</span>
+<span class="sd">        behavior_stimulus_file</span>
+<span class="sd">        mapping_stimulus_file</span>
+<span class="sd">        replay_stimulus_file</span>
+<span class="sd">        """</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">_get_multi_stim_running_df</span><span class="p">(</span>
+                <span class="n">sync_path</span><span class="o">=</span><span class="n">sync_file</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">mapping_stimulus_file</span><span class="o">=</span><span class="n">mapping_stimulus_file</span><span class="p">,</span>
+                <span class="n">replay_stimulus_file</span><span class="o">=</span><span class="n">replay_stimulus_file</span><span class="p">,</span>
+                <span class="n">use_lowpass_filter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">zscore_threshold</span><span class="o">=</span><span class="mf">10.0</span><span class="p">)[</span><span class="s1">'running_acquisition'</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">running_acquisition</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+                <span class="n">stimulus_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunningAcquisition.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.RunningAcquisition.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"RunningAcquisition"</span><span class="p">:</span>
+        <span class="n">running_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s1">'running'</span><span class="p">]</span>
+        <span class="n">dx_interface</span> <span class="o">=</span> <span class="n">running_module</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s1">'dx'</span><span class="p">)</span>
+
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">dx_interface</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">v_in</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s1">'v_in'</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">v_sig</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s1">'v_sig'</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">dx_interface</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+
+        <span class="n">running_acq_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s1">'dx'</span><span class="p">:</span> <span class="n">dx</span><span class="p">,</span>
+                <span class="s1">'v_in'</span><span class="p">:</span> <span class="n">v_in</span><span class="p">,</span>
+                <span class="s1">'v_sig'</span><span class="p">:</span> <span class="n">v_sig</span>
+            <span class="p">},</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">timestamps</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'timestamps'</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">running_acquisition</span><span class="o">=</span><span class="n">running_acq_df</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RunningAcquisition.to_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_acquisition.RunningAcquisition.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+        <span class="n">running_acquisition_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">running_dx_series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'dx'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s1">'cm'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s1">'Running wheel angular change, computed during data collection'</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">v_sig</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'v_sig'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="p">[</span><span class="s1">'v_sig'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s1">'V'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">'Voltage signal from the running wheel encoder'</span>
+        <span class="p">)</span>
+        <span class="n">v_in</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'v_in'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="p">[</span><span class="s1">'v_in'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">running_acquisition_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s1">'V'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="p">(</span>
+                <span class="s1">'The theoretical maximum voltage that the running wheel '</span>
+                <span class="s1">'encoder will reach prior to "wrapping". This should '</span>
+                <span class="s1">'theoretically be 5V (after crossing 5V goes to 0V, or '</span>
+                <span class="s1">'vice versa). In practice the encoder does not always '</span>
+                <span class="s1">'reach this value before wrapping, which can cause '</span>
+                <span class="s1">'transient spikes in speed at the voltage "wraps".'</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">'running'</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">:</span>
+            <span class="n">running_mod</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s1">'running'</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">running_mod</span> <span class="o">=</span> <span class="n">ProcessingModule</span><span class="p">(</span><span class="s1">'running'</span><span class="p">,</span>
+                                           <span class="s1">'Running speed processing module'</span><span class="p">)</span>
+            <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_processing_module</span><span class="p">(</span><span class="n">running_mod</span><span class="p">)</span>
+
+        <span class="n">running_mod</span><span class="o">.</span><span class="n">add_data_interface</span><span class="p">(</span><span class="n">running_dx_series</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">v_sig</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">v_in</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

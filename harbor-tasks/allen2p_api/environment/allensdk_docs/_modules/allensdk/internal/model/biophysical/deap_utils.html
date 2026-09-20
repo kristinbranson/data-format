@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.biophysical.deap_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.biophysical.deap_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.biophys_sim.neuron.hoc_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">HocUtils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.ephys.ephys_extractor</span><span class="w"> </span><span class="kn">import</span> <span class="n">EphysSweepFeatureExtractor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<div class="viewcode-block" id="Utils">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Utils</span><span class="p">(</span><span class="n">HocUtils</span><span class="p">):</span>
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Utils</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_curr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sampling_rate</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">cell</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Utils.generate_morphology">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.generate_morphology">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_morphology</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">morph_filename</span><span class="p">):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell</span>
+
+        <span class="n">swc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_SWC_read</span><span class="p">()</span>
+        <span class="n">swc</span><span class="o">.</span><span class="n">quiet</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">swc</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">morph_filename</span><span class="p">))</span>
+        <span class="n">imprt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Import3d_GUI</span><span class="p">(</span><span class="n">swc</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">imprt</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">cell</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">area</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mi">40</span><span class="p">)</span>
+
+        <span class="n">cell</span><span class="o">.</span><span class="n">simplify_axon</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">axonal</span><span class="p">:</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="mi">30</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">diam</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">nseg</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">sec</span><span class="o">.</span><span class="n">L</span> <span class="o">/</span> <span class="mi">40</span><span class="p">)</span>
+        <span class="n">cell</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">cell</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">cell</span><span class="o">.</span><span class="n">axon</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">define_shape</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Utils.load_cell_parameters">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.load_cell_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_cell_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell</span>
+        <span class="n">passive</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'passive'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">conditions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'conditions'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span>
+        <span class="n">addl_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'addl_params'</span><span class="p">]</span>
+
+        <span class="c1"># Set passive properties</span>
+        <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">Ra</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s1">'ra'</span><span class="p">]</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">cm</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s1">'cm'</span><span class="p">][</span><span class="n">sec</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]]</span>
+            <span class="n">sec</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s1">'pas'</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">sec</span><span class="p">:</span>
+                <span class="n">seg</span><span class="o">.</span><span class="n">pas</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"e_pas"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">v_init</span> <span class="o">=</span> <span class="n">passive</span><span class="p">[</span><span class="s2">"e_pas"</span><span class="p">]</span>
+
+        <span class="c1"># Insert channels and set parameters</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                <span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">all</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">c</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]]</span>
+                <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                    <span class="n">sec</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">ap</span> <span class="ow">in</span> <span class="n">addl_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ap</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                <span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">all</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">ap</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]]</span>
+                <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                    <span class="n">sec</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">ap</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">])</span>
+
+        <span class="c1"># Set reversal potentials</span>
+        <span class="k">for</span> <span class="n">erev</span> <span class="ow">in</span> <span class="n">conditions</span><span class="p">[</span><span class="s1">'erev'</span><span class="p">]:</span>
+            <span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">cell</span><span class="o">.</span><span class="n">all</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                <span class="n">sec</span><span class="o">.</span><span class="n">ena</span> <span class="o">=</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"ena"</span><span class="p">]</span>
+                <span class="n">sec</span><span class="o">.</span><span class="n">ek</span> <span class="o">=</span> <span class="n">erev</span><span class="p">[</span><span class="s2">"ek"</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Utils.set_normalized_parameters">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.set_normalized_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_normalized_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="n">channels_and_others</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'addl_params'</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">channels_and_others</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"max"</span><span class="p">]</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="s2">"min"</span><span class="p">])</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="s2">"min"</span><span class="p">]</span>
+            <span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">all</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">c</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                <span class="n">param_name</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">"parameter"</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                    <span class="n">param_name</span> <span class="o">+=</span> <span class="s2">"_"</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">sec</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Utils.set_actual_parameters">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.set_actual_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_actual_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="n">channels_and_others</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'addl_params'</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">channels_and_others</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">sections</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">all</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span><span class="mi">4</span><span class="p">]</span> <span class="o">==</span> <span class="n">c</span><span class="p">[</span><span class="s2">"section"</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">sec</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+                <span class="n">param_name</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="s2">"parameter"</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">""</span><span class="p">:</span>
+                    <span class="n">param_name</span> <span class="o">+=</span> <span class="s2">"_"</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">sec</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Utils.normalize_actual_parameters">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.normalize_actual_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">normalize_actual_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="n">params_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">channels_and_others</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'addl_params'</span><span class="p">]</span>
+        <span class="n">max_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="s2">"max"</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels_and_others</span><span class="p">])</span>
+        <span class="n">min_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="s2">"min"</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels_and_others</span><span class="p">])</span>
+
+        <span class="n">normalized_params</span> <span class="o">=</span> <span class="p">(</span><span class="n">params_array</span> <span class="o">-</span> <span class="n">min_vals</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_vals</span> <span class="o">-</span> <span class="n">min_vals</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">normalized_params</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Utils.actual_parameters_from_normalized">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.actual_parameters_from_normalized">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">actual_parameters_from_normalized</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="n">actual_params</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">channels_and_others</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'addl_params'</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">channels_and_others</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">p</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"max"</span><span class="p">]</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="s2">"min"</span><span class="p">])</span> <span class="o">+</span> <span class="n">c</span><span class="p">[</span><span class="s2">"min"</span><span class="p">]</span>
+            <span class="n">actual_params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">actual_params</span></div>
+
+
+<div class="viewcode-block" id="Utils.insert_iclamp">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.insert_iclamp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">insert_iclamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">IClamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="mf">0.5</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Utils.set_iclamp_params">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.set_iclamp_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_iclamp_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amp</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">dur</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">amp</span> <span class="o">=</span> <span class="n">amp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">delay</span> <span class="o">=</span> <span class="n">delay</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="n">dur</span></div>
+
+
+<div class="viewcode-block" id="Utils.calculate_feature_errors">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.calculate_feature_errors">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_feature_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_ms</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="c1"># Special case checks and penalty values</span>
+        <span class="n">minimum_num_spikes</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">missing_penalty_value</span> <span class="o">=</span> <span class="mf">20.0</span>
+        <span class="n">max_fail_penalty</span> <span class="o">=</span> <span class="mf">250.0</span>
+        <span class="n">min_fail_penalty</span> <span class="o">=</span> <span class="mf">75.0</span>
+        <span class="n">variance_factor</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+        <span class="n">fail_trace</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">delay</span> <span class="o">*</span> <span class="mf">1e-3</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">dur</span> <span class="o">*</span> <span class="mf">1e-3</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">t_ms</span> <span class="o">*</span> <span class="mf">1e-3</span>
+        <span class="n">feature_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'features'</span><span class="p">]</span>
+
+        <span class="c1"># penalize for failing to return to rest</span>
+        <span class="n">start_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">delay</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[:</span><span class="n">start_index</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mf">2.0</span><span class="p">:</span>
+            <span class="n">fail_trace</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">swp</span> <span class="o">=</span> <span class="n">EphysSweepFeatureExtractor</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">swp</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">swp</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"avg_rate"</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">fail_trace</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">target_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'target_features'</span><span class="p">]</span>
+        <span class="n">target_features_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]:</span> <span class="p">{</span><span class="s2">"mean"</span><span class="p">:</span> <span class="n">f</span><span class="p">[</span><span class="s2">"mean"</span><span class="p">],</span> <span class="s2">"stdev"</span><span class="p">:</span> <span class="n">f</span><span class="p">[</span><span class="s2">"stdev"</span><span class="p">]}</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">target_features</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fail_trace</span><span class="p">:</span>
+            <span class="n">swp</span> <span class="o">=</span> <span class="n">EphysSweepFeatureExtractor</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="n">delay</span> <span class="o">+</span> <span class="n">duration</span><span class="p">),</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">swp</span><span class="o">.</span><span class="n">process_spikes</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">swp</span><span class="o">.</span><span class="n">spikes</span><span class="p">())</span> <span class="o">&lt;</span> <span class="n">minimum_num_spikes</span><span class="p">:</span> <span class="c1"># Enough spikes?</span>
+                <span class="n">fail_trace</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">avg_per_spike_peak_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">abs</span><span class="p">(</span><span class="n">spk</span><span class="p">[</span><span class="s2">"peak_v"</span><span class="p">]</span> <span class="o">-</span> <span class="n">target_features_dict</span><span class="p">[</span><span class="s2">"peak_v"</span><span class="p">][</span><span class="s2">"mean"</span><span class="p">])</span> <span class="k">for</span> <span class="n">spk</span> <span class="ow">in</span> <span class="n">swp</span><span class="o">.</span><span class="n">spikes</span><span class="p">()])</span>
+                <span class="n">avg_overall_error</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">target_features_dict</span><span class="p">[</span><span class="s2">"peak_v"</span><span class="p">][</span><span class="s2">"mean"</span><span class="p">]</span> <span class="o">-</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"peak_v"</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+                <span class="k">if</span> <span class="n">avg_per_spike_peak_error</span> <span class="o">&gt;</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="n">avg_overall_error</span><span class="p">:</span> <span class="c1"># Weird bi-modality of spikes; 3.0 is arbitrary</span>
+                    <span class="n">fail_trace</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">fail_trace</span><span class="p">:</span>
+            <span class="n">variance_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">delay</span> <span class="o">-</span> <span class="mf">0.1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">variance_end</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="n">delay</span> <span class="o">+</span> <span class="n">duration</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">trace_variance</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">variance_start</span><span class="p">:</span><span class="n">variance_end</span><span class="p">]</span><span class="o">.</span><span class="n">var</span><span class="p">()</span>
+            <span class="n">error_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">max_fail_penalty</span> <span class="o">-</span> <span class="n">trace_variance</span> <span class="o">*</span> <span class="n">variance_factor</span><span class="p">,</span> <span class="n">min_fail_penalty</span><span class="p">)</span>
+            <span class="n">errs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">feature_names</span><span class="p">))</span> <span class="o">*</span> <span class="n">error_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Calculate additional features not done by swp.process_spikes()</span>
+            <span class="n">swp</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="s2">"v_baseline"</span><span class="p">)</span>
+            <span class="n">other_features</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">threshold_t</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"threshold_t"</span><span class="p">)</span>
+            <span class="n">fast_trough_t</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"fast_trough_t"</span><span class="p">)</span>
+            <span class="n">slow_trough_t</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"slow_trough_t"</span><span class="p">)</span>
+
+            <span class="n">delta_t</span> <span class="o">=</span> <span class="n">slow_trough_t</span> <span class="o">-</span> <span class="n">fast_trough_t</span>
+            <span class="n">delta_t</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">delta_t</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="n">other_features</span><span class="p">[</span><span class="s2">"slow_trough_delta_time"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">delta_t</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">threshold_t</span><span class="p">))</span>
+
+            <span class="n">fast_trough_v</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"fast_trough_v"</span><span class="p">)</span>
+            <span class="n">slow_trough_v</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="s2">"slow_trough_v"</span><span class="p">)</span>
+            <span class="n">delta_v</span> <span class="o">=</span> <span class="n">fast_trough_v</span> <span class="o">-</span> <span class="n">slow_trough_v</span>
+            <span class="n">delta_v</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">delta_v</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="n">other_features</span><span class="p">[</span><span class="s2">"slow_trough_delta_v"</span><span class="p">]</span> <span class="o">=</span> <span class="n">delta_v</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">feature_names</span><span class="p">:</span>
+                <span class="n">target_mean</span> <span class="o">=</span> <span class="n">target_features_dict</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'mean'</span><span class="p">]</span>
+                <span class="n">target_stdev</span> <span class="o">=</span> <span class="n">target_features_dict</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'stdev'</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">target_stdev</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">"Feature with 0 stdev: "</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature_keys</span><span class="p">():</span>
+                    <span class="n">model_mean</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">spike_feature</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                <span class="k">elif</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">swp</span><span class="o">.</span><span class="n">sweep_feature_keys</span><span class="p">():</span>
+                    <span class="n">model_mean</span> <span class="o">=</span> <span class="n">swp</span><span class="o">.</span><span class="n">sweep_feature</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">other_features</span><span class="p">:</span>
+                    <span class="n">model_mean</span> <span class="o">=</span> <span class="n">other_features</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">model_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">model_mean</span><span class="p">):</span>
+                    <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">missing_penalty_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">model_mean</span> <span class="o">-</span> <span class="n">target_mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">target_stdev</span><span class="p">))</span>
+
+            <span class="n">errs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">errs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">errs</span></div>
+
+
+<div class="viewcode-block" id="Utils.record_values">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.deap_utils.html#allensdk.internal.model.biophysical.deap_utils.Utils.record_values">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">v_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">()</span>
+        <span class="n">t_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">()</span>
+        <span class="n">i_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">()</span>
+
+        <span class="n">v_vec</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">soma</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">_ref_v</span><span class="p">)</span>
+        <span class="n">i_vec</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">_ref_amp</span><span class="p">)</span>
+        <span class="n">t_vec</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">_ref_t</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">v_vec</span><span class="p">,</span> <span class="n">i_vec</span><span class="p">,</span> <span class="n">t_vec</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

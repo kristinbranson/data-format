@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.r_neuropil &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.r_neuropil</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.sparse</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sparse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.linalg</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_banded</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+
+<div class="viewcode-block" id="get_diagonals_from_sparse">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.get_diagonals_from_sparse">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_diagonals_from_sparse</span><span class="p">(</span><span class="n">mat</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Returns a dictionary of diagonals keyed by offsets</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mat: scipy.sparse matrix</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dictionary: diagonals keyed by offsets</span>
+<span class="sd">    '''</span>
+
+    <span class="n">mat_dia</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">todia</span><span class="p">()</span>  <span class="c1"># make sure the matrix is in diagonal format</span>
+
+    <span class="n">offsets</span> <span class="o">=</span> <span class="n">mat_dia</span><span class="o">.</span><span class="n">offsets</span>
+    <span class="n">diagonals</span> <span class="o">=</span> <span class="n">mat_dia</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">mat_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">offsets</span><span class="p">):</span>
+        <span class="n">mat_dict</span><span class="p">[</span><span class="n">o</span><span class="p">]</span> <span class="o">=</span> <span class="n">diagonals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">mat_dict</span></div>
+
+
+
+<div class="viewcode-block" id="ab_from_diagonals">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.ab_from_diagonals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ab_from_diagonals</span><span class="p">(</span><span class="n">mat_dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Constructs value for scipy.linalg.solve_banded</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mat_dict: dictionary of diagonals keyed by offsets</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ab: value for scipy.linalg.solve_banded</span>
+<span class="sd">    '''</span>
+    <span class="n">offsets</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mat_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">offsets</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">offsets</span><span class="p">)</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">mat_dict</span><span class="p">[</span><span class="n">offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">ab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">l</span> <span class="o">+</span> <span class="n">u</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">offsets</span><span class="p">:</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">u</span> <span class="o">-</span> <span class="n">o</span>
+        <span class="n">ab</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">mat_dict</span><span class="p">[</span><span class="n">o</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ab</span></div>
+
+
+
+<div class="viewcode-block" id="error_calc">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.error_calc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">error_calc</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">,</span> <span class="n">F_C</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+
+    <span class="n">er</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">F_C</span> <span class="o">-</span> <span class="p">(</span><span class="n">F_M</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span><span class="p">))))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">F_M</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">er</span></div>
+
+
+
+<div class="viewcode-block" id="error_calc_outlier">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.error_calc_outlier">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">error_calc_outlier</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">,</span> <span class="n">F_C</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+
+    <span class="n">std_F_M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">F_M</span><span class="p">)</span>
+    <span class="n">mean_F_M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">F_M</span><span class="p">)</span>
+    <span class="n">ind_outlier</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">F_M</span> <span class="o">&gt;</span> <span class="n">mean_F_M</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">std_F_M</span><span class="p">)</span>
+
+    <span class="n">er</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span>
+        <span class="n">F_C</span><span class="p">[</span><span class="n">ind_outlier</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">F_M</span><span class="p">[</span><span class="n">ind_outlier</span><span class="p">]</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span><span class="p">[</span><span class="n">ind_outlier</span><span class="p">]))))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">F_M</span><span class="p">[</span><span class="n">ind_outlier</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">er</span></div>
+
+
+
+<div class="viewcode-block" id="ab_from_T">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.ab_from_T">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ab_from_T</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">lam</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+    <span class="c1"># using csr because multiplication is fast</span>
+    <span class="n">Ls</span> <span class="o">=</span> <span class="o">-</span><span class="n">sparse</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'csr'</span><span class="p">)</span> <span class="o">+</span> \
+        <span class="n">sparse</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'csr'</span><span class="p">)</span>
+    <span class="n">Ls</span> <span class="o">/=</span> <span class="n">dt</span>
+    <span class="n">Ls2</span> <span class="o">=</span> <span class="n">Ls</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Ls</span><span class="p">)</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">lam</span> <span class="o">*</span> <span class="n">Ls2</span>
+    <span class="n">mat_dict</span> <span class="o">=</span> <span class="n">get_diagonals_from_sparse</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+    <span class="n">ab</span> <span class="o">=</span> <span class="n">ab_from_diagonals</span><span class="p">(</span><span class="n">mat_dict</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ab</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_F">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.normalize_F">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_F</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">):</span>
+    <span class="n">F_N_min</span><span class="p">,</span> <span class="n">F_N_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">F_N</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">F_N</span><span class="p">))</span>
+
+    <span class="c1"># rescale so F_N is [0,1]</span>
+    <span class="n">F_M_s</span> <span class="o">=</span> <span class="p">(</span><span class="n">F_M</span> <span class="o">-</span> <span class="n">F_N_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">F_N_max</span> <span class="o">-</span> <span class="n">F_N_min</span><span class="p">)</span>
+    <span class="n">F_N_s</span> <span class="o">=</span> <span class="p">(</span><span class="n">F_N</span> <span class="o">-</span> <span class="n">F_N_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">F_N_max</span> <span class="o">-</span> <span class="n">F_N_min</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">F_M_s</span><span class="p">,</span> <span class="n">F_N_s</span></div>
+
+
+
+<div class="viewcode-block" id="alpha_filter">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.alpha_filter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">alpha_filter</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">A</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">beta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="validate_with_synthetic_F">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.validate_with_synthetic_F">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_with_synthetic_F</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Compute N synthetic traces of length T with known values of r, then estimate r.</span>
+<span class="sd">    TODO: docs</span>
+<span class="sd">    """</span>
+    <span class="n">af1</span> <span class="o">=</span> <span class="n">alpha_filter</span><span class="p">()</span>
+    <span class="n">af2</span> <span class="o">=</span> <span class="n">alpha_filter</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="n">r_truth_vals</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">r_est_vals</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+        <span class="n">F_M_truth</span><span class="p">,</span> <span class="n">F_N_truth</span><span class="p">,</span> <span class="n">F_C_truth</span><span class="p">,</span> <span class="n">r_truth</span> <span class="o">=</span> <span class="n">synthesize_F</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">af1</span><span class="p">,</span> <span class="n">af2</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">estimate_contamination_ratios</span><span class="p">(</span><span class="n">F_M_truth</span><span class="p">,</span> <span class="n">F_N_truth</span><span class="p">)</span>
+
+        <span class="n">r_est</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s1">'r'</span><span class="p">]</span>
+
+        <span class="n">r_truth_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r_truth</span><span class="p">)</span>
+        <span class="n">r_est_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r_est</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">r_truth_vals</span><span class="p">,</span> <span class="n">r_est_vals</span></div>
+
+
+
+<div class="viewcode-block" id="synthesize_F">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.synthesize_F">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">synthesize_F</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">af1</span><span class="p">,</span> <span class="n">af2</span><span class="p">,</span> <span class="n">p1</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">p2</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Build a synthetic F_C, F_M, F_N, and r of length T</span>
+<span class="sd">    TODO: docs</span>
+<span class="sd">    """</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">p1</span>
+    <span class="n">F_C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">af1</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'full'</span><span class="p">)[:</span><span class="n">T</span><span class="p">]</span>
+
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">p2</span>
+    <span class="n">F_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">af2</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'full'</span><span class="p">)[:</span><span class="n">T</span><span class="p">]</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+
+    <span class="n">F_M</span> <span class="o">=</span> <span class="n">F_C</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span>
+
+    <span class="k">return</span> <span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">,</span> <span class="n">F_C</span><span class="p">,</span> <span class="n">r</span></div>
+
+
+
+<div class="viewcode-block" id="NeuropilSubtract">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.NeuropilSubtract">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NeuropilSubtract</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" TODO: docs</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">folds</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lam</span> <span class="o">=</span> <span class="n">lam</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folds</span> <span class="o">=</span> <span class="n">folds</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ab</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">F_M</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">F_N</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_vals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_vals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="NeuropilSubtract.set_F">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.NeuropilSubtract.set_F">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_F</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Break the F_M and F_N traces into the number of folds specified</span>
+<span class="sd">        in the class constructor and normalize each fold of F_M and R_N relative to F_N.</span>
+<span class="sd">        """</span>
+
+        <span class="n">F_M_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">F_M</span><span class="p">)</span>
+        <span class="n">F_N_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">F_N</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">F_M_len</span> <span class="o">!=</span> <span class="n">F_N_len</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">"F_M and F_N must have the same length (</span><span class="si">%d</span><span class="s2"> vs </span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span><span class="n">F_M_len</span><span class="p">,</span> <span class="n">F_N_len</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">!=</span> <span class="n">F_M_len</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"updating ab matrix for new T=</span><span class="si">%d</span><span class="s2">"</span><span class="p">,</span> <span class="n">F_M_len</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">F_M_len</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">folds</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ab</span> <span class="o">=</span> <span class="n">ab_from_T</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T_f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">F_M</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">F_N</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">fi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folds</span><span class="p">):</span>
+            <span class="c1"># F_M_i_s, F_N_i_s = normalize_F(F_M[fi*self.T_f:(fi+1)*self.T_f],</span>
+            <span class="c1">#                               F_N[fi*self.T_f:(fi+1)*self.T_f])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">F_M</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F_M</span><span class="p">[</span><span class="n">fi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span><span class="p">:(</span><span class="n">fi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">F_N</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F_N</span><span class="p">[</span><span class="n">fi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span><span class="p">:(</span><span class="n">fi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_f</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="NeuropilSubtract.fit_block_coordinate_desc">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.NeuropilSubtract.fit_block_coordinate_desc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_block_coordinate_desc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r_init</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">min_delta_r</span><span class="o">=</span><span class="mf">0.00000001</span><span class="p">):</span>
+        <span class="n">F_M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_M</span><span class="p">)</span>
+        <span class="n">F_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">F_N</span><span class="p">)</span>
+
+        <span class="n">r_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">error_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">r_init</span>
+
+        <span class="n">delta_r</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">ab</span> <span class="o">=</span> <span class="n">ab_from_T</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">delta_r</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">delta_r</span> <span class="o">&gt;</span> <span class="n">min_delta_r</span><span class="p">:</span>
+            <span class="n">F_C</span> <span class="o">=</span> <span class="n">solve_banded</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">ab</span><span class="p">,</span> <span class="n">F_M</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span><span class="p">)</span>
+            <span class="n">new_r</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">F_C</span> <span class="o">-</span> <span class="n">F_M</span><span class="p">)</span> <span class="o">*</span> <span class="n">F_N</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">F_N</span><span class="p">))</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_error</span><span class="p">(</span><span class="n">new_r</span><span class="p">)</span>
+
+            <span class="n">error_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">r_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_r</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">delta_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="n">new_r</span><span class="p">)</span> <span class="o">/</span> <span class="n">r</span>
+
+            <span class="n">r</span> <span class="o">=</span> <span class="n">new_r</span>
+            <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_vals</span> <span class="o">=</span> <span class="n">r_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_vals</span> <span class="o">=</span> <span class="n">error_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">r_vals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">error_vals</span><span class="o">.</span><span class="n">min</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NeuropilSubtract.fit">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.NeuropilSubtract.fit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r_range</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">dr_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Estimate error values for a range of r values.  Identify a new r range</span>
+<span class="sd">        around the minimum error values and repeat multiple times.</span>
+<span class="sd">        TODO: docs</span>
+<span class="sd">        """</span>
+        <span class="n">global_min_error</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">global_min_r</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">r_vals</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">error_vals</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">it_range</span> <span class="o">=</span> <span class="n">r_range</span>
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">it_dr</span> <span class="o">=</span> <span class="n">dr</span>
+        <span class="k">while</span> <span class="n">it</span> <span class="o">&lt;</span> <span class="n">iterations</span><span class="p">:</span>
+            <span class="n">it_errors</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># build a set of r values evenly distributed in a current range</span>
+            <span class="n">rs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">it_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">it_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">it_dr</span><span class="p">)</span>
+
+            <span class="c1"># estimate error for each r</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rs</span><span class="p">:</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_error</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">it_errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+                <span class="n">r_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                <span class="n">error_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+
+            <span class="c1"># find the minimum in this range and update the global minimum</span>
+            <span class="n">min_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">it_errors</span><span class="p">)</span>
+            <span class="n">min_error</span> <span class="o">=</span> <span class="n">it_errors</span><span class="p">[</span><span class="n">min_i</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">global_min_error</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">min_error</span> <span class="o">&lt;</span> <span class="n">global_min_error</span><span class="p">:</span>
+                <span class="n">global_min_error</span> <span class="o">=</span> <span class="n">min_error</span>
+                <span class="n">global_min_r</span> <span class="o">=</span> <span class="n">rs</span><span class="p">[</span><span class="n">min_i</span><span class="p">]</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"iteration </span><span class="si">%d</span><span class="s2">, r=</span><span class="si">%0.4f</span><span class="s2">, e=</span><span class="si">%.6e</span><span class="s2">"</span><span class="p">,</span>
+                          <span class="n">it</span><span class="p">,</span> <span class="n">global_min_r</span><span class="p">,</span> <span class="n">global_min_error</span><span class="p">)</span>
+
+            <span class="c1"># if the minimum error is on the upper boundary,</span>
+            <span class="c1"># extend the boundary and redo this iteration</span>
+            <span class="k">if</span> <span class="n">min_i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">it_errors</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">"minimum error found on upper r bound, extending range"</span><span class="p">)</span>
+                <span class="n">it_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">rs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">rs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">rs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">rs</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># error is somewhere on either side of the minimum error index</span>
+                <span class="n">it_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">rs</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">min_i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span>
+                            <span class="n">rs</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">min_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">rs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]]</span>
+                <span class="n">it_dr</span> <span class="o">*=</span> <span class="n">dr_factor</span>
+                <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_vals</span> <span class="o">=</span> <span class="n">r_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_vals</span> <span class="o">=</span> <span class="n">error_vals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">global_min_r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="n">global_min_error</span></div>
+
+
+<div class="viewcode-block" id="NeuropilSubtract.estimate_error">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.NeuropilSubtract.estimate_error">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Estimate error values for a given r for each fold and return the mean. """</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folds</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fi</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folds</span><span class="p">):</span>
+            <span class="n">F_M</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_M</span><span class="p">[</span><span class="n">fi</span><span class="p">]</span>
+            <span class="n">F_N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">F_N</span><span class="p">[</span><span class="n">fi</span><span class="p">]</span>
+            <span class="n">F_C</span> <span class="o">=</span> <span class="n">solve_banded</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">ab</span><span class="p">,</span> <span class="n">F_M</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span><span class="p">)</span>
+            <span class="n">errors</span><span class="p">[</span><span class="n">fi</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">error_calc</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">,</span> <span class="n">F_C</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="estimate_contamination_ratios">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.r_neuropil.html#allensdk.brain_observatory.r_neuropil.estimate_contamination_ratios">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_contamination_ratios</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">,</span>
+                                  <span class="n">lam</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">folds</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                  <span class="n">r_range</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span> <span class="n">dr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">dr_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Calculates neuropil contamination of ROI</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">       F_M: ROI trace</span>
+<span class="sd">       F_N: Neuropil trace</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dictionary: key-value pairs</span>
+<span class="sd">        * 'r': the contamination ratio -- corrected trace = M - r*N</span>
+<span class="sd">        * 'err': RMS error</span>
+<span class="sd">        * 'min_error': minimum error</span>
+<span class="sd">        * 'bounds_error': boolean. True if error or R are outside tolerance</span>
+<span class="sd">    '''</span>
+
+    <span class="n">ns</span> <span class="o">=</span> <span class="n">NeuropilSubtract</span><span class="p">(</span><span class="n">lam</span><span class="o">=</span><span class="n">lam</span><span class="p">,</span> <span class="n">folds</span><span class="o">=</span><span class="n">folds</span><span class="p">)</span>
+
+    <span class="n">ns</span><span class="o">.</span><span class="n">set_F</span><span class="p">(</span><span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">)</span>
+
+    <span class="n">ns</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">r_range</span><span class="o">=</span><span class="n">r_range</span><span class="p">,</span>
+           <span class="n">iterations</span><span class="o">=</span><span class="n">iterations</span><span class="p">,</span>
+           <span class="n">dr</span><span class="o">=</span><span class="n">dr</span><span class="p">,</span>
+           <span class="n">dr_factor</span><span class="o">=</span><span class="n">dr_factor</span><span class="p">)</span>
+
+    <span class="c1"># ns.fit_block_coordinate_desc()</span>
+
+    <span class="k">if</span> <span class="n">ns</span><span class="o">.</span><span class="n">r</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"r is negative (</span><span class="si">%f</span><span class="s2">). return 0.0."</span><span class="p">,</span> <span class="n">ns</span><span class="o">.</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">ns</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"r"</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">r</span><span class="p">,</span>
+        <span class="s2">"r_vals"</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">r_vals</span><span class="p">,</span>
+        <span class="s2">"err"</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+        <span class="s2">"err_vals"</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">error_vals</span><span class="p">,</span>
+        <span class="s2">"min_error"</span><span class="p">:</span> <span class="n">ns</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+        <span class="s2">"it"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ns</span><span class="o">.</span><span class="n">r_vals</span><span class="p">)</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

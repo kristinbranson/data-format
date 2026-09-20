@@ -1,0 +1,1167 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pynwb.base module &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="pynwb.misc module" href="pynwb.misc.html" />
+    <link rel="prev" title="pynwb.behavior module" href="pynwb.behavior.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="export.html">Exporting NWB files</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api_docs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="pynwb.file.html">NWBFile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ecephys.html">Extracellular Electrophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ophys.html">Optophysiology</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.ogen.html">Optogenetics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.image.html">General Imaging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.behavior.html">Behavior</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">NWB Base Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.ProcessingModule"><code class="docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.description"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.data_interfaces"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.data_interfaces</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.containers"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.containers</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.keys"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.keys</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.values"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.values</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.items"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.items</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.__getitem__"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.__getitem__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.add"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.add</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.get"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.get</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.namespace"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ProcessingModule.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ProcessingModule.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.TimeSeries"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.DEFAULT_DATA"><code class="docutils literal notranslate"><span class="pre">TimeSeries.DEFAULT_DATA</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.DEFAULT_UNIT"><code class="docutils literal notranslate"><span class="pre">TimeSeries.DEFAULT_UNIT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.DEFAULT_RESOLUTION"><code class="docutils literal notranslate"><span class="pre">TimeSeries.DEFAULT_RESOLUTION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.DEFAULT_CONVERSION"><code class="docutils literal notranslate"><span class="pre">TimeSeries.DEFAULT_CONVERSION</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.DEFAULT_OFFSET"><code class="docutils literal notranslate"><span class="pre">TimeSeries.DEFAULT_OFFSET</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.timestamps_unit"><code class="docutils literal notranslate"><span class="pre">TimeSeries.timestamps_unit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.interval"><code class="docutils literal notranslate"><span class="pre">TimeSeries.interval</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.starting_time"><code class="docutils literal notranslate"><span class="pre">TimeSeries.starting_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.starting_time_unit"><code class="docutils literal notranslate"><span class="pre">TimeSeries.starting_time_unit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.num_samples"><code class="docutils literal notranslate"><span class="pre">TimeSeries.num_samples</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.data"><code class="docutils literal notranslate"><span class="pre">TimeSeries.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.data_link"><code class="docutils literal notranslate"><span class="pre">TimeSeries.data_link</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.timestamps"><code class="docutils literal notranslate"><span class="pre">TimeSeries.timestamps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.timestamp_link"><code class="docutils literal notranslate"><span class="pre">TimeSeries.timestamp_link</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.time_unit"><code class="docutils literal notranslate"><span class="pre">TimeSeries.time_unit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.get_timestamps"><code class="docutils literal notranslate"><span class="pre">TimeSeries.get_timestamps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.get_starting_time"><code class="docutils literal notranslate"><span class="pre">TimeSeries.get_starting_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.get_duration"><code class="docutils literal notranslate"><span class="pre">TimeSeries.get_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.get_data_in_units"><code class="docutils literal notranslate"><span class="pre">TimeSeries.get_data_in_units</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.comments"><code class="docutils literal notranslate"><span class="pre">TimeSeries.comments</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.continuity"><code class="docutils literal notranslate"><span class="pre">TimeSeries.continuity</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.control"><code class="docutils literal notranslate"><span class="pre">TimeSeries.control</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.control_description"><code class="docutils literal notranslate"><span class="pre">TimeSeries.control_description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.conversion"><code class="docutils literal notranslate"><span class="pre">TimeSeries.conversion</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.description"><code class="docutils literal notranslate"><span class="pre">TimeSeries.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.namespace"><code class="docutils literal notranslate"><span class="pre">TimeSeries.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.neurodata_type"><code class="docutils literal notranslate"><span class="pre">TimeSeries.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.offset"><code class="docutils literal notranslate"><span class="pre">TimeSeries.offset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.rate"><code class="docutils literal notranslate"><span class="pre">TimeSeries.rate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.resolution"><code class="docutils literal notranslate"><span class="pre">TimeSeries.resolution</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeries.unit"><code class="docutils literal notranslate"><span class="pre">TimeSeries.unit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.BaseImage"><code class="docutils literal notranslate"><span class="pre">BaseImage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.BaseImage.description"><code class="docutils literal notranslate"><span class="pre">BaseImage.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.BaseImage.namespace"><code class="docutils literal notranslate"><span class="pre">BaseImage.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.BaseImage.neurodata_type"><code class="docutils literal notranslate"><span class="pre">BaseImage.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.Image"><code class="docutils literal notranslate"><span class="pre">Image</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Image.resolution"><code class="docutils literal notranslate"><span class="pre">Image.resolution</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Image.namespace"><code class="docutils literal notranslate"><span class="pre">Image.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Image.neurodata_type"><code class="docutils literal notranslate"><span class="pre">Image.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.ExternalImage"><code class="docutils literal notranslate"><span class="pre">ExternalImage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ExternalImage.image_format"><code class="docutils literal notranslate"><span class="pre">ExternalImage.image_format</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ExternalImage.image_mode"><code class="docutils literal notranslate"><span class="pre">ExternalImage.image_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ExternalImage.namespace"><code class="docutils literal notranslate"><span class="pre">ExternalImage.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ExternalImage.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ExternalImage.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.ImageReferences"><code class="docutils literal notranslate"><span class="pre">ImageReferences</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ImageReferences.namespace"><code class="docutils literal notranslate"><span class="pre">ImageReferences.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.ImageReferences.neurodata_type"><code class="docutils literal notranslate"><span class="pre">ImageReferences.neurodata_type</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.Images"><code class="docutils literal notranslate"><span class="pre">Images</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.__getitem__"><code class="docutils literal notranslate"><span class="pre">Images.__getitem__</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.add_image"><code class="docutils literal notranslate"><span class="pre">Images.add_image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.create_image"><code class="docutils literal notranslate"><span class="pre">Images.create_image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.description"><code class="docutils literal notranslate"><span class="pre">Images.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.get_image"><code class="docutils literal notranslate"><span class="pre">Images.get_image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.images"><code class="docutils literal notranslate"><span class="pre">Images.images</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.namespace"><code class="docutils literal notranslate"><span class="pre">Images.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.neurodata_type"><code class="docutils literal notranslate"><span class="pre">Images.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.Images.order_of_images"><code class="docutils literal notranslate"><span class="pre">Images.order_of_images</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.TimeSeriesReference"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.idx_start</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.count"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.timeseries"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.timeseries</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.check_types"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.check_types</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.isvalid"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.isvalid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.timestamps"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.timestamps</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.data"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReference.empty"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReference.empty</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.namespace"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.neurodata_type"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.neurodata_type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.add_row"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.add_row</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.append"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.append</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.get"><code class="docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData.get</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.misc.html">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pynwb.epoch.html">Epoch</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="pynwb.html">PyNWB</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="pynwb.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">pynwb.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.behavior.html">pynwb.behavior module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.core.html">pynwb.core module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.device.html">pynwb.device module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ecephys.html">pynwb.ecephys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.epoch.html">pynwb.epoch module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.event.html">pynwb.event module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.file.html">pynwb.file module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.icephys.html">pynwb.icephys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.image.html">pynwb.image module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.misc.html">pynwb.misc module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ogen.html">pynwb.ogen module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.ophys.html">pynwb.ophys module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.resources.html">pynwb.resources module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.spec.html">pynwb.spec module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation.html">pynwb.validation module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pynwb.validation_cli.html">pynwb.validation_cli module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pynwb.html#module-pynwb">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="api_docs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">pynwb.base module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pynwb.base.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pynwb.base">
+<span id="pynwb-base-module"></span><h1>pynwb.base module<a class="headerlink" href="#module-pynwb.base" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">ProcessingModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_interfaces</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ProcessingModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ProcessingModule" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a></p>
+<p>Processing module. This is a container for one or more containers
+that provide data at intermediate levels of analysis</p>
+<p>ProcessingModules should be created through calls to NWB.create_module().
+They should not be instantiated directly</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this processing module</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this processing module</p></li>
+<li><p><strong>data_interfaces</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – NWBDataInterfaces that belong to this ProcessingModule</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.base.ProcessingModule.description" title="Link to this definition"></a></dt>
+<dd><p>Description of this processing module</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.data_interfaces">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data_interfaces</span></span><a class="headerlink" href="#pynwb.base.ProcessingModule.data_interfaces" title="Link to this definition"></a></dt>
+<dd><p>a dictionary containing the NWBDataInterface or DynamicTable in this ProcessingModule</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.containers">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">containers</span></span><a class="headerlink" href="#pynwb.base.ProcessingModule.containers" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ProcessingModule.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ProcessingModule.keys" title="Link to this definition"></a></dt>
+<dd><p>Get the names of data interfaces in this ProcessingModule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>View of interface names</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>KeysView</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ProcessingModule.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ProcessingModule.values" title="Link to this definition"></a></dt>
+<dd><p>Get the data interfaces in this ProcessingModule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>View of interfaces</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ValuesView</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ProcessingModule.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ProcessingModule.items" title="Link to this definition"></a></dt>
+<dd><p>Get the (name, interface) pairs in this ProcessingModule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>View of (name, interface) pairs</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ItemsView</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.ProcessingModule.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>Get a NWBDataInterface from this ProcessingModule</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the NWBDataInterface or DynamicTable</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the NWBDataInterface or DynamicTable with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_interfaces</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.ProcessingModule.add" title="Link to this definition"></a></dt>
+<dd><p>Add one or multiple NWBDataInterface or DynamicTable objects to this ProcessingModule</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data_interfaces</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>) – one or multiple NWBDataInterface or DynamicTable objects to add to this ProcessingModule</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.ProcessingModule.get" title="Link to this definition"></a></dt>
+<dd><p>Get a NWBDataInterface from this ProcessingModule</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the NWBDataInterface or DynamicTable</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the NWBDataInterface or DynamicTable with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.ProcessingModule.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ProcessingModule.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ProcessingModule'</span></span><a class="headerlink" href="#pynwb.base.ProcessingModule.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">TimeSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversion</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">starting_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comments</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">comments'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">control_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeries" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBDataInterface" title="pynwb.core.NWBDataInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDataInterface</span></code></a></p>
+<p>A generic base class for time series data</p>
+<p>Create a TimeSeries object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this TimeSeries dataset</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) – The data values. The first dimension must be time. Can also store binary data, e.g., image frames</p></li>
+<li><p><strong>unit</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The base unit of measurement (should be SI unit)</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The smallest meaningful difference (in specified unit) between values in data</p></li>
+<li><p><strong>conversion</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to multiply each element in data to convert it to the specified unit</p></li>
+<li><p><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p></li>
+<li><p><strong>timestamps</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a> or <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) – Timestamps for samples stored in data</p></li>
+<li><p><strong>starting_time</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – The timestamp of the first sample</p></li>
+<li><p><strong>rate</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – Sampling rate in Hz</p></li>
+<li><p><strong>comments</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Human-readable comments about this TimeSeries dataset</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of this TimeSeries dataset</p></li>
+<li><p><strong>control</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Numerical labels that apply to each element in data</p></li>
+<li><p><strong>control_description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>) – Description of each control value</p></li>
+<li><p><strong>continuity</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Optionally describe the continuity of the data. Can be “continuous”, “instantaneous”, or “step”. For example, a voltage trace would be “continuous”, because samples are recorded from a continuous process. An array of lick times would be “instantaneous”, because the data represents distinct moments in time. Times of image presentations would be “step” because the picture remains the same until the next time-point. This field is optional, but is useful in providing information about the underlying data. It may inform the way this data is interpreted, the way it is visualized, and what analysis methods are applicable. For storing instantaneous event information, it is recommended to use an EventsTable instead of a TimeSeries with continuity set to “instantaneous”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.DEFAULT_DATA">
+<span class="sig-name descname"><span class="pre">DEFAULT_DATA</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">array([],</span> <span class="pre">dtype=uint8)</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.DEFAULT_DATA" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.DEFAULT_UNIT">
+<span class="sig-name descname"><span class="pre">DEFAULT_UNIT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'unknown'</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.DEFAULT_UNIT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.DEFAULT_RESOLUTION">
+<span class="sig-name descname"><span class="pre">DEFAULT_RESOLUTION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-1.0</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.DEFAULT_RESOLUTION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.DEFAULT_CONVERSION">
+<span class="sig-name descname"><span class="pre">DEFAULT_CONVERSION</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.DEFAULT_CONVERSION" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.DEFAULT_OFFSET">
+<span class="sig-name descname"><span class="pre">DEFAULT_OFFSET</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.DEFAULT_OFFSET" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.timestamps_unit">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">timestamps_unit</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.timestamps_unit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.interval">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">interval</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.interval" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.starting_time">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">starting_time</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.starting_time" title="Link to this definition"></a></dt>
+<dd><p>The timestamp of the first sample</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.starting_time_unit">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">starting_time_unit</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.starting_time_unit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.num_samples">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">num_samples</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.num_samples" title="Link to this definition"></a></dt>
+<dd><p>Tries to return the number of data samples. If this cannot be assessed, returns None.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.data">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.data" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.data_link">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data_link</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.data_link" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.timestamps">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">timestamps</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.timestamps" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.timestamp_link">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">timestamp_link</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.timestamp_link" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.time_unit">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">time_unit</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.time_unit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.get_timestamps">
+<span class="sig-name descname"><span class="pre">get_timestamps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeries.get_timestamps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeries.get_timestamps" title="Link to this definition"></a></dt>
+<dd><p>Get the timestamps of this TimeSeries. If timestamps are not stored in this TimeSeries, generate timestamps.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.get_starting_time">
+<span class="sig-name descname"><span class="pre">get_starting_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeries.get_starting_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeries.get_starting_time" title="Link to this definition"></a></dt>
+<dd><p>Get the starting time of this TimeSeries in seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The starting time in seconds, or None if no starting time is defined
+and there is no data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)">float</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.get_duration">
+<span class="sig-name descname"><span class="pre">get_duration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeries.get_duration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeries.get_duration" title="Link to this definition"></a></dt>
+<dd><p>Get the duration of this TimeSeries in seconds.</p>
+<p>Returns the time span from the first sample to the last sample.
+For a single sample or empty TimeSeries with a defined starting_time, returns 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The duration in seconds, or None if the TimeSeries has no data and
+no starting_time defined.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)">float</a> or None</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For rate-based TimeSeries: duration = (n - 1) / rate
+For timestamp-based TimeSeries: duration = timestamps[-1] - timestamps[0]</p>
+<p>The duration represents the time span between sample times, not the total
+recording time. If you need to account for the last sample’s duration
+(e.g., for continuous recordings), add 1/rate manually.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.get_data_in_units">
+<span class="sig-name descname"><span class="pre">get_data_in_units</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeries.get_data_in_units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeries.get_data_in_units" title="Link to this definition"></a></dt>
+<dd><p>Get the data of this TimeSeries in the specified unit of measurement, applying the conversion factor and offset:</p>
+<div class="math notranslate nohighlight">
+\[out = data * conversion + offset\]</div>
+<p>If the field ‘channel_conversion’ is present, the conversion factor for each channel is additionally applied
+to each channel:</p>
+<div class="math notranslate nohighlight">
+\[out_{channel} = data * conversion * conversion_{channel} + offset\]</div>
+<p>NOTE: This will read the entire dataset into memory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.comments">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">comments</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.comments" title="Link to this definition"></a></dt>
+<dd><p>Human-readable comments about this TimeSeries dataset</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.continuity">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">continuity</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.continuity" title="Link to this definition"></a></dt>
+<dd><p>Optionally describe the continuity of the data. Can be “continuous”, “instantaneous”, or “step”. For example, a voltage trace would be “continuous”, because samples are recorded from a continuous process. An array of lick times would be “instantaneous”, because the data represents distinct moments in time. Times of image presentations would be “step” because the picture remains the same until the next time-point. This field is optional, but is useful in providing information about the underlying data. It may inform the way this data is interpreted, the way it is visualized, and what analysis methods are applicable. For storing instantaneous event information, it is recommended to use an EventsTable instead of a TimeSeries with continuity set to “instantaneous”.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.control">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">control</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.control" title="Link to this definition"></a></dt>
+<dd><p>Numerical labels that apply to each element in data</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.control_description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">control_description</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.control_description" title="Link to this definition"></a></dt>
+<dd><p>Description of each control value</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.conversion">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">conversion</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.conversion" title="Link to this definition"></a></dt>
+<dd><p>Scalar to multiply each element in data to convert it to the specified unit</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.description" title="Link to this definition"></a></dt>
+<dd><p>Description of this TimeSeries dataset</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TimeSeries'</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.offset">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">offset</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.offset" title="Link to this definition"></a></dt>
+<dd><p>Scalar to add to each element in the data scaled by ‘conversion’ to finish converting it to the specified unit.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.rate">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">rate</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.rate" title="Link to this definition"></a></dt>
+<dd><p>Sampling rate in Hz</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.resolution">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">resolution</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.resolution" title="Link to this definition"></a></dt>
+<dd><p>The smallest meaningful difference (in specified unit) between values in data</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeries.unit">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">unit</span></span><a class="headerlink" href="#pynwb.base.TimeSeries.unit" title="Link to this definition"></a></dt>
+<dd><p>The base unit of measurement (should be SI unit)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.BaseImage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">BaseImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#BaseImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.BaseImage" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBData" title="pynwb.core.NWBData"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBData</span></code></a>, <a class="reference external" href="https://docs.python.org/3.11/library/abc.html#abc.ABC" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>An abstract base type for image data. Parent type for Image and ExternalImage types.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of the image</p></li>
+<li><p><strong>data</strong> (<em>None</em>) – The image data (any type) as specified by a subclass.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of the image</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.BaseImage.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.base.BaseImage.description" title="Link to this definition"></a></dt>
+<dd><p>Description of the image</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.BaseImage.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.BaseImage.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.BaseImage.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BaseImage'</span></span><a class="headerlink" href="#pynwb.base.BaseImage.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.Image">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">Image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#Image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.Image" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a></p>
+<p>A base type for storing image data directly. Shape can be 2-D (x, y), or 3-D where the
+third dimension can have three or four elements, e.g. (x, y, (r, g, b)) or
+(x, y, (r, g, b, a)).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of the image</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – Data of image. Shape can be (x, y), (x, y, 3), or (x, y, 4).</p></li>
+<li><p><strong>resolution</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/functions.html#float" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>) – pixels / cm</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of the image</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.Image.resolution">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">resolution</span></span><a class="headerlink" href="#pynwb.base.Image.resolution" title="Link to this definition"></a></dt>
+<dd><p>pixels / cm</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.Image.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.Image.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.Image.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Image'</span></span><a class="headerlink" href="#pynwb.base.Image.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.ExternalImage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">ExternalImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_format</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ExternalImage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ExternalImage" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a></p>
+<p>A type for referencing an external image file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of the image</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Path or URL to the external image file.</p></li>
+<li><p><strong>image_format</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Common name of the image file format. Only widely readable, open file formats are allowed.Allowed values are “PNG”, “JPEG”, and “GIF”.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of the image</p></li>
+<li><p><strong>image_mode</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Image mode (color mode) of the image, e.g., “RGB”, “RGBA”, “grayscale”, and “LA”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.ExternalImage.image_format">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">image_format</span></span><a class="headerlink" href="#pynwb.base.ExternalImage.image_format" title="Link to this definition"></a></dt>
+<dd><p>Common name of the image file format. Only widely readable, open file formats are allowed.Allowed values are “PNG”, “JPEG”, and “GIF”.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.ExternalImage.image_mode">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">image_mode</span></span><a class="headerlink" href="#pynwb.base.ExternalImage.image_mode" title="Link to this definition"></a></dt>
+<dd><p>Image mode (color mode) of the image, e.g., “RGB”, “RGBA”, “grayscale”, and “LA”.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ExternalImage.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.ExternalImage.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ExternalImage.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ExternalImage'</span></span><a class="headerlink" href="#pynwb.base.ExternalImage.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.ImageReferences">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">ImageReferences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#ImageReferences"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.ImageReferences" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.NWBData" title="pynwb.core.NWBData"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBData</span></code></a></p>
+<p>Ordered dataset of references to Image objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this ImageReferences object.</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>) – The images in order.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ImageReferences.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.ImageReferences.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.ImageReferences.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ImageReferences'</span></span><a class="headerlink" href="#pynwb.base.ImageReferences.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.Images">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">Images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">images</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'no</span> <span class="pre">description'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_of_images</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#Images"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.Images" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="pynwb.core.html#pynwb.core.MultiContainerInterface" title="pynwb.core.MultiContainerInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiContainerInterface</span></code></a></p>
+<p>An collection of images with an optional way to specify the order of the images
+using the “order_of_images” dataset. An order must be specified if the images are
+referenced by index, e.g., from an IndexSeries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of this set of images</p></li>
+<li><p><strong>images</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a>) – image objects</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – description of images</p></li>
+<li><p><strong>order_of_images</strong> (<a class="reference internal" href="#pynwb.base.ImageReferences" title="pynwb.base.ImageReferences"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageReferences</span></code></a>) – Ordered dataset of references to BaseImage objects stored in the parent group.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.Images.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.Images.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>Get a BaseImage from this Images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the BaseImage</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the BaseImage with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.Images.add_image">
+<span class="sig-name descname"><span class="pre">add_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.Images.add_image" title="Link to this definition"></a></dt>
+<dd><p>Add one or multiple BaseImage objects to this Images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>images</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> or <a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a>) – one or multiple BaseImage objects to add to this Images</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.Images.create_image">
+<span class="sig-name descname"><span class="pre">create_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.Images.create_image" title="Link to this definition"></a></dt>
+<dd><p>Create a BaseImage object and add it to this Images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – The name of the image</p></li>
+<li><p><strong>data</strong> (<em>None</em>) – The image data (any type) as specified by a subclass.</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Description of the image</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the BaseImage object that was created</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.Images.description">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">description</span></span><a class="headerlink" href="#pynwb.base.Images.description" title="Link to this definition"></a></dt>
+<dd><p>description of images</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.Images.get_image">
+<span class="sig-name descname"><span class="pre">get_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pynwb.base.Images.get_image" title="Link to this definition"></a></dt>
+<dd><p>Get a BaseImage from this Images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the BaseImage</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the BaseImage with the given name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pynwb.base.BaseImage" title="pynwb.base.BaseImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseImage</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.Images.images">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">images</span></span><a class="headerlink" href="#pynwb.base.Images.images" title="Link to this definition"></a></dt>
+<dd><p>a dictionary containing the BaseImage in this Images</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.Images.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.Images.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.Images.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Images'</span></span><a class="headerlink" href="#pynwb.base.Images.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.Images.order_of_images">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">order_of_images</span></span><a class="headerlink" href="#pynwb.base.Images.order_of_images" title="Link to this definition"></a></dt>
+<dd><p>Ordered dataset of references to BaseImage objects stored in the parent group.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">TimeSeriesReference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idx_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeseries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><span class="pre">TimeSeries</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReference" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.11/library/typing.html#typing.NamedTuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
+<p>Class used to represent data values of a <a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a>
+This is a <code class="docutils literal notranslate"><span class="pre">typing.NamedTuple</span></code> type with predefined tuple components
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a>, <a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a>, and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timeseries</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>idx_start</strong></p></li>
+<li><p><strong>count</strong></p></li>
+<li><p><strong>timeseries</strong></p></li>
+</ul>
+</dd>
+</dl>
+<p>Create new instance of TimeSeriesReference(idx_start, count, timeseries)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.idx_start">
+<span class="sig-name descname"><span class="pre">idx_start</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span><a class="headerlink" href="#pynwb.base.TimeSeriesReference.idx_start" title="Link to this definition"></a></dt>
+<dd><p>Start index in time for the timeseries</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.count">
+<span class="sig-name descname"><span class="pre">count</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.11/library/functions.html#int" title="(in Python v3.11)"><span class="pre">int</span></a></span><a class="headerlink" href="#pynwb.base.TimeSeriesReference.count" title="Link to this definition"></a></dt>
+<dd><p>Number of timesteps to be selected starting from <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.timeseries">
+<span class="sig-name descname"><span class="pre">timeseries</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><span class="pre">TimeSeries</span></a></span><a class="headerlink" href="#pynwb.base.TimeSeriesReference.timeseries" title="Link to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> object the TimeSeriesReference applies to</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.check_types">
+<span class="sig-name descname"><span class="pre">check_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReference.check_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReference.check_types" title="Link to this definition"></a></dt>
+<dd><p>Helper function to check correct types for <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a>,
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a>, and <a class="reference internal" href="#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timeseries</span></code></a>.</p>
+<p>This function is usually used in the try/except block to check for <cite>TypeError</cite> raised by the function.</p>
+<p>See also <a class="reference internal" href="#pynwb.base.TimeSeriesReference.isvalid" title="pynwb.base.TimeSeriesReference.isvalid"><code class="xref py py-meth docutils literal notranslate"><span class="pre">isvalid</span></code></a> to check both validity of types and the
+reference itself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if successful. If unsuccessful <cite>TypeError</cite> is raised.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#TypeError" title="(in Python v3.11)"><strong>TypeError</strong></a> – If one of the fields does not match the expected type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.isvalid">
+<span class="sig-name descname"><span class="pre">isvalid</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReference.isvalid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReference.isvalid" title="Link to this definition"></a></dt>
+<dd><p>Check whether the reference is valid. Setting <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> to -1 is used to indicate invalid references. This is
+useful to allow for missing data in <a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the selection is valid. Returns False if both
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and <a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a>
+are negative. Raises <cite>IndexError</cite> in case the indices are bad.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#IndexError" title="(in Python v3.11)"><strong>IndexError</strong></a> – If the combination of <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> are not valid for the given timeseries.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#TypeError" title="(in Python v3.11)"><strong>TypeError</strong></a> – If one of the fields does not match the expected type</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.timestamps">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">timestamps</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReference.timestamps" title="Link to this definition"></a></dt>
+<dd><p>Get the floating point timestamp offsets in seconds from the timeseries that correspond to the array.
+These are either loaded directly from the <a class="reference internal" href="#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timeseries</span></code></a>
+timestamps or calculated from the starting time and sampling rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#IndexError" title="(in Python v3.11)"><strong>IndexError</strong></a> – If the combination of <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> are not valid for the given timeseries.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#TypeError" title="(in Python v3.11)"><strong>TypeError</strong></a> – If one of the fields does not match the expected type</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array with the timestamps.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.data">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReference.data" title="Link to this definition"></a></dt>
+<dd><p>Get the selected data values. This is a convenience function to slice data from the
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.timeseries" title="pynwb.base.TimeSeriesReference.timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">timeseries</span></code></a> based on the given
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#IndexError" title="(in Python v3.11)"><strong>IndexError</strong></a> – If the combination of <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a> and
+<a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> are not valid for the given timeseries.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3.11/library/exceptions.html#TypeError" title="(in Python v3.11)"><strong>TypeError</strong></a> – If one of the fields does not match the expected type</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Result of <code class="docutils literal notranslate"><span class="pre">self.timeseries.data[self.idx_start:</span> <span class="pre">(self.idx_start</span> <span class="pre">+</span> <span class="pre">self.count)]</span></code>. Returns
+None in case the reference is invalid (i.e., if both <a class="reference internal" href="#pynwb.base.TimeSeriesReference.idx_start" title="pynwb.base.TimeSeriesReference.idx_start"><code class="xref py py-meth docutils literal notranslate"><span class="pre">idx_start</span></code></a>
+and <a class="reference internal" href="#pynwb.base.TimeSeriesReference.count" title="pynwb.base.TimeSeriesReference.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">count</span></code></a> are negative.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReference.empty">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">empty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeseries</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReference.empty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReference.empty" title="Link to this definition"></a></dt>
+<dd><p>Creates an empty TimeSeriesReference object to represent missing data.</p>
+<blockquote>
+<div><p>When missing data needs to be represented, NWB defines <code class="docutils literal notranslate"><span class="pre">None</span></code> for the complex data type <code class="docutils literal notranslate"><span class="pre">(idx_start,</span>
+<span class="pre">count,</span> <span class="pre">TimeSeries)</span></code> as (-1, -1, TimeSeries) for storage. The exact timeseries object will technically not
+matter since the empty reference is a way of indicating a NaN value in a
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a> column.</p>
+<p>An example where this functionality is used is <a class="reference internal" href="pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>
+where only one of stimulus or response data was recorded. In such cases, the timeseries object for the
+empty stimulus <a class="reference internal" href="#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> could be set to the response series, or vice versa.</p>
+<dl class="field-list simple">
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Returns <a class="reference internal" href="#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a></p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>timeseries</strong> (<a class="reference internal" href="#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – the timeseries object to reference.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pynwb.base.</span></span><span class="sig-name descname"><span class="pre">TimeSeriesReferenceVectorData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'timeseries'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Column</span> <span class="pre">storing</span> <span class="pre">references</span> <span class="pre">to</span> <span class="pre">a</span> <span class="pre">TimeSeries</span> <span class="pre">(rows).</span> <span class="pre">For</span> <span class="pre">each</span> <span class="pre">TimeSeries</span> <span class="pre">this</span> <span class="pre">VectorData</span> <span class="pre">column</span> <span class="pre">stores</span> <span class="pre">the</span> <span class="pre">start_index</span> <span class="pre">and</span> <span class="pre">count</span> <span class="pre">to</span> <span class="pre">indicate</span> <span class="pre">the</span> <span class="pre">range</span> <span class="pre">in</span> <span class="pre">time</span> <span class="pre">to</span> <span class="pre">be</span> <span class="pre">selected</span> <span class="pre">as</span> <span class="pre">well</span> <span class="pre">as</span> <span class="pre">an</span> <span class="pre">object</span> <span class="pre">reference</span> <span class="pre">to</span> <span class="pre">the</span> <span class="pre">TimeSeries.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReferenceVectorData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">VectorData</span></code></a></p>
+<p>Column storing references to a TimeSeries (rows). For each TimeSeries this VectorData
+column stores the start_index and count to indicate the range in time to be selected
+as well as an object reference to the TimeSeries.</p>
+<p><strong>Representing missing values</strong> In practice we sometimes need to be able to represent missing values,
+e.g., in the <a class="reference internal" href="pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> we have
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a> to link to stimulus and
+response recordings, but a user can specify either only one of them or both. Since there is no
+<code class="docutils literal notranslate"><span class="pre">None</span></code> value for a complex types like <code class="docutils literal notranslate"><span class="pre">(idx_start,</span> <span class="pre">count,</span> <span class="pre">TimeSeries)</span></code>, NWB defines
+<code class="docutils literal notranslate"><span class="pre">None</span></code> as <code class="docutils literal notranslate"><span class="pre">(-1,</span> <span class="pre">-1,</span> <span class="pre">TimeSeries)</span></code> for storage, i.e., if the <code class="docutils literal notranslate"><span class="pre">idx_start</span></code> (and <code class="docutils literal notranslate"><span class="pre">count</span></code>) is negative
+then this indicates an invalid link (in practice both <code class="docutils literal notranslate"><span class="pre">idx_start</span></code> and <code class="docutils literal notranslate"><span class="pre">count</span></code> must always
+either both be positive or both be negative). When selecting data via the
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.get" title="pynwb.base.TimeSeriesReferenceVectorData.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> or
+<a class="reference external" href="https://docs.python.org/3.11/reference/datamodel.html#object.__getitem__" title="(in Python v3.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__</span></code></a>
+functions, <code class="docutils literal notranslate"><span class="pre">(-1,</span> <span class="pre">-1,</span> <span class="pre">TimeSeries)</span></code> values are replaced by the corresponding
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_NONE_TYPE</span></code></a> tuple
+to avoid exposing NWB storage internals to the user and simplifying the use of and checking
+for missing values. <strong>NOTE:</strong> We can still inspect the raw data values by looking at <code class="docutils literal notranslate"><span class="pre">self.data</span></code>
+directly instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>TIME_SERIES_REFERENCE_TUPLE</strong></p></li>
+<li><p><strong>TIME_SERIES_REFERENCE_NONE_TYPE</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of this VectorData</p></li>
+<li><p><strong>description</strong> (<a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a description for this column</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#list" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a> or <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a> or <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html#pandas.Series" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></a> or <code class="xref py py-class docutils literal notranslate"><span class="pre">ExtensionArray</span></code> or <a class="reference external" href="https://zarr.readthedocs.io/en/v2.18.4/_autoapi/zarr.core.Array.html#zarr.core.Array" title="(in zarr v2.18.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.utils.html#hdmf.utils.StrDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StrDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.query.html#hdmf.query.HDMFDataset" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFDataset</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.AbstractDataChunkIterator" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDataChunkIterator</span></code></a> or <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.data_utils.html#hdmf.data_utils.DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataIO</span></code></a>) – a dataset where the first dimension is a concatenation of multiple vectors</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE">
+<span class="sig-name descname"><span class="pre">TIME_SERIES_REFERENCE_TUPLE</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE" title="Link to this definition"></a></dt>
+<dd><p>Return type when calling <a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.get" title="pynwb.base.TimeSeriesReferenceVectorData.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> or
+<a class="reference external" href="https://docs.python.org/3.11/reference/datamodel.html#object.__getitem__" title="(in Python v3.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__</span></code></a></p>
+<p>alias of <a class="reference internal" href="#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE">
+<span class="sig-name descname"><span class="pre">TIME_SERIES_REFERENCE_NONE_TYPE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None)</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE" title="Link to this definition"></a></dt>
+<dd><p>Tuple used to represent None values when calling <a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.get" title="pynwb.base.TimeSeriesReferenceVectorData.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get</span></code></a> or
+<a class="reference external" href="https://docs.python.org/3.11/reference/datamodel.html#object.__getitem__" title="(in Python v3.11)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__</span></code></a>. See also
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_TUPLE</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.namespace">
+<span class="sig-name descname"><span class="pre">namespace</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'core'</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.neurodata_type">
+<span class="sig-name descname"><span class="pre">neurodata_type</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TimeSeriesReferenceVectorData'</span></span><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.neurodata_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.add_row">
+<span class="sig-name descname"><span class="pre">add_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReferenceVectorData.add_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.add_row" title="Link to this definition"></a></dt>
+<dd><p>Append a data value to this column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<a class="reference internal" href="#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – the value to add to this column. If this is a regular tuple then it must be convertible to a TimeSeriesReference</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReferenceVectorData.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.append" title="Link to this definition"></a></dt>
+<dd><p>Append a data value to this column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>arg</strong> (<a class="reference internal" href="#pynwb.base.TimeSeriesReference" title="pynwb.base.TimeSeriesReference"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReference</span></code></a> or <a class="reference external" href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – the value to append to this column. If this is a regular tuple then it must be convertible to a TimeSeriesReference</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pynwb.base.TimeSeriesReferenceVectorData.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pynwb/base.html#TimeSeriesReferenceVectorData.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pynwb.base.TimeSeriesReferenceVectorData.get" title="Link to this definition"></a></dt>
+<dd><p>Retrieve elements from this object.</p>
+<p>The function uses <a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_TUPLE</span></code></a>
+to describe individual records in the dataset. This allows the code to avoid exposing internal
+details of the schema to the user and simplifies handling of missing values by explicitly
+representing missing values via
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_NONE_TYPE</span></code></a>
+rather than the internal representation used for storage of <code class="docutils literal notranslate"><span class="pre">(-1,</span> <span class="pre">-1,</span> <span class="pre">TimeSeries)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – Selection of the elements</p></li>
+<li><p><strong>kwargs</strong> – Ignored</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_TUPLE</span></code></a> if a single
+element is being selected. Otherwise return a list of
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_TUPLE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_TUPLE</span></code></a> objects.
+Missing values are represented by
+<a class="reference internal" href="#pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE" title="pynwb.base.TimeSeriesReferenceVectorData.TIME_SERIES_REFERENCE_NONE_TYPE"><code class="xref py py-class docutils literal notranslate"><span class="pre">TIME_SERIES_REFERENCE_NONE_TYPE</span></code></a>
+in which all values (i.e., idx_start, count, timeseries) are set to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pynwb.behavior.html" class="btn btn-neutral float-left" title="pynwb.behavior module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pynwb.misc.html" class="btn btn-neutral float-right" title="pynwb.misc module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

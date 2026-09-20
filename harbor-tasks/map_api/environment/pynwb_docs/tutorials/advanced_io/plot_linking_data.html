@@ -1,0 +1,541 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modular Data Storage using External Files &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Parallel I/O using MPI" href="parallelio.html" />
+    <link rel="prev" title="Iterative Data Write" href="plot_iterative_write.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="h5dataio.html">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_editing.html">Editing NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_iterative_write.html">Iterative Data Write</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Modular Data Storage using External Files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-use-case-integrating-data-from-multiple-files">Example Use Case: Integrating data from multiple files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copying-an-nwbfile-for-linking">Copying an NWBFile for linking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-single-file-for-sharing">Creating a single file for sharing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#automatically-splitting-large-data-across-multiple-hdf5-files">Automatically splitting large data across multiple HDF5 files</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="parallelio.html">Parallel I/O using MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="streaming.html">Streaming NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_zarr_io.html">Zarr IO</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Modular Data Storage using External Files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/advanced_io/plot_linking_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-advanced-io-plot-linking-data-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="modular-data-storage-using-external-files">
+<span id="linking-data"></span><span id="sphx-glr-tutorials-advanced-io-plot-linking-data-py"></span><h1>Modular Data Storage using External Files<a class="headerlink" href="#modular-data-storage-using-external-files" title="Link to this heading"></a></h1>
+<p>PyNWB supports linking between files using external links.</p>
+<section id="example-use-case-integrating-data-from-multiple-files">
+<h2>Example Use Case: Integrating data from multiple files<a class="headerlink" href="#example-use-case-integrating-data-from-multiple-files" title="Link to this heading"></a></h2>
+<p>NBWContainer classes (e.g., <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) support the integration of data stored in external
+HDF5 files with NWB data files via external links. To make things more concrete, let’s look at the following use
+case. We want to simultaneously record multiple data streams during data acquisition. Using the concept of external
+links allows us to save each data stream to an external HDF5 files during data acquisition and to
+afterward link the data into a single NWB file. In this case, each recording becomes represented by a
+separate file-system object that can be set as read-only once the experiment is done.  In the following
+we are using <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> as an example, but the same approach works for other
+NWBContainers as well.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<blockquote>
+<div><p>The same strategies we use here for creating External Links also apply to Soft Links.
+The main difference between soft and external links is that soft links point to other
+objects within the same file while external links point to objects in external files.</p>
+</div></blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>In the case of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, the uncorrected timestamps generated by the acquisition
+system can be stored (or linked) in the <em>sync</em> group. In the NWB format, hardware-recorded time data
+must then be corrected to a common time base (e.g., timestamps from all hardware sources aligned) before
+it can be included in the <em>timestamps</em> of the <em>TimeSeries</em>. This means, in the case
+of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> we need to be careful that we are not including data with incompatible
+timestamps in the same file when using external links.</p>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>External links can become stale/break. Since external links are pointing to data in other files
+external links may become invalid any time files are modified on the file system, e.g., renamed,
+moved or access permissions are changed.</p>
+</div>
+<section id="creating-test-data">
+<h3>Creating test data<a class="headerlink" href="#creating-test-data" title="Link to this heading"></a></h3>
+<p>In the following we are creating two <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> each written to a separate file.
+We then show how we can integrate these files into a single NWBFile.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+
+<span class="c1"># Create the base data</span>
+<a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_time</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">())</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">1000</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename1</span></a> <span class="o">=</span> <span class="s2">&quot;external1_example.nwb&quot;</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename2</span></a> <span class="o">=</span> <span class="s2">&quot;external2_example.nwb&quot;</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename3</span></a> <span class="o">=</span> <span class="s2">&quot;external_linkcontainer_example.nwb&quot;</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename4</span></a> <span class="o">=</span> <span class="s2">&quot;external_linkdataset_example.nwb&quot;</span>
+
+<span class="c1"># Create the first file</span>
+<span class="n">nwbfile1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate external files&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_time</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Create the second file</span>
+<span class="n">test_ts1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries1&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a>
+<span class="p">)</span>
+<span class="n">nwbfile1</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts1</span><span class="p">)</span>
+
+<span class="c1"># Write the first file</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename1</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile1</span><span class="p">)</span>
+
+<span class="c1"># Create the second file</span>
+<span class="n">nwbfile2</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate external files&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_time</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Create the second file</span>
+<span class="n">test_ts2</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries2&quot;</span><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile2</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts2</span><span class="p">)</span>
+
+<span class="c1"># Write the second file</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename2</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="linking-to-select-datasets">
+<h3>Linking to select datasets<a class="headerlink" href="#linking-to-select-datasets" title="Link to this heading"></a></h3>
+<section id="step-1-create-the-new-nwbfile">
+<h4>Step 1: Create the new NWBFile<a class="headerlink" href="#step-1-create-the-new-nwbfile" title="Link to this heading"></a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the first file</span>
+<span class="n">nwbfile4</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate external files&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_time</span></a><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-get-the-dataset-you-want-to-link-to">
+<h4>Step 2: Get the dataset you want to link to<a class="headerlink" href="#step-2-get-the-dataset-you-want-to-link-to" title="Link to this heading"></a></h4>
+<p>Now let’s open our test files and retrieve our timeseries.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the first timeseries</span>
+<span class="n">io1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename1</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwbfile1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io1</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<span class="n">timeseries_1</span> <span class="o">=</span> <span class="n">nwbfile1</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;test_timeseries1&quot;</span><span class="p">)</span>
+<a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="h5py.Dataset" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timeseries_1_data</span></a> <span class="o">=</span> <span class="n">timeseries_1</span><span class="o">.</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a>
+</pre></div>
+</div>
+</section>
+<section id="step-3-create-the-object-you-want-to-link-to-the-data">
+<h4>Step 3: Create the object you want to link to the data<a class="headerlink" href="#step-3-create-the-object-you-want-to-link-to-the-data" title="Link to this heading"></a></h4>
+<p>To link to the dataset we can simply assign the data object (here `` timeseries_1.data``) to a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a new timeseries that links to our data</span>
+<span class="n">test_ts4</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries4&quot;</span><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="h5py.Dataset" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timeseries_1_data</span></a><span class="p">,</span>  <span class="c1"># &lt;-------</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile4</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above case we did not make it explicit how we want to handle the data from
+our TimeSeries, this means that <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> will need to
+determine on write how to treat the dataset. We can make this explicit and customize this
+behavior on a per-dataset basis by wrapping our dataset using
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5.h5_utils</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a>
+
+<span class="c1"># Create another timeseries that links to the same data</span>
+<span class="n">test_ts5</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_timeseries5&quot;</span><span class="p">,</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="h5py.Dataset" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timeseries_1_data</span></a><span class="p">,</span> <span class="n">link_data</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>  <span class="c1"># &lt;-------</span>
+    <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">timestamps</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile4</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-write-the-data">
+<h4>Step 4: Write the data<a class="headerlink" href="#step-4-write-the-data" title="Link to this heading"></a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename4</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io4</span><span class="p">:</span>
+    <span class="c1"># Use link_data=True to specify default behavior to link rather than copy data</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io4</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile4</span><span class="p">,</span> <span class="n">link_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io1</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the case of TimeSeries one advantage of linking to just the main dataset is that we can now
+use our own timestamps in case the timestamps in the original file are not aligned with the
+clock of the NWBFile we are creating. In this way we can use the linking to “re-align” different
+TimeSeries without having to copy the main data.</p>
+</div>
+</section>
+</section>
+<section id="linking-to-whole-containers">
+<h3>Linking to whole Containers<a class="headerlink" href="#linking-to-whole-containers" title="Link to this heading"></a></h3>
+<p>Appending to files and linking is made possible by passing around the same
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BuildManager</span></code></a>. You can get a manager to pass around
+using the <a class="reference internal" href="../../pynwb.html#pynwb.get_manager" title="pynwb.get_manager"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_manager</span></code></a> function.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_manager</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a> <span class="o">=</span> <span class="n">get_manager</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can pass in extensions to <a class="reference internal" href="../../pynwb.html#pynwb.get_manager" title="pynwb.get_manager"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_manager</span></code></a> using the <em>extensions</em> argument.</p>
+</div>
+<section id="step-1-get-the-container-object-you-want-to-link-to">
+<h4>Step 1: Get the container object you want to link to<a class="headerlink" href="#step-1-get-the-container-object-you-want-to-link-to" title="Link to this heading"></a></h4>
+<p>Now let’s open our test files and retrieve our timeseries.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the first timeseries</span>
+<span class="n">io1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename1</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="p">)</span>
+<span class="n">nwbfile1</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io1</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<span class="n">timeseries_1</span> <span class="o">=</span> <span class="n">nwbfile1</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;test_timeseries1&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get the second timeseries</span>
+<span class="n">io2</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename2</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="p">)</span>
+<span class="n">nwbfile2</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io2</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+<span class="n">timeseries_2</span> <span class="o">=</span> <span class="n">nwbfile2</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="s2">&quot;test_timeseries2&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-add-the-container-to-another-nwbfile">
+<h4>Step 2: Add the container to another NWBFile<a class="headerlink" href="#step-2-add-the-container-to-another-nwbfile" title="Link to this heading"></a></h4>
+<p>To integrate both <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> into a single file we simply create a new
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and add our existing <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> to it. PyNWB’s
+<a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> backend then automatically detects that the TimeSeries have already
+been written to another file and will create external links for us.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a new NWBFile that links to the external timeseries</span>
+<span class="n">nwbfile3</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate external files&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_time</span></a><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile3</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">timeseries_1</span><span class="p">)</span>  <span class="c1"># &lt;--------</span>
+<span class="n">nwbfile3</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">timeseries_2</span><span class="p">)</span>  <span class="c1"># &lt;--------</span>
+
+<span class="c1"># Write our third file that includes our two timeseries as external links</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename3</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="p">)</span> <span class="k">as</span> <span class="n">io3</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io3</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile3</span><span class="p">)</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io1</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.close" title="hdmf.backends.hdf5.h5tools.HDF5IO.close" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io2</span><span class="o">.</span><span class="n">close</span></a><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="copying-an-nwbfile-for-linking">
+<h2>Copying an NWBFile for linking<a class="headerlink" href="#copying-an-nwbfile-for-linking" title="Link to this heading"></a></h2>
+<p>Using the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.copy" title="pynwb.file.NWBFile.copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy</span></code></a> method allows us to easily create a shallow copy
+of a whole NWB file with links to all data in the original file. For example, we may want to
+store processed data in a new file separate from the raw data, while still being able to access
+the raw data. See the <a class="reference internal" href="../general/scratch.html#scratch"><span class="std std-ref">Exploratory Data Analysis with NWB</span></a> tutorial for a detailed example.</p>
+</section>
+<section id="creating-a-single-file-for-sharing">
+<h2>Creating a single file for sharing<a class="headerlink" href="#creating-a-single-file-for-sharing" title="Link to this heading"></a></h2>
+<p>External links are convenient but to share data we may want to hand a single file with all the
+data to our collaborator rather than having to collect all relevant files. To do this,
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDF5IO</span></code></a> (and in turn <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>)
+provide the convenience function <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.export" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">export</span></code></a>,
+which can copy the file and resolves all external links.</p>
+</section>
+<section id="automatically-splitting-large-data-across-multiple-hdf5-files">
+<h2>Automatically splitting large data across multiple HDF5 files<a class="headerlink" href="#automatically-splitting-large-data-across-multiple-hdf5-files" title="Link to this heading"></a></h2>
+<p>For extremely large datasets it can be useful to split data across multiple files, e.g., in cases where
+the file stystem does not allow for large files. While we can achieve this by writing different
+components (e.g., <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>)  to different files as described above,
+this option does not allow splitting data from single datasets. An alternative option is to use the
+<code class="docutils literal notranslate"><span class="pre">family</span></code> driver in <code class="docutils literal notranslate"><span class="pre">h5py</span></code> to automatically split the NWB file into a collection of many HDF5 files.
+The <code class="docutils literal notranslate"><span class="pre">family</span></code> driver stores the file on disk as a series of fixed-length chunks (each in its own file).
+In practice, to write very large arrays, we can combine this approach with <a class="reference internal" href="plot_iterative_write.html#iterative-write"><span class="std std-ref">Iterative Data Write</span></a> to
+avoid having to load all data into memory. In the example shown here we use a manual approach to
+iterative write by using <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a> to create an empty dataset and
+then filling in the data afterward.</p>
+<section id="step-1-create-the-nwbfile-as-usual">
+<h3>Step 1: Create the NWBFile as usual<a class="headerlink" href="#step-1-create-the-nwbfile-as-usual" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.backends.hdf5</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Create an NWBFile object</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span><span class="n">session_description</span><span class="o">=</span><span class="s1">&#39;example file family&#39;</span><span class="p">,</span>
+                  <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+                  <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">()</span><span class="o">.</span><span class="n">astimezone</span><span class="p">())</span>
+
+<span class="c1"># Create the data as an empty dataset so that we can write to it later</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class"><span class="n">H5DataIO</span></a><span class="p">(</span><span class="n">maxshape</span><span class="o">=</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>  <span class="c1"># make the first dimension expandable</span>
+                <span class="n">dtype</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.float32" title="numpy.float32" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">float32</span></a><span class="p">,</span>     <span class="c1"># create the data as float32</span>
+                <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>        <span class="c1"># initial data shape to initialize as empty dataset</span>
+                <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+                <span class="p">)</span>
+
+<span class="c1"># Create a TimeSeries object</span>
+<span class="n">time_series</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;example_timeseries&#39;</span><span class="p">,</span>
+                         <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="hdmf.backends.hdf5.h5_utils.H5DataIO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data</span></a><span class="p">,</span>
+                         <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                         <span class="n">rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                         <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;mV&#39;</span><span class="p">)</span>
+
+<span class="c1"># Add the TimeSeries to the NWBFile</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">time_series</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-open-the-new-file-with-the-family-driver-and-write">
+<h3>Step 2: Open the new file with the <cite>family</cite> driver and write<a class="headerlink" href="#step-2-open-the-new-file-with-the-family-driver-and-write" title="Link to this heading"></a></h3>
+<p>Here we need to open the file with <cite>h5py</cite> first to set up the driver, and then we can use
+that file with <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.NWBHDF5IO</span></code></a>. This is required, because <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.NWBHDF5IO</span></code></a>
+currently does not support passing the <cite>memb_size</cite> option required by the <cite>family</cite> driver.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span>  <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a>
+
+<span class="c1"># Define the size of the individual files, determining the number of files to create</span>
+<span class="c1"># chunk_size = 1 * 1024**3  # 1GB per file</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_size</span></a> <span class="o">=</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>  <span class="c1"># 1MB just for testing</span>
+
+<span class="c1"># filename pattern</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename_pattern</span></a> <span class="o">=</span> <span class="s1">&#39;family_nwb_file_</span><span class="si">%d</span><span class="s1">.nwb&#39;</span>
+
+<span class="c1"># Create the HDF5 file using the family driver</span>
+<span class="k">with</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename_pattern</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;family&#39;</span><span class="p">,</span> <span class="n">memb_size</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_size</span></a><span class="p">)</span> <span class="k">as</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">:</span>
+
+    <span class="c1"># Use NWBHDF5IO to write the NWBFile to the HDF5 file</span>
+    <span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="n">file</span><span class="o">=</span><a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+        <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="c1"># Write new data iteratively to the file</span>
+        <span class="k">for</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_index</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a> <span class="o">*</span> <span class="mi">1000</span>
+            <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop_index</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_index</span></a> <span class="o">+</span> <span class="mi">1000</span>
+            <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">data</span><span class="o">.</span><span class="n">dataset</span><span class="o">.</span><span class="n">resize</span></a><span class="p">((</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop_index</span></a><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>          <span class="c1"># Resize the dataset</span>
+            <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" title="hdmf.backends.hdf5.h5_utils.H5DataIO.dataset" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5_utils sphx-glr-backref-type-py-property"><span class="n">data</span><span class="o">.</span><span class="n">dataset</span></a><span class="p">[</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">start_index</span></a><span class="p">:</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop_index</span></a> <span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">i</span></a>  <span class="c1"># Set the additional values</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Alternatively, we could have also used the <a class="reference internal" href="plot_iterative_write.html#iterative-write"><span class="std std-ref">Iterative Data Write</span></a> features to write the data
+iteratively directly as part of the <cite>io.write</cite> call instead of manually afterward.</p>
+</div>
+</section>
+<section id="step-3-read-a-file-written-with-the-family-driver">
+<h3>Step 3: Read a file written with the family driver<a class="headerlink" href="#step-3-read-a-file-written-with-the-family-driver" title="Link to this heading"></a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Open the HDF5 file using the family driver</span>
+<span class="k">with</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class"><span class="n">h5py</span><span class="o">.</span><span class="n">File</span></a><span class="p">(</span><span class="n">name</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">filename_pattern</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;family&#39;</span><span class="p">,</span> <span class="n">memb_size</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">chunk_size</span></a><span class="p">)</span> <span class="k">as</span> <a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">:</span>
+    <span class="c1"># Use NWBHDF5IO to read the NWBFile from the HDF5 file</span>
+    <span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><span class="n">file</span><span class="o">=</span><a href="https://docs.h5py.org/en/latest/high/file.html#h5py.File" title="h5py.File" class="sphx-glr-backref-module-h5py sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">f</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="hdmf.build.manager.BuildManager" class="sphx-glr-backref-module-hdmf-build-manager sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">manager</span></a><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+        <span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>root pynwb.file.NWBFile at 0x133235014300688
+Fields:
+  acquisition: {
+    example_timeseries &lt;class &#39;pynwb.base.TimeSeries&#39;&gt;
+  }
+  file_create_date: [datetime.datetime(2026, 9, 19, 21, 22, 49, 572386, tzinfo=tzoffset(None, -14400))]
+  identifier: 665e1b1a-b096-4f04-a858-9fe9418b8584
+  session_description: example file family
+  session_start_time: 2026-09-19 21:22:49.571913-04:00
+  timestamps_reference_time: 2026-09-19 21:22:49.571913-04:00
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The filename you provide when using the <code class="docutils literal notranslate"><span class="pre">family</span></code> driver must contain a printf-style integer format code
+(e.g.`%d`), which will be replaced by the file sequence number.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">memb_size</span></code> parameter must be set on both write and read. As such, reading the file requires
+the user to know the <code class="docutils literal notranslate"><span class="pre">memb_size</span></code> that was used for writing.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The DANDI archive may not support NWB files that are split in this fashion.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Other file drivers, e.g., <code class="docutils literal notranslate"><span class="pre">split</span></code> or <code class="docutils literal notranslate"><span class="pre">multi</span></code> could be used in a similar fashion.
+However, not all HDF5 drivers are supported by the the high-level API of
+<code class="docutils literal notranslate"><span class="pre">h5py</span></code> and as such may require a bit more complex setup via the the
+low-level HDF5 API in <code class="docutils literal notranslate"><span class="pre">h5py</span></code>.</p>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-advanced-io-plot-linking-data-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/4090f4f1f065bd48bccd00a673b6974c/plot_linking_data.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_linking_data.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/f76ad379024628451ea9f183f15d60a4/plot_linking_data.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_linking_data.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/5ace357953d93da3147eefcad7e5006f/plot_linking_data.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_linking_data.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_iterative_write.html" class="btn btn-neutral float-left" title="Iterative Data Write" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="parallelio.html" class="btn btn-neutral float-right" title="Parallel I/O using MPI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

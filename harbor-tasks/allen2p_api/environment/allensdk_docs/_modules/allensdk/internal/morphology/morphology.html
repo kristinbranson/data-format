@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.morphology.morphology &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.morphology.morphology</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2015-2016 Allen Institute for Brain Science</span>
+<span class="c1"># This file is part of Allen SDK.</span>
+<span class="c1">#</span>
+<span class="c1"># Allen SDK is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, version 3 of the License.</span>
+<span class="c1">#</span>
+<span class="c1"># Allen SDK is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with Allen SDK.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.morphology.node</span><span class="w"> </span><span class="kn">import</span> <span class="n">Node</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.morphology.compartment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Compartment</span>
+
+
+<div class="viewcode-block" id="Morphology">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Morphology</span><span class="p">(</span> <span class="nb">object</span> <span class="p">):</span>
+<span class="w">    </span><span class="sd">""" </span>
+<span class="sd">    Keep track of the list of nodes in a morphology and provide </span>
+<span class="sd">    a few helper methods (soma, tree information, pruning, etc).</span>
+<span class="sd">    """</span>
+
+    <span class="n">SOMA</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">AXON</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">BASAL_DENDRITE</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">APICAL_DENDRITE</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="n">NODE_TYPES</span> <span class="o">=</span> <span class="p">[</span> <span class="n">SOMA</span><span class="p">,</span> <span class="n">AXON</span><span class="p">,</span> <span class="n">BASAL_DENDRITE</span><span class="p">,</span> <span class="n">APICAL_DENDRITE</span> <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" </span>
+<span class="sd">        Try to initialize from a list of nodes first, then from</span>
+<span class="sd">        a dictionary indexed by node id if that fails, and finally just</span>
+<span class="sd">        leave everything empty.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        node_list: list </span>
+<span class="sd">            list of Node objects</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span> <span class="o">=</span> <span class="p">[]</span>            <span class="c1"># list of morphology node IDs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span> <span class="o">=</span> <span class="p">[]</span>     <span class="c1"># list of morphology compartment IDs</span>
+
+        <span class="c1">##############################################</span>
+        <span class="c1"># define tree list here for clarity, even though it's reset below</span>
+        <span class="c1">#   when nodes are assigned</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1">##############################################</span>
+        <span class="c1"># dimensions of morphology, including min and max values on xyz</span>
+        <span class="c1"># this is cached value</span>
+        <span class="c1"># NOTE: if morphology is manually manipulated, this value can</span>
+        <span class="c1">#   become incorrect</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dims</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="c1">##############################################</span>
+        <span class="c1"># construct the node list</span>
+        <span class="c1"># first try to do so using the node list, then try using</span>
+        <span class="c1">#   the node index and if that fails then complain</span>
+        <span class="k">if</span> <span class="n">node_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span> <span class="o">=</span> <span class="n">node_list</span>
+        <span class="c1">##############################################</span>
+        <span class="c1"># verify morphology is consistent with morphology rules (e.g.,</span>
+        <span class="c1">#   no dendrite branching from an axon)</span>
+        <span class="n">num_errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_consistency</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">num_errors</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Morphology appears to be inconsistent"</span><span class="p">)</span>
+        <span class="c1">##############################################</span>
+        <span class="c1"># restructure morphology as necessary (eg, renumber nodes)</span>
+        <span class="c1">#   and construct internal associations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span>
+
+
+    <span class="c1">####################################################################</span>
+    <span class="c1">####################################################################</span>
+    <span class="c1"># class properties, and helper functions for them</span>
+
+    <span class="nd">@property</span> 
+    <span class="k">def</span><span class="w"> </span><span class="nf">node_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Return the node list.  This is a property to ensure that the </span>
+<span class="sd">        node list and node index are in sync. """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span>
+
+    <span class="nd">@node_list</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">node_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Update the node list.  """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_nodes</span><span class="p">(</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compartment_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Return the number of trees in the morphology. A tree is</span>
+<span class="sd">        defined as everything following from a single root node. """</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" </span>
+<span class="sd">        Return the number of nodes in the morphology. </span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)</span>
+
+    <span class="c1"># internal function</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        take a list of SWC node objects and turn those into morphology</span>
+<span class="sd">        nodes need to be able to initialize from a list supplied by an SWC</span>
+<span class="sd">        file while also being able to initialize from the node list</span>
+<span class="sd">        of an existing Morphology object. As nodes in a morphology object</span>
+<span class="sd">        contain reference to nodes in that object, make a shallow copy</span>
+<span class="sd">        of input nodes and overwrite known references (ie, the </span>
+<span class="sd">        'children' array)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">node_list</span><span class="p">:</span>
+            <span class="n">seg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+        <span class="c1"># list data now set. remove holes in sequence and re-index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span>
+
+    <span class="c1"># removed old 'soma' and 'root' calls as these were ambiguous</span>
+    <span class="c1"># a soma can consist of multiple compartments, and there can</span>
+    <span class="c1">#   be multiple roots</span>
+    <span class="c1"># replaced those calls with new soma_root(), which returns the</span>
+    <span class="c1">#   same thing as the old soma() when only a single soma node is </span>
+    <span class="c1">#   present</span>
+<div class="viewcode-block" id="Morphology.soma_root">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.soma_root">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">soma_root</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Returns root node of soma, if present"""</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+    <span class="c1">####################################################################</span>
+    <span class="c1">####################################################################</span>
+    <span class="c1"># tree and node access</span>
+
+<div class="viewcode-block" id="Morphology.tree">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.tree">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" </span>
+<span class="sd">        Returns a list of all Morphology nodes within the specified</span>
+<span class="sd">        tree. A tree is defined as a fully connected graph of nodes.</span>
+<span class="sd">        Each tree has exactly one root.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: integer</span>
+<span class="sd">            ID of desired tree</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of all morphology objects in the specified tree, or None</span>
+<span class="sd">        if the tree doesn't exist</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.node">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.node">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns the morphology node having the specified ID.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: integer</span>
+<span class="sd">            ID of desired node</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A morphology node having the specified ID, or None if such a</span>
+<span class="sd">        node doesn't exist</span>
+<span class="sd">        """</span>
+        <span class="c1"># undocumented feature -- if a node is supplied instead of a</span>
+        <span class="c1">#   node ID, the node is returned and no error is </span>
+        <span class="c1">#   triggered</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_node_type</span><span class="p">(</span><span class="n">n</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.compartment">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.compartment">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compartment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" </span>
+<span class="sd">        Returns the morphology Compartment having the specified ID.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: integer</span>
+<span class="sd">            ID of desired compartment</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A morphology object having the specified ID, or None if such a</span>
+<span class="sd">        node doesn't exist</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compartment_list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.parent_of">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.parent_of">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parent_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Returns parent of the specified node.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seg: integer or Morphology Object</span>
+<span class="sd">            The ID of the child node, or the child node itself</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A morphology object, or None if no parent exists or if the</span>
+<span class="sd">        specified node ID doesn't exist</span>
+<span class="sd">        """</span>
+        <span class="c1"># if ID passed in, make sure it's converted to a node</span>
+        <span class="c1"># don't trap for exception here -- if supplied segment is </span>
+        <span class="c1">#   incorrect, make sure the user knows about it</span>
+        <span class="n">seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_node_type</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+        <span class="c1"># return parent of specified node</span>
+        <span class="k">if</span> <span class="n">seg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.children_of">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.children_of">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">children_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Returns a list of the children of the specified node</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seg: integer or Morphology Object</span>
+<span class="sd">            The ID of the parent node, or the parent node itself</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of the child morphology objects. If the ID of the parent</span>
+<span class="sd">        node is invalid, None is returned.</span>
+<span class="sd">        """</span>
+        <span class="n">seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_node_type</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">seg</span><span class="o">.</span><span class="n">children</span> <span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.to_dict">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns a dictionary of Node objects. These Nodes are a copy</span>
+<span class="sd">        of the Morphology. Modifying them will not modify anything in</span>
+<span class="sd">        the Morphology itself.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">{</span> <span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span> <span class="p">}</span></div>
+
+
+
+    <span class="c1">###################################################################</span>
+    <span class="c1">###################################################################</span>
+    <span class="c1"># Information querying and data manipulation</span>
+
+    <span class="c1"># internal function. takes an integer and returns the node having</span>
+    <span class="c1">#   that ID. IF a node is passed in instead, it is returned</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_node_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seg</span><span class="p">):</span>
+        <span class="c1"># if node passed then we don't need to convert anything</span>
+        <span class="c1"># if node not passed, try converting value to int</span>
+        <span class="c1">#   and using that as an index</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seg</span><span class="p">,</span> <span class="n">Node</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">seg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">seg</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">seg</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+                <span class="n">seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">[</span><span class="n">seg</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Object not recognized as morphology Node or index"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">seg</span>
+
+
+<div class="viewcode-block" id="Morphology.change_parent">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.change_parent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_parent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Change the parent of a node. The child node is adjusted to </span>
+<span class="sd">        point to the new parent, the child is taken off of the previous </span>
+<span class="sd">        parent's child list, and it is added to the new parent's child list.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        child: integer or Morphology Object</span>
+<span class="sd">            The ID of the child node, or the child node itself</span>
+<span class="sd">            </span>
+<span class="sd">        parent: integer or Morphology Object</span>
+<span class="sd">            The ID of the parent node, or the parent node itself</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Nothing</span>
+<span class="sd">        """</span>
+        <span class="n">child_seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_node_type</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+        <span class="n">parent_seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_node_type</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span>
+        <span class="c1"># if child has former parent, remove it from parent's child list</span>
+        <span class="k">if</span> <span class="n">child_seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">old_par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">child_seg</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+            <span class="n">old_par</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">child_seg</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">parent_seg</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child_seg</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">child_seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent_seg</span><span class="o">.</span><span class="n">n</span></div>
+
+    
+<div class="viewcode-block" id="Morphology.get_dimensions">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.get_dimensions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Returns tuple of overall width, height and depth of </span>
+<span class="sd">            morphology. </span>
+<span class="sd">            WARNING: if locations of nodes in morphology are manipulated</span>
+<span class="sd">            then this value can become incorrect. It can be reset and</span>
+<span class="sd">            recalculated by programmitcally setting self.dims to None.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            3 real arrays: [width, height, depth], [min_x, min_y, min_z],</span>
+<span class="sd">            [max_x, max_y, max_z]</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+            <span class="n">max_x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+            <span class="n">min_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">max_y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">min_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">z</span>
+            <span class="n">max_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">z</span>
+            <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+                <span class="n">max_x</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">max_x</span><span class="p">)</span>
+                <span class="n">max_y</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">max_y</span><span class="p">)</span>
+                <span class="n">max_z</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">max_z</span><span class="p">)</span>
+                <span class="c1">#</span>
+                <span class="n">min_x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">min_x</span><span class="p">)</span>
+                <span class="n">min_y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">min_y</span><span class="p">)</span>
+                <span class="n">min_z</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="n">min_z</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dims</span> <span class="o">=</span> <span class="p">[(</span><span class="n">max_x</span><span class="o">-</span><span class="n">min_x</span><span class="p">),</span> <span class="p">(</span><span class="n">max_y</span><span class="o">-</span><span class="n">min_y</span><span class="p">),</span> <span class="p">(</span><span class="n">max_z</span><span class="o">-</span><span class="n">min_z</span><span class="p">)],</span> <span class="p">[</span><span class="n">min_x</span><span class="p">,</span> <span class="n">min_y</span><span class="p">,</span> <span class="n">min_z</span><span class="p">],</span> <span class="p">[</span><span class="n">max_x</span><span class="p">,</span> <span class="n">max_y</span><span class="p">,</span> <span class="n">max_z</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dims</span></div>
+
+
+    <span class="c1"># returns a list of node located within dist of x,y,z</span>
+<div class="viewcode-block" id="Morphology.find">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.find">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Returns a list of Morphology Objects located within 'dist' </span>
+<span class="sd">        of coordinate (x,y,z). If node_type is specified, the search </span>
+<span class="sd">        will be constrained to return only nodes of that type.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x, y, z: float</span>
+<span class="sd">            The x,y,z coordinates from which to search around</span>
+<span class="sd">        </span>
+<span class="sd">        dist: float</span>
+<span class="sd">            The search radius</span>
+<span class="sd">        </span>
+<span class="sd">        node_type: enum (optional)</span>
+<span class="sd">            One of the following constants: SOMA, AXON, </span>
+<span class="sd">            BASAL_DENDRITE or APICAL_DENDRITE</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of all Morphology Objects matching the search criteria</span>
+<span class="sd">        """</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">dx</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">x</span>
+            <span class="n">dy</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">y</span>
+            <span class="n">dz</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span> <span class="o">-</span> <span class="n">z</span>
+            <span class="k">if</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dx</span><span class="o">*</span><span class="n">dx</span> <span class="o">+</span> <span class="n">dy</span><span class="o">*</span><span class="n">dy</span> <span class="o">+</span> <span class="n">dz</span><span class="o">*</span><span class="n">dz</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">dist</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">node_type</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">node_type</span><span class="p">:</span>
+                    <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">found</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.node_list_by_type">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.node_list_by_type">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">node_list_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Return an list of all nodes having the specified</span>
+<span class="sd">        node type.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        node_type: int</span>
+<span class="sd">            Desired node type</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of of Morphology Objects</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">node_type</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.save">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Write this morphology out to an SWC file </span>
+<span class="sd">      </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_name: string</span>
+<span class="sd">            desired name of your SWC file</span>
+<span class="sd">        """</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"#n,type,x,y,z,radius,parent</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="s2"> </span><span class="si">%d</span><span class="s2"> "</span> <span class="o">%</span> <span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span><span class="p">))</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%0.4f</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%0.4f</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%0.4f</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%0.4f</span><span class="s2"> "</span> <span class="o">%</span> <span class="n">seg</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="se">\n</span><span class="s2">"</span> <span class="o">%</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+    <span class="c1"># keep for backward compatibility, but don't publish in docs</span>
+<div class="viewcode-block" id="Morphology.write">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span></div>
+
+
+        
+<div class="viewcode-block" id="Morphology.sparsify">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.sparsify">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sparsify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modulo</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Return a new Morphology object that has a given number of non-leaf,</span>
+<span class="sd">        non-root nodes removed.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        modulo: int</span>
+<span class="sd">           keep 1 out of every modulo nodes.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------   </span>
+<span class="sd">        Morphology</span>
+<span class="sd">            A new morphology instance</span>
+<span class="sd">        """</span>
+        <span class="c1"># create and return a new morphology instance. make a copy of</span>
+        <span class="c1">#   this morphology's node list and manipulate that</span>
+        <span class="n">nodes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)</span>
+        <span class="c1"># figure out which nodes to toss</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ctr</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># mod counter -- keep every modulo element (starting w/ 1st)</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="n">nid</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">n</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> 
+                    <span class="nb">len</span><span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">children</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> 
+                    <span class="n">nodes</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">SOMA</span> <span class="ow">or</span>
+                    <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">SOMA</span><span class="p">):</span>
+                <span class="n">keep</span><span class="p">[</span><span class="n">nid</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ctr</span> <span class="o">%</span> <span class="n">modulo</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">keep</span><span class="p">[</span><span class="n">nid</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">keep</span><span class="p">[</span><span class="n">nid</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">ctr</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># hook children up to their new parents</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">keep</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">parent_id</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span>
+                <span class="k">while</span> <span class="n">keep</span><span class="p">[</span><span class="n">parent_id</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">parent_id</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">[</span><span class="n">parent_id</span><span class="p">]</span><span class="o">.</span><span class="n">parent</span>
+                <span class="k">for</span> <span class="n">child_id</span> <span class="ow">in</span> <span class="n">seg</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                    <span class="n">nodes</span><span class="p">[</span><span class="n">child_id</span><span class="p">]</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent_id</span>
+        <span class="c1"># filter out orphans</span>
+        <span class="n">sparse</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">keep</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">sparse</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Morphology</span><span class="p">(</span><span class="n">sparse</span><span class="p">)</span></div>
+
+
+
+    <span class="c1">####################################################################</span>
+    <span class="c1">####################################################################</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reconstruct</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Internal function. </span>
+<span class="sd">        Restructures data and establishes appropriate internal linking. </span>
+<span class="sd">        Data is re-order, removing 'holes' in the ID sequence so that </span>
+<span class="sd">        each object ID corresponds to its position in node list. </span>
+<span class="sd">        Dictionaries mapping IDs to objects are no longer necessary.</span>
+<span class="sd">        Trees are (re)calculated</span>
+<span class="sd">        Parent-child indices are recalculated </span>
+<span class="sd">        A new compartment list is created</span>
+<span class="sd">        """</span>
+        <span class="n">remap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># everything defaults to root. this way if a parent was deleted</span>
+        <span class="c1">#   the child will become a new root</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)):</span>
+            <span class="n">remap</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="c1"># map old old node numbers to new ones. reset n to the new ID</span>
+        <span class="c1">#   and put node in new list</span>
+        <span class="n">new_id</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">tmp_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">remap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_id</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">new_id</span>
+                <span class="n">tmp_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="n">new_id</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># use map to reset parent values. copy objs to new list</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">tmp_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">remap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span>
+        <span class="c1"># replace node list with newly created node list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span> <span class="o">=</span> <span class="n">tmp_list</span>
+        <span class="c1"># reconstruct parent/child relationship links</span>
+        <span class="c1">############################</span>
+        <span class="c1"># node list is complete and sequential so don't need index</span>
+        <span class="c1">#   to resolve relationships</span>
+        <span class="c1"># for each node, reset children array</span>
+        <span class="c1"># for each node, add self to parent's child list</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">compartment</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="c1"># update tree lists</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_separate_trees</span><span class="p">()</span>
+        <span class="c1"># verify that each node ID is the same as its position in the</span>
+        <span class="c1">#   node list</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Internal error detected -- node list not properly formed"</span><span class="p">)</span>
+        <span class="c1"># construct compartment list</span>
+        <span class="c1">#   (a compartment spans the distance between two nodes)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">compartment_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">child_id</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">endpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">child_id</span><span class="p">)</span>
+                <span class="n">compartment</span> <span class="o">=</span> <span class="n">Compartment</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
+                <span class="n">endpoint</span><span class="o">.</span><span class="n">compartment_id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_compartment_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">compartment</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Morphology.append">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.append">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Add additional nodes to this Morphology. Those nodes must</span>
+<span class="sd">        originate from another morphology object.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nodes: list of Morphology nodes</span>
+<span class="sd">        """</span>
+        <span class="c1"># construct a map between new and old IDs of added nodes</span>
+        <span class="n">remap</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
+            <span class="n">remap</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="c1"># map old old node numbers to new ones. reset n to the new ID</span>
+        <span class="c1"># append new nodes to existing node list</span>
+        <span class="n">old_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)</span>
+        <span class="n">new_id</span> <span class="o">=</span> <span class="n">old_count</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">remap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_id</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">new_id</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="n">new_id</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># use map to reset parent values. copy objs to new list</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">old_count</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)):</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">remap</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.convert_type">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.convert_type">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_type</span><span class="p">,</span> <span class="n">to_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Convert all nodes in morphology from one type to another</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        from_type: enum</span>
+<span class="sd">            The node type that will be eliminated and replaced.</span>
+<span class="sd">            Use one of the following constants: SOMA, AXON, </span>
+<span class="sd">            BASAL_DENDRITE, or APICAL_DENDRITE</span>
+
+<span class="sd">        to_type: enum</span>
+<span class="sd">            The new type that will replace it. </span>
+<span class="sd">            Use one of the following constants: SOMA, AXON, </span>
+<span class="sd">            BASAL_DENDRITE, or APICAL_DENDRITE</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">from_type</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">to_type</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.stumpify_axon">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.stumpify_axon">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stumpify_axon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Remove all axon nodes except the first 'count'</span>
+<span class="sd">        nodes, as counted from the connected axon root.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        count: Integer</span>
+<span class="sd">            The length of the axon 'stump', in number of nodes</span>
+<span class="sd">        """</span>
+        <span class="c1"># find connected axon root</span>
+        <span class="n">axon_root</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">AXON</span><span class="p">:</span>
+                <span class="n">par_id</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span>
+                <span class="k">if</span> <span class="n">par_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">par_id</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">par</span><span class="o">.</span><span class="n">t</span> <span class="o">!=</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">AXON</span><span class="p">:</span>
+                        <span class="n">axon_root</span> <span class="o">=</span> <span class="n">seg</span>
+                        <span class="k">break</span>
+        <span class="k">if</span> <span class="n">axon_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># flag the first 'count' nodes from the axon root</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axon_root</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">flag</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">count</span><span class="p">):</span>
+            <span class="c1"># ignore bifurcations -- go 'count' deep on one line only</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">flag</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="c1">#ax["flag"] = i</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">children</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">children</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">children</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># strip out all axons that aren't flagged</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)):</span>
+            <span class="n">seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">AXON</span><span class="p">:</span>
+                <span class="c1">#if "flag" not in seg:</span>
+                <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">flag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span></div>
+
+            
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_strip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flagged_for_removal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Internal function with code common between </span>
+<span class="sd">        strip_all_other_types() and strip_type()</span>
+<span class="sd">        """</span>
+        <span class="c1"># if parent will be stripped and node will remain, convert</span>
+        <span class="c1">#   parent to this type so it becomes root (otherwise root</span>
+        <span class="c1">#   will move)</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">soma_root</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_node_list</span><span class="p">:</span>
+            <span class="n">node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">node_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+                <span class="n">parent_flag</span> <span class="o">=</span> <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">parent</span><span class="o">.</span><span class="n">n</span><span class="p">]</span>
+                <span class="n">node_flag</span> <span class="o">=</span> <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">node</span><span class="o">.</span><span class="n">n</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">parent_flag</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">node_flag</span><span class="p">:</span>
+                    <span class="c1"># don't do this for soma root</span>
+                    <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">n</span> <span class="o">!=</span> <span class="n">root</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+                        <span class="n">parent</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span>
+                        <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">parent</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># removed flagged items</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">)):</span>
+            <span class="n">seg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]:</span>
+                <span class="c1"># eliminate node</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">]:</span>
+                <span class="c1"># parent was eliminated. make this a new root</span>
+                <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span>
+
+        
+    <span class="c1"># strip out everything but the soma and the specified SWC type</span>
+<div class="viewcode-block" id="Morphology.strip_all_other_types">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.strip_all_other_types">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">strip_all_other_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">keep_soma</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Strips everything from the morphology except for the</span>
+<span class="sd">        specified type.</span>
+<span class="sd">        Parent and child relationships are updated accordingly, creating</span>
+<span class="sd">        new roots when necessary.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        node_type: enum</span>
+<span class="sd">            The node type to keep in the morphology. </span>
+<span class="sd">            Use one of the following constants: SOMA, AXON, </span>
+<span class="sd">            BASAL_DENDRITE, or APICAL_DENDRITE</span>
+<span class="sd">        </span>
+<span class="sd">        keep_soma: Boolean (optional)</span>
+<span class="sd">            True (default) if soma nodes should remain in the </span>
+<span class="sd">            morpyhology, and False if the soma should also be stripped</span>
+<span class="sd">        """</span>
+        <span class="n">flagged_for_removal</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># scan nodes and see which ones should be removed. keep a record</span>
+        <span class="c1">#   of them</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">node_type</span><span class="p">:</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">keep_soma</span><span class="p">:</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">remove</span><span class="p">:</span>
+                <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip</span><span class="p">(</span><span class="n">flagged_for_removal</span><span class="p">)</span></div>
+
+
+
+    <span class="c1"># strip out the specified SWC type</span>
+<div class="viewcode-block" id="Morphology.strip_type">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.strip_type">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">strip_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_type</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Strips all nodes of the specified type from the</span>
+<span class="sd">        morphology. </span>
+<span class="sd">        Parent and child relationships are updated accordingly, creating</span>
+<span class="sd">        new roots when necessary.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        node_type: enum</span>
+<span class="sd">            The node type to strip from the morphology.</span>
+<span class="sd">            Use one of the following constants: SOMA, AXON, </span>
+<span class="sd">            BASAL_DENDRITE, or APICAL_DENDRITE</span>
+<span class="sd">        """</span>
+        <span class="n">flagged_for_removal</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">node_type</span><span class="p">:</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">remove</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">remove</span><span class="p">:</span>
+                <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flagged_for_removal</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strip</span><span class="p">(</span><span class="n">flagged_for_removal</span><span class="p">)</span></div>
+
+    
+
+<div class="viewcode-block" id="Morphology.clone">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.clone">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Create a clone (deep copy) of this morphology</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Morphology.apply_affine_only_rotation">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.apply_affine_only_rotation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_affine_only_rotation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aff</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Apply an affine transform to all nodes in this </span>
+<span class="sd">        morphology. Only the rotation element of the transform is</span>
+<span class="sd">        performed (i.e., although the entire transformation and </span>
+<span class="sd">        translation matrix is supplied, only the rotation element</span>
+<span class="sd">        is used). The morphology is translated to the point where</span>
+<span class="sd">        the soma root is at 0,0,0.</span>
+<span class="sd">        </span>
+<span class="sd">        Format of the affine matrix is:</span>
+<span class="sd">        </span>
+<span class="sd">        [x0 y0 z0]  [tx]</span>
+<span class="sd">        [x1 y1 z1]  [ty]</span>
+<span class="sd">        [x2 y2 z2]  [tz]</span>
+<span class="sd">        </span>
+<span class="sd">        where the left 3x3 the matrix defines the affine rotation </span>
+<span class="sd">        and scaling, and the right column is the translation</span>
+<span class="sd">        vector.</span>
+
+<span class="sd">        The matrix must be collapsed and stored in a list as follows:</span>
+<span class="sd">        </span>
+<span class="sd">        [x0 y0, z0, x1, y1, z1, x2, y2, z2, tx, ty, tz]</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        aff: 3x4 array of floats (python 2D list, or numpy 2D array)</span>
+<span class="sd">            the transformation matrix</span>
+<span class="sd">        """</span>
+        <span class="n">affine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">aff</span><span class="p">)</span>
+        <span class="c1"># remove scale on each axis</span>
+        <span class="n">scale_x</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">affine</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">scale_x</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_x</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_x</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_x</span>
+        <span class="n">scale_y</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">affine</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">scale_y</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_y</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_y</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_y</span>
+        <span class="n">scale_z</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">affine</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">affine</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">scale_z</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_z</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_z</span>
+            <span class="n">affine</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">/=</span> <span class="n">scale_z</span>
+        <span class="c1"># apply rotation</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">affine</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span></div>
+
+<span class="c1">#        # relocate back to zero</span>
+<span class="c1">#        soma = self.soma_root()</span>
+<span class="c1">#        if soma is not None:</span>
+<span class="c1">#            for seg in self.node_list:</span>
+<span class="c1">#                seg.x -= soma.x</span>
+<span class="c1">#                seg.y -= soma.y</span>
+<span class="c1">#                seg.z -= soma.z</span>
+
+
+<div class="viewcode-block" id="Morphology.apply_affine">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.apply_affine">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_affine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aff</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Apply an affine transform to all nodes in this </span>
+<span class="sd">        morphology. Compartment radius is adjusted as well.</span>
+<span class="sd">        </span>
+<span class="sd">        Format of the affine matrix is:</span>
+<span class="sd">        </span>
+<span class="sd">        [x0 y0 z0]  [tx]</span>
+<span class="sd">        [x1 y1 z1]  [ty]</span>
+<span class="sd">        [x2 y2 z2]  [tz]</span>
+<span class="sd">        </span>
+<span class="sd">        where the left 3x3 the matrix defines the affine rotation </span>
+<span class="sd">        and scaling, and the right column is the translation</span>
+<span class="sd">        vector.</span>
+<span class="sd">        </span>
+<span class="sd">        The matrix must be collapsed and stored in a list as follows:</span>
+<span class="sd">        </span>
+<span class="sd">        [x0 y0, z0, x1, y1, z1, x2, y2, z2, tx, ty, tz]</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        aff: 3x4 array of floats (python 2D list, or numpy 2D array)</span>
+<span class="sd">            the transformation matrix</span>
+<span class="sd">        """</span>
+        <span class="c1"># In addition to transforming the locations of the morphology</span>
+        <span class="c1">#   nodes, the radius of each node must be adjusted.</span>
+        <span class="c1"># There are 2 ways to measure scale from a transform. Assuming</span>
+        <span class="c1">#   an isotropic transform, the scale is the cube root of the</span>
+        <span class="c1">#   matrix determinant. The other ways is to measure scale </span>
+        <span class="c1">#   independently along each axis.</span>
+        <span class="c1"># For now, the node radius is only updated based on the average</span>
+        <span class="c1">#   scale along all 3 axes (eg, isotropic assumption), so calculate</span>
+        <span class="c1">#   scale using the determinant</span>
+        <span class="c1">#</span>
+        <span class="k">if</span> <span class="n">scale</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># calculate the determinant</span>
+            <span class="n">determinant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">aff</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">9</span><span class="p">],</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+            <span class="c1"># determinant is change of volume that occurred during transform</span>
+            <span class="c1"># assume equal scaling along all axes. take 3rd root to get</span>
+            <span class="c1">#   scale factor</span>
+            <span class="n">det_scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">determinant</span><span class="p">),</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
+            <span class="c1">## measure scale along each axis</span>
+            <span class="c1">## keep this code here in case </span>
+            <span class="c1">#scale_x = abs(aff[0] + aff[3] + aff[6])</span>
+            <span class="c1">#scale_y = abs(aff[1] + aff[4] + aff[7])</span>
+            <span class="c1">#scale_z = abs(aff[2] + aff[5] + aff[8])</span>
+            <span class="c1">#avg_scale = (scale_x + scale_y + scale_z) / 3.0;</span>
+            <span class="c1">#</span>
+            <span class="c1"># use determinant for scaling for now as it's most simple</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="n">det_scale</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">aff</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">aff</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">x</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">y</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">+</span> <span class="n">seg</span><span class="o">.</span><span class="n">z</span><span class="o">*</span><span class="n">aff</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">+</span> <span class="n">aff</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">z</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">radius</span> <span class="o">*=</span> <span class="n">scale</span></div>
+
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_separate_trees</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct list of independent trees (each tree has a root of -1).</span>
+<span class="sd">        The soma root, if it exists, is in tree 0.</span>
+<span class="sd">        """</span>
+        <span class="n">trees</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># reset each node's tree ID to indicate that it's not assigned</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="c1"># construct trees for each node</span>
+        <span class="c1"># if a node is adjacent an existing tree, merge to it</span>
+        <span class="c1"># if a node is adjacent multiple trees, merge all</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="c1"># see what trees this node is adjacent to</span>
+            <span class="n">local_trees</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">local_trees</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span><span class="o">.</span><span class="n">tree_id</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">child_id</span> <span class="ow">in</span> <span class="n">seg</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">child</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">child_id</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">local_trees</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">tree_id</span><span class="p">)</span>
+            <span class="c1"># figure out which tree to put node into</span>
+            <span class="c1"># if there are muliple possibilities, merge all of them</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_trees</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">tree_num</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span> <span class="c1"># create new tree</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_trees</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">tree_num</span> <span class="o">=</span> <span class="n">local_trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>   <span class="c1"># use existing tree</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">local_trees</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># this node is an intersection of multiple trees</span>
+                <span class="c1"># merge all trees into the first one found</span>
+                <span class="n">tree_num</span> <span class="o">=</span> <span class="n">local_trees</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">local_trees</span><span class="p">)):</span>
+                    <span class="n">dead_tree</span> <span class="o">=</span> <span class="n">local_trees</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                    <span class="n">trees</span><span class="p">[</span><span class="n">dead_tree</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">==</span> <span class="n">dead_tree</span><span class="p">:</span>
+                            <span class="n">node</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">=</span> <span class="n">tree_num</span>
+            <span class="c1"># merge node into tree</span>
+            <span class="c1"># ensure there's space</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">trees</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">tree_num</span><span class="p">:</span>
+                <span class="n">trees</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+            <span class="n">trees</span><span class="p">[</span><span class="n">tree_num</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
+            <span class="n">seg</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">=</span> <span class="n">tree_num</span>
+        <span class="c1"># consolidate tree lists into class's tree list object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="n">trees</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+        <span class="c1"># make soma's tree be the first tree, if soma present</span>
+        <span class="c1"># this should be the case if the file is properly ordered, but</span>
+        <span class="c1">#   don't assume that</span>
+        <span class="n">soma_tree</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">soma_tree</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">tree_id</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">soma_tree</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># swap soma tree for first tree in list</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">soma_tree</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">soma_tree</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="c1"># reset node tree_id to correct tree number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_tree_ids</span><span class="p">()</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_tree_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        reset each node's tree_id value to the correct tree number</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">tree_id</span> <span class="o">=</span> <span class="n">i</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_consistency</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        internal function -- don't publish in the docs</span>
+<span class="sd">        TODO? print warning if unrecognized types are present</span>
+<span class="sd">        Return value: number of errors detected in file</span>
+<span class="sd">        """</span>
+        <span class="n">errs</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># Make sure that the parents are of proper ID range</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_nodes</span>
+        <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">"Parent for node </span><span class="si">%d</span><span class="s2"> is invalid (</span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">seg</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+                    <span class="n">errs</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># make sure that each tree has exactly one root</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">):</span>
+            <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">tree</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">root</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">"Too many roots in tree </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                        <span class="n">errs</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">root</span> <span class="o">=</span> <span class="n">j</span>
+            <span class="k">if</span> <span class="n">root</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">"No root present in tree </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">i</span><span class="p">)</span>
+                <span class="n">errs</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1"># make sure each axon has at most one root</span>
+        <span class="c1"># find type boundaries. at each axon boundary, walk back up</span>
+        <span class="c1">#   tree to root and make sure another axon segment not</span>
+        <span class="c1">#   encountered</span>
+        <span class="n">adoptees</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_type_boundary</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">adoptees</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">AXON</span><span class="p">:</span>
+                <span class="n">par_id</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">parent</span>
+                <span class="k">while</span> <span class="n">par_id</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">par_id</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">par</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="n">Morphology</span><span class="o">.</span><span class="n">AXON</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">"Branch has multiple axon roots"</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+                        <span class="n">errs</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">break</span>
+                    <span class="n">par_id</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">if</span> <span class="n">errs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Failed consistency check: </span><span class="si">%d</span><span class="s2"> errors encountered"</span> <span class="o">%</span> <span class="n">errs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">errs</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_type_boundary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        return a list of segments who have parents that are a different type</span>
+<span class="sd">        """</span>
+        <span class="n">adoptees</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_of</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">t</span> <span class="o">!=</span> <span class="n">par</span><span class="o">.</span><span class="n">t</span><span class="p">:</span>
+                <span class="n">adoptees</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">adoptees</span>
+
+
+    <span class="c1"># remove tree from swc's "forest"</span>
+<div class="viewcode-block" id="Morphology.delete_tree">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphology.html#allensdk.internal.morphology.morphology.Morphology.delete_tree">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Delete tree, and all of its nodes, from the morphology.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: Integer</span>
+<span class="sd">            The tree number to delete</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_trees</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">"Error -- attempted to delete non-existing tree (</span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tree</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">[</span><span class="n">tree</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tree_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reconstruct</span><span class="p">()</span>
+        <span class="c1"># reset node tree_id to correct tree number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_tree_ids</span><span class="p">()</span></div>
+
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_print_all_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        debugging function. prints all nodes</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_list</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">short_string</span><span class="p">())</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

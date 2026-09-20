@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.vbn_2022.input_json_writer.utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.vbn_2022.input_json_writer.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numbers</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.wkf_lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">wkf_path_from_attachable</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.equipment_lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">experiment_configs_from_equipment_id_and_type</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneResultExpectedError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">build_in_list_selector_query</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.</span>\
+    <span class="n">metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">reporter_line</span> <span class="kn">import</span><span class="w"> </span><span class="nn">ReporterLine</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.</span>\
+    <span class="n">metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">driver_line</span> <span class="kn">import</span><span class="w"> </span><span class="nn">DriverLine</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_ecephys_summary_table_from_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="n">probes_table_from_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="n">channels_table_from_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="n">units_table_from_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="n">get_list_of_bad_probe_ids</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.vbn_2022.metadata_writer.</span>\
+    <span class="n">dataframe_manipulations</span> <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+        <span class="n">_add_age_in_days</span><span class="p">,</span>
+        <span class="n">_patch_date_and_stage_from_pickle_file</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LIMS_DB_CREDENTIAL_MAP</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">db_connection_creator</span>
+
+
+<div class="viewcode-block" id="NwbConfigErrorLog">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.NwbConfigErrorLog">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NwbConfigErrorLog</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This is a class meant to keep track of all of the non-fatal</span>
+<span class="sd">    data irregularities encountered during input json generation</span>
+<span class="sd">    for the VBN NWB writer.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="NwbConfigErrorLog.log">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.NwbConfigErrorLog.log">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+            <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Log an irregularity associated with a specifiec</span>
+<span class="sd">        ecephys session</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ecephys_session_id: Union[int, str]</span>
+<span class="sd">            Will get cast to int before actual logging</span>
+
+<span class="sd">        msg: str</span>
+<span class="sd">            The specific message that you want attached to</span>
+<span class="sd">            that ecephys_session_id</span>
+<span class="sd">        """</span>
+        <span class="n">ecephys_session_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ecephys_session_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NwbConfigErrorLog.write">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.NwbConfigErrorLog.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns a string summarizing all of the logged</span>
+<span class="sd">        message. The string will look like</span>
+
+<span class="sd">        ecephys_session: 1111</span>
+<span class="sd">            first message associated with ecephys_session 1111</span>
+<span class="sd">            second message assocated with ecephys_session 1111</span>
+<span class="sd">        ecephys_session: 2222</span>
+<span class="sd">            first message associated with ecephys_session 2222</span>
+<span class="sd">            ...</span>
+<span class="sd">        """</span>
+        <span class="n">k_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">k_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">k_list</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"ecephys_session: </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"    </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="vbn_nwb_config_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.vbn_nwb_config_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">vbn_nwb_config_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">probes_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return a list of dicts. Each dict the specification for</span>
+<span class="sd">    an NWB writer job, suitable for serialization with</span>
+<span class="sd">    json.dumps</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The ecephys_session_ids for which you want to create</span>
+<span class="sd">        NWB writer specifications</span>
+
+<span class="sd">    probes_to_skip: List[dict]</span>
+<span class="sd">        A list of dicts, each specifying a probe to ignore</span>
+<span class="sd">        when generating the NWB writer specifications.</span>
+<span class="sd">        Each dict should look like</span>
+<span class="sd">            {</span>
+<span class="sd">             "session": 12345   # an ecephys_session_id</span>
+<span class="sd">             "probe": "probeB"  # the probe's name</span>
+<span class="sd">            }</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dict</span>
+<span class="sd">        {</span>
+<span class="sd">         "specfications": the list of dicts representing</span>
+<span class="sd">                          the NWB writer specifications</span>
+<span class="sd">         "log": a string with a summary of all non-fatal</span>
+<span class="sd">                irregularities encountered in the data</span>
+<span class="sd">        }</span>
+<span class="sd">    """</span>
+
+    <span class="n">error_log</span> <span class="o">=</span> <span class="n">NwbConfigErrorLog</span><span class="p">()</span>
+
+    <span class="n">lims_connection</span> <span class="o">=</span> <span class="n">db_connection_creator</span><span class="p">(</span>
+            <span class="n">fallback_credentials</span><span class="o">=</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span><span class="p">)</span>
+
+    <span class="c1"># convert probes_to_skip into a list of ecephys_probe_ids</span>
+    <span class="k">if</span> <span class="n">probes_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">probe_ids_to_skip</span> <span class="o">=</span> <span class="n">get_list_of_bad_probe_ids</span><span class="p">(</span>
+                <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                <span class="n">probes_to_skip</span><span class="o">=</span><span class="n">probes_to_skip</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">probe_ids_to_skip</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># get a list of basic session configuresions (i.e. the</span>
+    <span class="c1"># data for each session excluding the lists of probes,</span>
+    <span class="c1"># channels, and units)</span>
+    <span class="n">session_list</span> <span class="o">=</span> <span class="n">session_input_from_ecephys_session_id_list</span><span class="p">(</span>
+            <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">error_log</span><span class="o">=</span><span class="n">error_log</span><span class="p">)</span>
+
+    <span class="c1"># iterate over each session, adding the probes, channels,</span>
+    <span class="c1"># and units as appropriate</span>
+    <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">session_list</span><span class="p">:</span>
+        <span class="n">session_id</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">'ecephys_session_id'</span><span class="p">]</span>
+
+        <span class="n">probe_list</span> <span class="o">=</span> <span class="n">probe_input_from_ecephys_session_id</span><span class="p">(</span>
+            <span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">error_log</span><span class="o">=</span><span class="n">error_log</span>
+        <span class="p">)</span>
+
+        <span class="n">session</span><span class="p">[</span><span class="s1">'probes'</span><span class="p">]</span> <span class="o">=</span> <span class="n">probe_list</span>
+
+        <span class="n">channel_input</span> <span class="o">=</span> <span class="n">channel_input_from_ecephys_session_id</span><span class="p">(</span>
+                            <span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                            <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+                            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">error_log</span><span class="o">=</span><span class="n">error_log</span><span class="p">)</span>
+
+        <span class="c1"># bad_probe_list keeps track of any probes that did not have</span>
+        <span class="c1"># channels attached to it; these probes will be excluded</span>
+        <span class="c1"># from the final configuration, and a message will be logged</span>
+        <span class="n">bad_probe_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">probe</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s1">'probes'</span><span class="p">]):</span>
+            <span class="n">probe_id</span> <span class="o">=</span> <span class="n">probe</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">probe_id</span> <span class="ow">in</span> <span class="n">channel_input</span><span class="p">:</span>
+                <span class="n">channels</span> <span class="o">=</span> <span class="n">channel_input</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span>
+                <span class="n">probe</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">]</span> <span class="o">=</span> <span class="n">channels</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bad_probe_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"could not find channels for probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">; "</span>
+                       <span class="s2">"not listing in the input.json"</span><span class="p">)</span>
+                <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                              <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">bad_probe_list</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">bad_probe_list</span><span class="p">:</span>
+            <span class="n">this_probe</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">'probes'</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="s1">'channels'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">this_probe</span>
+
+        <span class="n">unit_input</span> <span class="o">=</span> <span class="n">unit_input_from_ecephys_session_id</span><span class="p">(</span>
+                        <span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                        <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+                        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                        <span class="n">error_log</span><span class="o">=</span><span class="n">error_log</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">probe</span> <span class="ow">in</span> <span class="n">session</span><span class="p">[</span><span class="s1">'probes'</span><span class="p">]:</span>
+            <span class="n">probe_id</span> <span class="o">=</span> <span class="n">probe</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">probe_id</span> <span class="ow">in</span> <span class="n">unit_input</span><span class="p">:</span>
+                <span class="n">units</span> <span class="o">=</span> <span class="n">unit_input</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span>
+                <span class="n">probe</span><span class="p">[</span><span class="s1">'units'</span><span class="p">]</span> <span class="o">=</span> <span class="n">units</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"could not find units for probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">"</span>
+                <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                              <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s1">'sessions'</span><span class="p">:</span> <span class="n">session_list</span><span class="p">,</span>
+            <span class="s1">'log'</span><span class="p">:</span> <span class="n">error_log</span><span class="o">.</span><span class="n">write</span><span class="p">()}</span></div>
+
+
+
+<div class="viewcode-block" id="session_input_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.session_input_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">session_input_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">error_log</span><span class="p">:</span> <span class="n">NwbConfigErrorLog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return a list of dicts, each dict representing the configuration</span>
+<span class="sd">    data necessary for writing an NWB file for a session, excluding</span>
+<span class="sd">    the lists of probes, channels, and units associated with that</span>
+<span class="sd">    session.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        List of ecephys_session_ids for which we are generating</span>
+<span class="sd">        the configurations</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    error_log: NwbConfigErrorLog</span>
+<span class="sd">        An object for keeping track of all of the non-fatal</span>
+<span class="sd">        irregularities encountered in the data.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    result: List[dict]</span>
+<span class="sd">        Each dict represents a single session's configuration</span>
+<span class="sd">    """</span>
+
+    <span class="n">session_table</span> <span class="o">=</span> <span class="n">_ecephys_summary_table_from_ecephys_session_id_list</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+            <span class="n">failed_ecephys_session_id_list</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="c1"># get date_of_acquisition from the pickle file by nulling out the</span>
+    <span class="c1"># dates of acqusition from any sessions with behavior_session_ids,</span>
+    <span class="c1"># then filling the values back in from the pickle file.</span>
+    <span class="n">session_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">session_table</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">isna</span><span class="p">()),</span>
+        <span class="s1">'date_of_acquisition'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">session_table</span> <span class="o">=</span> <span class="n">_patch_date_and_stage_from_pickle_file</span><span class="p">(</span>
+                            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">behavior_df</span><span class="o">=</span><span class="n">session_table</span><span class="p">,</span>
+                            <span class="n">flag_columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'date_of_acquisition'</span><span class="p">],</span>
+                            <span class="n">columns_to_patch</span><span class="o">=</span><span class="p">[</span><span class="s1">'date_of_acquisition'</span><span class="p">])</span>
+
+    <span class="c1"># clip fractions of a second off the date of acquisition</span>
+    <span class="c1"># (DateTime data object will fail deserialization if you do not)</span>
+    <span class="n">session_table</span><span class="o">.</span><span class="n">date_of_acquisition</span> <span class="o">=</span> \
+        <span class="n">session_table</span><span class="o">.</span><span class="n">date_of_acquisition</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="s1">'S'</span><span class="p">)</span>
+
+    <span class="n">session_table</span> <span class="o">=</span> <span class="n">_add_age_in_days</span><span class="p">(</span>
+                <span class="n">df</span><span class="o">=</span><span class="n">session_table</span><span class="p">,</span>
+                <span class="n">index_column</span><span class="o">=</span><span class="s1">'ecephys_session_id'</span><span class="p">)</span>
+
+    <span class="n">session_table</span><span class="o">.</span><span class="n">age_in_days</span> <span class="o">=</span> <span class="n">session_table</span><span class="o">.</span><span class="n">age_in_days</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                         <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s1">'P</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="si">:</span><span class="s1">d</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+
+    <span class="c1"># apply naming conventions from the NWB writer's schema</span>
+    <span class="n">session_table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'equipment_name'</span><span class="p">:</span> <span class="s1">'rig_name'</span><span class="p">,</span>
+                     <span class="s1">'mouse_id'</span><span class="p">:</span> <span class="s1">'external_specimen_name'</span><span class="p">,</span>
+                     <span class="s1">'genotype'</span><span class="p">:</span> <span class="s1">'full_genotype'</span><span class="p">,</span>
+                     <span class="s1">'age_in_days'</span><span class="p">:</span> <span class="s1">'age'</span><span class="p">},</span>
+            <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">session_table</span><span class="o">.</span><span class="n">external_specimen_name</span> <span class="o">=</span> \
+        <span class="n">session_table</span><span class="o">.</span><span class="n">external_specimen_name</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">session_table</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">'session_type'</span><span class="p">,</span> <span class="s1">'project_code'</span><span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="s1">'columns'</span><span class="p">,</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">session_table</span> <span class="o">=</span> <span class="n">session_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span>
+                        <span class="s1">'ecephys_session_id'</span><span class="p">)</span>
+
+    <span class="n">session_table</span> <span class="o">=</span> <span class="n">session_table</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+
+    <span class="c1"># get lookup tables mapping ecephys_session_id to the</span>
+    <span class="c1"># ecephys_analysis_run_ids for the optotagging and</span>
+    <span class="c1"># stimulus table files</span>
+    <span class="n">optotagging_run_lookup</span> <span class="o">=</span> <span class="n">_analysis_run_from_session_id</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+            <span class="n">strategy_class</span><span class="o">=</span><span class="s1">'EcephysOptotaggingTableStrategy'</span><span class="p">)</span>
+
+    <span class="n">stim_table_run_lookup</span> <span class="o">=</span> <span class="n">_analysis_run_from_session_id</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+            <span class="n">strategy_class</span><span class="o">=</span><span class="s1">'VbnCreateStimTableStrategy'</span><span class="p">)</span>
+
+    <span class="c1"># A list of tuples associating fields in the final specification</span>
+    <span class="c1"># returned by this method with the names of files in the</span>
+    <span class="c1"># well_known_file_types table on LIMS. The zeroth element in each</span>
+    <span class="c1"># tuple is the field in the returned specification; the first</span>
+    <span class="c1"># element is the associated well_known_file_types.name</span>
+    <span class="n">input_from_wkf_session</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="s1">'behavior_stimulus_file'</span><span class="p">,</span> <span class="s1">'StimulusPickle'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'mapping_stimulus_file'</span><span class="p">,</span> <span class="s1">'MappingPickle'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'replay_stimulus_file'</span><span class="p">,</span> <span class="s1">'EcephysReplayStimulus'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'raw_eye_tracking_video_meta_data'</span><span class="p">,</span>
+             <span class="s1">'RawEyeTrackingVideoMetadata'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'eye_dlc_file'</span><span class="p">,</span> <span class="s1">'EyeDlcOutputFile'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'face_dlc_file'</span><span class="p">,</span> <span class="s1">'FaceDlcOutputFile'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'side_dlc_file'</span><span class="p">,</span> <span class="s1">'SideDlcOutputFile'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'eye_tracking_filepath'</span><span class="p">,</span> <span class="s1">'EyeTracking Ellipses'</span><span class="p">),</span>
+            <span class="p">(</span><span class="s1">'sync_file'</span><span class="p">,</span> <span class="s1">'EcephysRigSync'</span><span class="p">)]</span>
+
+    <span class="c1"># cast to a SQL-safe string</span>
+    <span class="n">wkf_types_to_query_session</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span>
+                                  <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">input_from_wkf_session</span><span class="p">]</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">ecephys_session_id_list</span><span class="p">:</span>
+        <span class="n">session_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session_table</span><span class="p">:</span>
+            <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                          <span class="n">msg</span><span class="o">=</span><span class="s2">"No session data was found at all; skipping"</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">session_table</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">'ecephys_session_id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">session_id</span>
+
+        <span class="c1"># lookup all of the well known files we need for this</span>
+        <span class="c1"># specification</span>
+        <span class="n">wkf_path_lookup</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+                            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">wkf_type_name</span><span class="o">=</span><span class="n">wkf_types_to_query_session</span><span class="p">,</span>
+                            <span class="n">attachable_type</span><span class="o">=</span><span class="s1">'EcephysSession'</span><span class="p">,</span>
+                            <span class="n">attachable_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key_pair</span> <span class="ow">in</span> <span class="n">input_from_wkf_session</span><span class="p">:</span>
+            <span class="n">this_path</span> <span class="o">=</span> <span class="n">wkf_path_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key_pair</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">this_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"Could not find </span><span class="si">{</span><span class="n">key_pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+                       <span class="sa">f</span><span class="s2">"for ecephys_session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                              <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">key_pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">this_path</span>
+
+        <span class="c1"># get stimulus_table</span>
+        <span class="n">stim_path_lookup</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+                    <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                    <span class="n">wkf_type_name</span><span class="o">=</span><span class="p">[</span><span class="s2">"'EcephysStimulusTable'"</span><span class="p">,</span> <span class="p">],</span>
+                    <span class="n">attachable_type</span><span class="o">=</span><span class="s2">"EcephysAnalysisRun"</span><span class="p">,</span>
+                    <span class="n">attachable_id</span><span class="o">=</span><span class="n">stim_table_run_lookup</span><span class="p">[</span><span class="n">session_id</span><span class="p">])</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="s1">'stim_table_file'</span><span class="p">]</span> <span class="o">=</span> <span class="n">stim_path_lookup</span><span class="p">[</span><span class="s1">'EcephysStimulusTable'</span><span class="p">]</span>
+
+        <span class="c1"># get optotagging_table</span>
+        <span class="n">optotagging_path_lookup</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+                    <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                    <span class="n">wkf_type_name</span><span class="o">=</span><span class="p">[</span><span class="s2">"'EcephysOptotaggingTable'"</span><span class="p">,</span> <span class="p">],</span>
+                    <span class="n">attachable_type</span><span class="o">=</span><span class="s2">"EcephysAnalysisRun"</span><span class="p">,</span>
+                    <span class="n">attachable_id</span><span class="o">=</span><span class="n">optotagging_run_lookup</span><span class="p">[</span><span class="n">session_id</span><span class="p">])</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="s1">'optotagging_table_path'</span><span class="p">]</span> <span class="o">=</span> <span class="n">optotagging_path_lookup</span><span class="p">[</span>
+                        <span class="s2">"EcephysOptotaggingTable"</span><span class="p">]</span>
+
+        <span class="n">driver_line</span> <span class="o">=</span> <span class="n">DriverLine</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                        <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                        <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">'behavior_session_id'</span><span class="p">],</span>
+                        <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">driver_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">driver_line</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'driver_line'</span><span class="p">]</span> <span class="o">=</span> <span class="n">driver_line</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'driver_line'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">driver_line</span><span class="p">,</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">'driver_line'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">reporter_line</span> <span class="o">=</span> <span class="n">ReporterLine</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                            <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">'behavior_session_id'</span><span class="p">],</span>
+                            <span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">reporter_line</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reporter_line</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'reporter_line'</span><span class="p">]</span> <span class="o">=</span> <span class="n">reporter_line</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data</span><span class="p">[</span><span class="s1">'reporter_line'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">reporter_line</span><span class="p">,</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">'reporter_line'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">eye_geometry</span> <span class="o">=</span> <span class="n">eye_tracking_geometry_from_equipment_id</span><span class="p">(</span>
+                <span class="n">equipment_id</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'equipment_id'</span><span class="p">),</span>
+                <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">'date_of_acquisition'</span><span class="p">],</span>
+                <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">)</span>
+
+        <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'equipment'</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'rig_name'</span><span class="p">]</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="s1">'eye_tracking_rig_geometry'</span><span class="p">]</span> <span class="o">=</span> <span class="n">eye_geometry</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'date_of_acquisition'</span><span class="p">,</span>
+                  <span class="s1">'date_of_birth'</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_probe_analysis_run_from_probe_id</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_strategy</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">):</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'''</span>
+<span class="s1">    SELECT earp.id</span>
+<span class="s1">    FROM ecephys_analysis_run_probes earp</span>
+<span class="s1">    JOIN ecephys_analysis_runs ear on ear.id = earp.ecephys_analysis_run_id</span>
+<span class="s1">    WHERE earp.ecephys_probe_id = </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s1"> and</span>
+<span class="s1">        job_strategy_class = '</span><span class="si">{</span><span class="n">lims_strategy</span><span class="si">}</span><span class="s1">' and</span>
+<span class="s1">        ear.current</span>
+<span class="s1">    '''</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select_one</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">res</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">OneResultExpectedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">'Expected to find one analysis probe run for probe '</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_probe_lfp_meta</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Gets filepaths for files needed to build LFP data</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection</span>
+<span class="sd">    probe_id</span>
+
+<span class="sd">    """</span>
+    <span class="n">lfp_subsampling_run_well_known_files</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">'EcephysSubsampledLfpContinuous'</span><span class="p">,</span>
+        <span class="s1">'EcephysSubsampledLfpTimestamps'</span><span class="p">,</span>
+        <span class="s1">'EcephysSubsampledChannelStates'</span>
+    <span class="p">]</span>
+    <span class="n">current_source_density_well_known_files</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">'EcephysCurrentSourceDensity'</span>
+    <span class="p">]</span>
+    <span class="n">probe_lfp_subsampling_run_id</span> <span class="o">=</span> <span class="n">_get_probe_analysis_run_from_probe_id</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">,</span>
+        <span class="n">lims_strategy</span><span class="o">=</span><span class="s1">'EcephysLfpSubsamplingStrategy'</span>
+    <span class="p">)</span>
+    <span class="n">probe_current_source_density_run_id</span> <span class="o">=</span> \
+        <span class="n">_get_probe_analysis_run_from_probe_id</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">,</span>
+            <span class="n">lims_strategy</span><span class="o">=</span><span class="s1">'EcephysCurrentSourceDensityStrategy'</span>
+        <span class="p">)</span>
+    <span class="n">probe_lfp_well_known_files</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">wkf_type_name</span><span class="o">=</span><span class="n">lfp_subsampling_run_well_known_files</span><span class="p">,</span>
+        <span class="n">attachable_type</span><span class="o">=</span><span class="s1">'EcephysAnalysisRunProbe'</span><span class="p">,</span>
+        <span class="n">attachable_id</span><span class="o">=</span><span class="n">probe_lfp_subsampling_run_id</span><span class="p">)</span>
+    <span class="n">probe_csd_well_known_files</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">wkf_type_name</span><span class="o">=</span><span class="n">current_source_density_well_known_files</span><span class="p">,</span>
+        <span class="n">attachable_type</span><span class="o">=</span><span class="s1">'EcephysAnalysisRunProbe'</span><span class="p">,</span>
+        <span class="n">attachable_id</span><span class="o">=</span><span class="n">probe_current_source_density_run_id</span><span class="p">)</span>
+
+    <span class="n">lfp</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">'input_data_path'</span><span class="p">:</span>
+            <span class="n">probe_lfp_well_known_files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s1">'EcephysSubsampledLfpContinuous'</span><span class="p">),</span>
+        <span class="s1">'input_timestamps_path'</span><span class="p">:</span>
+            <span class="n">probe_lfp_well_known_files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s1">'EcephysSubsampledLfpTimestamps'</span><span class="p">),</span>
+        <span class="s1">'input_channels_path'</span><span class="p">:</span>
+            <span class="n">probe_lfp_well_known_files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s1">'EcephysSubsampledChannelStates'</span><span class="p">),</span>
+        <span class="s1">'csd_path'</span><span class="p">:</span> <span class="n">probe_csd_well_known_files</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s1">'EcephysCurrentSourceDensity'</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">lfp</span>
+
+
+<div class="viewcode-block" id="probe_input_from_ecephys_session_id">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.probe_input_from_ecephys_session_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">probe_input_from_ecephys_session_id</span><span class="p">(</span>
+        <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">error_log</span><span class="p">:</span> <span class="n">NwbConfigErrorLog</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get the list of probe specifications, excluding the lists</span>
+<span class="sd">    of channels and units, for a given ecephys_session_id</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_session_id: int</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]:</span>
+<span class="sd">        List of probes not to return because we already know they</span>
+<span class="sd">        are "bad" in some way.</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    error_log: NwbConfigErrorLog</span>
+<span class="sd">        object to store all of the non-fatal irregularities</span>
+<span class="sd">        encountered in the data</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    probe_list: List[dict]</span>
+<span class="sd">        Each dict represents the specifications of a probe</span>
+<span class="sd">        that needs to be written to the input.json.</span>
+
+<span class="sd">        These dicts will not include the channels or</span>
+<span class="sd">        units data. Those are added at a later step in</span>
+<span class="sd">        processing.</span>
+<span class="sd">    """</span>
+
+    <span class="n">probes_table</span> <span class="o">=</span> <span class="n">probes_table_from_ecephys_session_id_list</span><span class="p">(</span>
+                        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">,</span> <span class="p">],</span>
+                        <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">)</span>
+
+    <span class="n">probes_table</span> <span class="o">=</span> <span class="n">probes_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'ecephys_probe_id'</span><span class="p">)</span>
+
+    <span class="n">probes_table</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">'ecephys_session_id'</span><span class="p">,</span>
+                <span class="s1">'phase'</span><span class="p">,</span>
+                <span class="s1">'unit_count'</span><span class="p">,</span>
+                <span class="s1">'channel_count'</span><span class="p">,</span>
+                <span class="s1">'structure_acronyms'</span><span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="s1">'columns'</span><span class="p">,</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">probes_table</span> <span class="o">=</span> <span class="n">probes_table</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+
+    <span class="c1"># A list of tuples associating fields in the final specification</span>
+    <span class="c1"># returned by this method with the names of files in the</span>
+    <span class="c1"># well_known_file_types table on LIMS. The zeroth element in each</span>
+    <span class="c1"># tuple is the field in the returned specification; the first</span>
+    <span class="c1"># element is the associated well_known_file_types.name</span>
+    <span class="n">input_from_wkf_probe</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">'inverse_whitening_matrix_path'</span><span class="p">,</span> <span class="s1">'EcephysSortedWhiteningMatInv'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'mean_waveforms_path'</span><span class="p">,</span> <span class="s1">'EcephysSortedMeanWaveforms'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'spike_amplitudes_path'</span><span class="p">,</span> <span class="s1">'EcephysSortedAmplitudes'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'spike_clusters_file'</span><span class="p">,</span> <span class="s1">'EcephysSortedSpikeClusters'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'spike_templates_path'</span><span class="p">,</span> <span class="s1">'EcephysSortedSpikeTemplates'</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'templates_path'</span><span class="p">,</span> <span class="s1">'EcephysSortedTemplates'</span><span class="p">)]</span>
+
+    <span class="n">wkf_to_query</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">'"</span>
+                    <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">input_from_wkf_probe</span><span class="p">]</span>
+
+    <span class="n">probe_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">probe_id_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">probes_table</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">probe_id_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">probe_id</span> <span class="ow">in</span> <span class="n">probe_id_list</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">probes_table</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span>
+        <span class="n">has_lfp</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'has_lfp_data'</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">probe_id</span>
+
+        <span class="n">wkf_path_lookup</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+                            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">wkf_type_name</span><span class="o">=</span><span class="n">wkf_to_query</span><span class="p">,</span>
+                            <span class="n">attachable_type</span><span class="o">=</span><span class="s1">'EcephysProbe'</span><span class="p">,</span>
+                            <span class="n">attachable_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key_pair</span> <span class="ow">in</span> <span class="n">input_from_wkf_probe</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">key_pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">wkf_path_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key_pair</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">has_lfp</span><span class="p">:</span>
+            <span class="n">lfp_meta</span> <span class="o">=</span> <span class="n">_get_probe_lfp_meta</span><span class="p">(</span>
+                <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                <span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span>
+            <span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">'csd_path'</span><span class="p">]</span> <span class="o">=</span> <span class="n">lfp_meta</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'csd_path'</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">'lfp'</span><span class="p">]</span> <span class="o">=</span> <span class="n">lfp_meta</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">'lfp'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">probe_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_nan_to_none</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+    <span class="n">probe_list</span> <span class="o">=</span> <span class="n">_add_spike_times_path</span><span class="p">(</span>
+                    <span class="n">probe_list</span><span class="o">=</span><span class="n">probe_list</span><span class="p">,</span>
+                    <span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+                    <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                    <span class="n">error_log</span><span class="o">=</span><span class="n">error_log</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">probe_list</span></div>
+
+
+
+<div class="viewcode-block" id="channel_input_from_ecephys_session_id">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.channel_input_from_ecephys_session_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">channel_input_from_ecephys_session_id</span><span class="p">(</span>
+        <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">error_log</span><span class="p">:</span> <span class="n">NwbConfigErrorLog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get a dict mapping probe_id to the list of channel</span>
+<span class="sd">    specifications for a given ecephys_session_id</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_session_id: int</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]:</span>
+<span class="sd">        List of probes not to return because we already know they</span>
+<span class="sd">        are "bad" in some way.</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    error_log: NwbConfigErrorLog</span>
+<span class="sd">        object to store all of the non-fatal irregularities</span>
+<span class="sd">        encountered in the data</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    probe_id_to_channels: Dict[int, List[dict]]</span>
+<span class="sd">        A dict mapping probe_id to a list of dicts, each</span>
+<span class="sd">        of which represents the specifications of a channel</span>
+<span class="sd">        that needs to be written to the input.json.</span>
+<span class="sd">    """</span>
+
+    <span class="n">raw_channels_table</span> <span class="o">=</span> <span class="n">channels_table_from_ecephys_session_id_list</span><span class="p">(</span>
+                                <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">,</span> <span class="p">],</span>
+                                <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+                                <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">)</span>
+
+    <span class="n">raw_channels_table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'ecephys_channel_id'</span><span class="p">:</span> <span class="s1">'id'</span><span class="p">,</span>
+                     <span class="s1">'ecephys_probe_id'</span><span class="p">:</span> <span class="s1">'probe_id'</span><span class="p">},</span>
+            <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">raw_channels_table</span> <span class="o">=</span> <span class="n">raw_channels_table</span><span class="p">[[</span>
+                              <span class="s1">'id'</span><span class="p">,</span>
+                              <span class="s1">'probe_id'</span><span class="p">,</span>
+                              <span class="s1">'probe_channel_number'</span><span class="p">,</span>
+                              <span class="s1">'structure_id'</span><span class="p">,</span>
+                              <span class="s1">'structure_acronym'</span><span class="p">,</span>
+                              <span class="s1">'anterior_posterior_ccf_coordinate'</span><span class="p">,</span>
+                              <span class="s1">'dorsal_ventral_ccf_coordinate'</span><span class="p">,</span>
+                              <span class="s1">'left_right_ccf_coordinate'</span><span class="p">,</span>
+                              <span class="s1">'probe_horizontal_position'</span><span class="p">,</span>
+                              <span class="s1">'probe_vertical_position'</span><span class="p">,</span>
+                              <span class="s1">'valid_data'</span><span class="p">]]</span>
+    <span class="n">raw_channels_table</span> <span class="o">=</span> <span class="n">raw_channels_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span>
+    <span class="n">raw_channels_table</span> <span class="o">=</span> <span class="n">raw_channels_table</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+    <span class="n">probe_id_to_channels</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">channel_id</span> <span class="ow">in</span> <span class="n">raw_channels_table</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">this_channel</span> <span class="o">=</span> <span class="n">raw_channels_table</span><span class="p">[</span><span class="n">channel_id</span><span class="p">]</span>
+        <span class="n">probe_id</span> <span class="o">=</span> <span class="n">this_channel</span><span class="p">[</span><span class="s1">'probe_id'</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">probe_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probe_id_to_channels</span><span class="p">:</span>
+            <span class="n">probe_id_to_channels</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">this_channel</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_id</span>
+        <span class="n">probe_id_to_channels</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_nan_to_none</span><span class="p">(</span><span class="n">this_channel</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">probe_id_to_channels</span></div>
+
+
+
+<div class="viewcode-block" id="unit_input_from_ecephys_session_id">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.unit_input_from_ecephys_session_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unit_input_from_ecephys_session_id</span><span class="p">(</span>
+        <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">error_log</span><span class="p">:</span> <span class="n">NwbConfigErrorLog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get a dict mapping probe_id to the list of unit</span>
+<span class="sd">    specifications for a given ecephys_session_id</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_session_id: int</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]:</span>
+<span class="sd">        List of probes not to return because we already know they</span>
+<span class="sd">        are "bad" in some way.</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    error_log: NwbConfigErrorLog</span>
+<span class="sd">        object to store all of the non-fatal irregularities</span>
+<span class="sd">        encountered in the data</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    probe_id_to_units: Dict[int, List[dict]]</span>
+<span class="sd">        A dict mapping probe_id to a list of dicts, each</span>
+<span class="sd">        of which represents the specifications of a unit</span>
+<span class="sd">        that needs to be written to the input.json.</span>
+<span class="sd">    """</span>
+    <span class="n">raw_unit_table</span> <span class="o">=</span> <span class="n">units_table_from_ecephys_session_id_list</span><span class="p">(</span>
+                        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">,</span> <span class="p">],</span>
+                        <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+                        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">)</span>
+
+    <span class="n">raw_unit_table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'unit_id'</span><span class="p">:</span> <span class="s1">'id'</span><span class="p">,</span>
+                 <span class="s1">'ecephys_channel_id'</span><span class="p">:</span> <span class="s1">'peak_channel_id'</span><span class="p">},</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_unit_table</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"could not find units for session </span><span class="si">{</span><span class="n">ecephys_session_id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+                      <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">raw_unit_table</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">'ecephys_session_id'</span><span class="p">,</span>
+                <span class="s1">'probe_vertical_position'</span><span class="p">,</span>
+                <span class="s1">'probe_horizontal_position'</span><span class="p">,</span>
+                <span class="s1">'anterior_posterior_ccf_coordinate'</span><span class="p">,</span>
+                <span class="s1">'dorsal_ventral_ccf_coordinate'</span><span class="p">,</span>
+                <span class="s1">'left_right_ccf_coordinate'</span><span class="p">,</span>
+                <span class="s1">'structure_id'</span><span class="p">,</span>
+                <span class="s1">'structure_acronym'</span><span class="p">,</span>
+                <span class="s1">'valid_data'</span><span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="s1">'columns'</span><span class="p">,</span>
+        <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">raw_unit_table</span> <span class="o">=</span> <span class="n">raw_unit_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span>
+    <span class="n">raw_unit_table</span> <span class="o">=</span> <span class="n">raw_unit_table</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+    <span class="n">probe_id_to_units</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">raw_unit_table</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">this_unit</span> <span class="o">=</span> <span class="n">raw_unit_table</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span>
+        <span class="n">this_unit</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit_id</span>
+        <span class="n">probe_id</span> <span class="o">=</span> <span class="n">this_unit</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'ecephys_probe_id'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">probe_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probe_id_to_units</span><span class="p">:</span>
+            <span class="n">probe_id_to_units</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">probe_id_to_units</span><span class="p">[</span><span class="n">probe_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_nan_to_none</span><span class="p">(</span><span class="n">this_unit</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">probe_id_to_units</span></div>
+
+
+
+<div class="viewcode-block" id="eye_tracking_geometry_from_equipment_id">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.input_json_writer.utils.html#allensdk.brain_observatory.vbn_2022.input_json_writer.utils.eye_tracking_geometry_from_equipment_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eye_tracking_geometry_from_equipment_id</span><span class="p">(</span>
+        <span class="n">equipment_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">date_of_acquisition</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return eye_tracking_rig_geometry given a specified</span>
+<span class="sd">    equipment_id and date_of_acquisition</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    equipment_id: int</span>
+
+<span class="sd">    date_of_acqisition: pd.Timestamp</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    --------</span>
+<span class="sd">    eye_geometry: dict</span>
+<span class="sd">        The eye_tracking_geometry dict to be written to</span>
+<span class="sd">        the input.json</span>
+
+<span class="sd">        This dict conforms to the eye_traking_rig_geometry</span>
+<span class="sd">        schema specified in the NWB writer schema (except</span>
+<span class="sd">        that it will not list 'equipment'; that must be</span>
+<span class="sd">        added later)</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    They eye tracking geometry that is specified is the latest</span>
+<span class="sd">    (as determined by LIMS' active_date column) that occured</span>
+<span class="sd">    before date_of_acquisition.</span>
+<span class="sd">    """</span>
+    <span class="n">raw_eye_geometry</span> <span class="o">=</span> <span class="n">_raw_eye_tracking_geometry_from_equipment_id</span><span class="p">(</span>
+            <span class="n">equipment_id</span><span class="o">=</span><span class="n">equipment_id</span><span class="p">,</span>
+            <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">)</span>
+
+    <span class="n">eye_geometry</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'led_position'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'led position'</span><span class="p">][</span><span class="s1">'center_x_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'led position'</span><span class="p">][</span><span class="s1">'center_y_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'led position'</span><span class="p">][</span><span class="s1">'center_z_mm'</span><span class="p">]]</span>
+
+    <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'monitor_position_mm'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'center_x_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'center_y_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'center_z_mm'</span><span class="p">]]</span>
+
+    <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'monitor_rotation_deg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'rotation_x_deg'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'rotation_y_deg'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'screen position'</span><span class="p">][</span><span class="s1">'rotation_z_deg'</span><span class="p">]]</span>
+
+    <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'camera_position_mm'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'center_x_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'center_y_mm'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'center_z_mm'</span><span class="p">]]</span>
+
+    <span class="n">eye_geometry</span><span class="p">[</span><span class="s1">'camera_rotation_deg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'rotation_x_deg'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'rotation_y_deg'</span><span class="p">],</span>
+            <span class="n">raw_eye_geometry</span><span class="p">[</span><span class="s1">'eye camera position'</span><span class="p">][</span><span class="s1">'rotation_z_deg'</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">eye_geometry</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_raw_eye_tracking_geometry_from_equipment_id</span><span class="p">(</span>
+        <span class="n">equipment_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">date_of_acquisition</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return eye_tracking_rig_geometry given a specified</span>
+<span class="sd">    equipment_id and date_of_acquisition</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    equipment_id: int</span>
+
+<span class="sd">    date_of_acquisition: pd.Timestamp</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    config: dict</span>
+<span class="sd">        A dict listing the configuration of the</span>
+<span class="sd">        eye tracking rig geometry</span>
+
+<span class="sd">        This dict will contain entries for</span>
+<span class="sd">        'led position'</span>
+<span class="sd">        'behavior camera position'</span>
+<span class="sd">        'eye camera position'</span>
+<span class="sd">        'screen position'</span>
+
+<span class="sd">        Each of these keys maps to a dict containing</span>
+<span class="sd">        'center_x_mm'</span>
+<span class="sd">        'center_y_mm'</span>
+<span class="sd">        'center_z_mm'</span>
+<span class="sd">        'rotation_x_deg'</span>
+<span class="sd">        'rotation_y_deg'</span>
+<span class="sd">        'rotation_z_deg'</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Will return the configuration with the latest</span>
+<span class="sd">    active_date that is before date_of_acquisition.</span>
+<span class="sd">    """</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'led position'</span><span class="p">,</span> <span class="s1">'behavior camera position'</span><span class="p">,</span>
+                 <span class="s1">'eye camera position'</span><span class="p">,</span> <span class="s1">'screen position'</span><span class="p">):</span>
+        <span class="n">this_df</span> <span class="o">=</span> <span class="n">experiment_configs_from_equipment_id_and_type</span><span class="p">(</span>
+                        <span class="n">equipment_id</span><span class="o">=</span><span class="n">equipment_id</span><span class="p">,</span>
+                        <span class="n">config_type</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">)</span>
+        <span class="n">this_df</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="n">this_df</span><span class="o">.</span><span class="n">active_date</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span> <span class="o">&lt;=</span> <span class="n">date_of_acquisition</span><span class="p">]</span>
+        <span class="n">this_df</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">this_df</span><span class="o">.</span><span class="n">active_date</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()]</span>
+        <span class="n">this_config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'center_x_mm'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">center_x_mm</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'center_y_mm'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">center_y_mm</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'center_z_mm'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">center_z_mm</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'rotation_x_deg'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">rotation_x_deg</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'rotation_y_deg'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">rotation_y_deg</span>
+        <span class="n">this_config</span><span class="p">[</span><span class="s1">'rotation_z_deg'</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_df</span><span class="o">.</span><span class="n">rotation_z_deg</span>
+        <span class="n">config</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_config</span>
+
+    <span class="k">return</span> <span class="n">config</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_analysis_run_from_session_id</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">strategy_class</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Get a dict mapping ecephys_session_id to ecephys_analysis_runs.id</span>
+<span class="sd">    for a specific job strategy class ('VbnCreateStimTableStrategy',</span>
+<span class="sd">    'EcephysOptotaggingTableStrategy', etc.). Will only select the</span>
+<span class="sd">    instance of the run marked as 'current' in the LIMS database.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+
+<span class="sd">    strategy_class: str</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    analysis_run_map: Dict[int, int]</span>
+<span class="sd">        A dict mapping ecephys_session_id to the</span>
+<span class="sd">        ecephys_analysis_runs.id associated with the specified</span>
+<span class="sd">        job strategy. Only returns the row marked as 'current'</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Raises a OneResultExpectedError if more than one run_id is returned</span>
+<span class="sd">    for the same session_id.</span>
+<span class="sd">    """</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      ecephys_session_id</span>
+<span class="s2">      ,id as ecephys_analysis_run_id</span>
+<span class="s2">    FROM</span>
+<span class="s2">      ecephys_analysis_runs</span>
+<span class="s2">    WHERE</span>
+<span class="s2">        ecephys_analysis_runs.current</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+                <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_analysis_runs.ecephys_session_id"</span><span class="p">,</span>
+                <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+                <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+                <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+                <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_analysis_runs.job_strategy_class"</span><span class="p">,</span>
+                <span class="n">valid_list</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">strategy_class</span><span class="si">}</span><span class="s2">'"</span><span class="p">],</span>
+                <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+                <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">query_result</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">analysis_run_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">for</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">run_id</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">query_result</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+                                  <span class="n">query_result</span><span class="o">.</span><span class="n">ecephys_analysis_run_id</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="n">analysis_run_map</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span><span class="s2">"More than one analysis run returned for "</span>
+                    <span class="sa">f</span><span class="s2">"ecephys_session_id=</span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">analysis_run_map</span><span class="p">[</span><span class="n">session_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_id</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">OneResultExpectedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">analysis_run_map</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_spike_times_path</span><span class="p">(</span>
+        <span class="n">probe_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+        <span class="n">ecephys_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">error_log</span><span class="p">:</span> <span class="n">NwbConfigErrorLog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Add the 'spike_times_path' entry to a list of probe specifications.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    probe_list: List[dict]</span>
+<span class="sd">        The list of probe specifications to be modified</span>
+
+<span class="sd">    ecephys_session_id:int</span>
+
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    probe_list: List[dict]</span>
+<span class="sd">        Same as input with 'spike_times_path' added.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Will alter probe_list in place</span>
+<span class="sd">    """</span>
+
+    <span class="n">probe_id_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">this_probe</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">this_probe</span> <span class="ow">in</span> <span class="n">probe_list</span><span class="p">]</span>
+
+    <span class="n">timestamp_run_lookup</span> <span class="o">=</span> <span class="n">_analysis_run_from_session_id</span><span class="p">(</span>
+                        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">,</span> <span class="p">],</span>
+                        <span class="n">strategy_class</span><span class="o">=</span><span class="s1">'EcephysAlignTimestampsStrategy'</span><span class="p">)</span>
+
+    <span class="c1"># get mapping from probe_id to</span>
+    <span class="c1"># ecephys_analysis_run_probes.id</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      ecephys_analysis_run_probes.ecephys_probe_id as probe_id</span>
+<span class="s2">      ,ecephys_analysis_run_probes.id as ecephys_analysis_run_probe_id</span>
+<span class="s2">    FROM</span>
+<span class="s2">      ecephys_analysis_run_probes</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+                <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_analysis_run_probes.ecephys_probe_id"</span><span class="p">,</span>
+                <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_id_list</span><span class="p">,</span>
+                <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+                <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+                <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_analysis_run_probes.ecephys_analysis_run_id"</span><span class="p">,</span>
+                <span class="n">valid_list</span><span class="o">=</span><span class="p">[</span>
+                    <span class="n">timestamp_run_lookup</span><span class="p">[</span><span class="n">ecephys_session_id</span><span class="p">],</span> <span class="p">],</span>
+                <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+                <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">query_result</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="n">probe_run_lookup</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">p_id</span><span class="p">,</span> <span class="n">r_id</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">query_result</span><span class="o">.</span><span class="n">probe_id</span><span class="p">,</span>
+                          <span class="n">query_result</span><span class="o">.</span><span class="n">ecephys_analysis_run_probe_id</span><span class="p">):</span>
+        <span class="n">probe_run_lookup</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">p_id</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">r_id</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">this_probe</span> <span class="ow">in</span> <span class="n">probe_list</span><span class="p">:</span>
+        <span class="n">probe_id</span> <span class="o">=</span> <span class="n">this_probe</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">probe_id</span> <span class="ow">in</span> <span class="n">probe_run_lookup</span><span class="p">:</span>
+            <span class="n">timestamp_lookup</span> <span class="o">=</span> <span class="n">wkf_path_from_attachable</span><span class="p">(</span>
+                            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+                            <span class="n">wkf_type_name</span><span class="o">=</span><span class="p">[</span>
+                                <span class="s2">"'EcephysAlignedEventTimestamps'"</span><span class="p">,</span> <span class="p">],</span>
+                            <span class="n">attachable_type</span><span class="o">=</span><span class="s1">'EcephysAnalysisRunProbe'</span><span class="p">,</span>
+                            <span class="n">attachable_id</span><span class="o">=</span><span class="n">probe_run_lookup</span><span class="p">[</span><span class="n">probe_id</span><span class="p">])</span>
+
+            <span class="n">this_probe</span><span class="p">[</span><span class="s1">'spike_times_path'</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">timestamp_lookup</span><span class="p">[</span><span class="s1">'EcephysAlignedEventTimestamps'</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"could not find EcephysAlignedEventTimestamps for "</span>
+                   <span class="sa">f</span><span class="s2">"probe </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">error_log</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ecephys_session_id</span><span class="o">=</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+                          <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="n">this_probe</span><span class="p">[</span><span class="s1">'spike_times_path'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">probe_list</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nan_to_none</span><span class="p">(</span><span class="n">input_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Scan through a dict transforming any NaNs into</span>
+<span class="sd">    Nones (argschema does not like NaNs appearing in</span>
+<span class="sd">    float fields). Return the same dict after alteration.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Alters the dict in place.</span>
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">input_dict</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">input_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Number</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+                <span class="n">input_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">input_dict</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

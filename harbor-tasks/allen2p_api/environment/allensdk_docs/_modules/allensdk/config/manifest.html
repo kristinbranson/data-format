@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.config.manifest &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.config.manifest</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2014-2016. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">errno</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+
+<div class="viewcode-block" id="ManifestVersionError">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.ManifestVersionError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ManifestVersionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> 
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">outdated</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">found_version</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> 
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">return</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">found_version</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ManifestVersionError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">found_version</span> <span class="o">=</span> <span class="n">found_version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span></div>
+
+        
+
+<div class="viewcode-block" id="Manifest">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Manifest</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Manages the location of external files</span>
+<span class="sd">     referenced in an Allen SDK configuration """</span>
+
+    <span class="n">DIR</span> <span class="o">=</span> <span class="s1">'dir'</span>
+    <span class="n">FILE</span> <span class="o">=</span> <span class="s1">'file'</span>
+    <span class="n">DIRNAME</span> <span class="o">=</span> <span class="s1">'dir_name'</span>
+    <span class="n">VERSION</span> <span class="o">=</span> <span class="s1">'manifest_version'</span>
+
+    <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">relative_base_dir</span><span class="o">=</span><span class="s1">'.'</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relative_base_dir</span> <span class="o">=</span> <span class="n">relative_base_dir</span>
+
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Manifest.load_config">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.load_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Load paths into the manifest from an Allen SDK config section.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config : Config</span>
+<span class="sd">            Manifest section of an Allen SDK config.</span>
+<span class="sd">        '''</span>
+        <span class="n">found_version</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">path_info</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+            <span class="n">path_type</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'type'</span><span class="p">]</span>
+            <span class="n">path_format</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="s1">'format'</span> <span class="ow">in</span> <span class="n">path_info</span><span class="p">:</span>
+                <span class="n">path_format</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'format'</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">path_type</span> <span class="o">==</span> <span class="s1">'file'</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">parent_key</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'parent_key'</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">parent_key</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="n">path_info</span><span class="p">[</span><span class="s1">'key'</span><span class="p">],</span>
+                              <span class="n">path_info</span><span class="p">[</span><span class="s1">'spec'</span><span class="p">],</span>
+                              <span class="n">parent_key</span><span class="p">,</span>
+                              <span class="n">path_format</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">path_type</span> <span class="o">==</span> <span class="s1">'dir'</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">parent_key</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'parent_key'</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="n">parent_key</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="n">spec</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'spec'</span><span class="p">]</span>
+                <span class="n">absolute</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'/'</span><span class="p">:</span>
+                    <span class="n">absolute</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="n">path_info</span><span class="p">[</span><span class="s1">'key'</span><span class="p">],</span>
+                              <span class="n">path_info</span><span class="p">[</span><span class="s1">'spec'</span><span class="p">],</span>
+                              <span class="n">path_type</span><span class="p">,</span>
+                              <span class="n">absolute</span><span class="p">,</span>
+                              <span class="n">path_format</span><span class="p">,</span>
+                              <span class="n">parent_key</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">path_type</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">VERSION</span><span class="p">:</span>
+                <span class="n">found_version</span> <span class="o">=</span> <span class="n">path_info</span><span class="p">[</span><span class="s1">'value'</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Manifest</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Unknown path type in manifest: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span>
+                                     <span class="p">(</span><span class="n">path_type</span><span class="p">))</span>
+
+
+        <span class="k">if</span> <span class="n">found_version</span> <span class="o">!=</span> <span class="n">version</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ManifestVersionError</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span> <span class="n">found_version</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span></div>
+
+
+<div class="viewcode-block" id="Manifest.add_path">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.add_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">path_type</span><span class="o">=</span><span class="n">DIR</span><span class="p">,</span>
+                 <span class="n">absolute</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">path_format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Insert a new entry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : string</span>
+<span class="sd">            Identifier for referencing the entry.</span>
+<span class="sd">        path : string</span>
+<span class="sd">            Specification for a path using %s, %d style substitution.</span>
+<span class="sd">        path_type : string enumeration</span>
+<span class="sd">            'dir' (default) or 'file'</span>
+<span class="sd">        absolute : boolean</span>
+<span class="sd">            Is the spec relative to the process current directory.</span>
+<span class="sd">        path_format : string, optional</span>
+<span class="sd">            Indicate a known file type for further parsing.</span>
+<span class="sd">        parent_key : string</span>
+<span class="sd">            Refer to another entry.</span>
+<span class="sd">        '''</span>
+        <span class="k">if</span> <span class="n">parent_key</span><span class="p">:</span>
+            <span class="n">path_args</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">parent_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">parent_key</span><span class="p">][</span><span class="s1">'spec'</span><span class="p">]</span>
+                <span class="n">path_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parent_path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">Manifest</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">"cannot resolve directory key </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">parent_key</span><span class="p">))</span>
+                <span class="k">raise</span>
+            <span class="n">path_args</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">))</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">path_args</span><span class="p">)</span>
+
+        <span class="c1"># TODO: relative paths need to be considered better</span>
+        <span class="k">if</span> <span class="n">absolute</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">relative_base_dir</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">path_type</span> <span class="o">==</span> <span class="n">Manifest</span><span class="o">.</span><span class="n">DIRNAME</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="n">path_type</span><span class="p">,</span>
+                               <span class="s1">'spec'</span><span class="p">:</span> <span class="n">path</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">path_type</span> <span class="o">==</span> <span class="n">Manifest</span><span class="o">.</span><span class="n">FILE</span> <span class="ow">and</span> <span class="n">path_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s1">'format'</span><span class="p">]</span> <span class="o">=</span> <span class="n">path_format</span></div>
+
+
+<div class="viewcode-block" id="Manifest.add_paths">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.add_paths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_info</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' add information about paths stored in the manifest.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">            path_info : dict</span>
+<span class="sd">                Information about the new paths</span>
+<span class="sd">        '''</span>
+        <span class="k">for</span> <span class="n">path_key</span><span class="p">,</span> <span class="n">path_data</span> <span class="ow">in</span> <span class="n">path_info</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">path_format</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="s1">'format'</span> <span class="ow">in</span> <span class="n">path_data</span><span class="p">:</span>
+                <span class="n">path_format</span> <span class="o">=</span> <span class="n">path_data</span><span class="p">[</span><span class="s1">'format'</span><span class="p">]</span>
+
+            <span class="n">Manifest</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Adding path.  type: </span><span class="si">%s</span><span class="s2">, format: </span><span class="si">%s</span><span class="s2">, spec: </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span>
+                              <span class="p">(</span><span class="n">path_data</span><span class="p">[</span><span class="s1">'type'</span><span class="p">],</span>
+                               <span class="n">path_data</span><span class="p">[</span><span class="s1">'spec'</span><span class="p">],</span>
+                               <span class="n">path_format</span><span class="p">))</span>
+            <span class="n">entry</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="n">path_data</span><span class="p">[</span><span class="s1">'type'</span><span class="p">],</span>
+                     <span class="s1">'spec'</span><span class="p">:</span> <span class="n">path_data</span><span class="p">[</span><span class="s1">'spec'</span><span class="p">]</span>
+                     <span class="p">}</span>
+            <span class="k">if</span> <span class="n">path_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s1">'format'</span><span class="p">]</span> <span class="o">=</span> <span class="n">path_format</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">path_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">entry</span></div>
+
+
+<div class="viewcode-block" id="Manifest.add_file">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.add_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">file_key</span><span class="p">,</span>
+                 <span class="n">file_name</span><span class="p">,</span>
+                 <span class="n">dir_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">path_format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Insert a new file entry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_key : string</span>
+<span class="sd">            Reference to the entry.</span>
+<span class="sd">        file_name : string</span>
+<span class="sd">            Subtitutions of the %s, %d style allowed.</span>
+<span class="sd">        dir_key : string</span>
+<span class="sd">            Reference to the parent directory entry.</span>
+<span class="sd">        path_format : string, optional</span>
+<span class="sd">            File type for further parsing.</span>
+<span class="sd">        '''</span>
+        <span class="n">path_args</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">dir_key</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dir_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">dir_key</span><span class="p">][</span><span class="s1">'spec'</span><span class="p">]</span>
+                <span class="n">path_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">Manifest</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">"cannot resolve directory key </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">dir_key</span><span class="p">))</span>
+                <span class="k">raise</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">file_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'/'</span><span class="p">):</span>
+            <span class="n">path_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">curdir</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span>
+
+        <span class="n">path_args</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">file_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">))</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">path_args</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">file_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="n">Manifest</span><span class="o">.</span><span class="n">FILE</span><span class="p">,</span>
+                                    <span class="s1">'spec'</span><span class="p">:</span> <span class="n">file_path</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">path_format</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">file_key</span><span class="p">][</span><span class="s1">'format'</span><span class="p">]</span> <span class="o">=</span> <span class="n">path_format</span></div>
+
+
+<div class="viewcode-block" id="Manifest.get_path">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.get_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Retrieve an entry with substitutions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_key : string</span>
+<span class="sd">            Refer to the entry to retrieve.</span>
+<span class="sd">        args : any types, optional</span>
+<span class="sd">           arguments to be substituted into the path spec for %s, %d, etc.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        string</span>
+<span class="sd">            Path with parent structure and substitutions applied.</span>
+<span class="sd">        '''</span>
+        <span class="n">path_spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">path_key</span><span class="p">][</span><span class="s1">'spec'</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">path_spec</span> <span class="o">%</span> <span class="n">args</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">path_spec</span>
+
+        <span class="k">return</span> <span class="n">path</span></div>
+
+
+<div class="viewcode-block" id="Manifest.get_format">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.get_format">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Retrieve the type of a path entry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_key : string</span>
+<span class="sd">            reference to the entry</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        string</span>
+<span class="sd">            File type.</span>
+<span class="sd">        '''</span>
+        <span class="n">path_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">[</span><span class="n">path_key</span><span class="p">]</span>
+        <span class="n">path_format</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="s1">'format'</span> <span class="ow">in</span> <span class="n">path_entry</span><span class="p">:</span>
+            <span class="n">path_format</span> <span class="o">=</span> <span class="n">path_entry</span><span class="p">[</span><span class="s1">'format'</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">path_format</span></div>
+
+
+<div class="viewcode-block" id="Manifest.safe_make_parent_dirs">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.safe_make_parent_dirs">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">safe_make_parent_dirs</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Create a parent directories for file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_name : string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        leftmost : string </span>
+<span class="sd">            most rootward directory created</span>
+
+<span class="sd">        '''</span>
+
+        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+        <span class="c1"># do nothing if there are no parent directories</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dirname</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">return</span> <span class="n">Manifest</span><span class="o">.</span><span class="n">safe_mkdir</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Manifest.safe_mkdir">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.safe_mkdir">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">safe_mkdir</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">directory</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Create path if not already there.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        directory : string</span>
+<span class="sd">            create it if it doesn't exist</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        leftmost : string </span>
+<span class="sd">            most rootward directory created</span>
+
+<span class="sd">        '''</span>
+
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span>
+        <span class="n">sub_paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">sub_paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_paths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">part</span><span class="p">)</span>
+
+        <span class="n">leftmost</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">sub_path</span> <span class="ow">in</span> <span class="n">sub_paths</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">sub_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">leftmost</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sub_path</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"darwin"</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EISDIR</span><span class="p">)</span> <span class="ow">and</span> \
+                <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="s2">"/"</span><span class="p">)):</span>
+                <span class="c1"># undocumented behavior of mkdir on OSX where for / it raises</span>
+                <span class="c1"># EISDIR and not EEXIST</span>
+                <span class="c1"># https://bugs.python.org/issue24231 (old but still holds true)</span>
+                <span class="k">pass</span>
+            <span class="k">elif</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"win32"</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EACCES</span><span class="p">:</span>
+                <span class="n">root_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="n">root_path</span> <span class="ow">or</span> \
+                   <span class="n">e</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="n">root_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">):</span>
+                    <span class="c1"># When attempting to os.makedirs the root drive letter on</span>
+                    <span class="c1"># Windows, EACCES is raised, not EEXIST</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span>
+            <span class="k">elif</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EEXIST</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+
+        <span class="k">return</span> <span class="n">leftmost</span></div>
+
+
+
+<div class="viewcode-block" id="Manifest.create_dir">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.create_dir">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Make a directory for an entry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_key : string</span>
+<span class="sd">            Reference to the entry.</span>
+<span class="sd">        '''</span>
+        <span class="n">dir_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">path_key</span><span class="p">)</span>
+        <span class="n">Manifest</span><span class="o">.</span><span class="n">safe_mkdir</span><span class="p">(</span><span class="n">dir_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Manifest.check_dir">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.check_dir">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_key</span><span class="p">,</span> <span class="n">do_exit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Verify a directories existence or optionally exit.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path_key : string</span>
+<span class="sd">            Reference to the entry.</span>
+<span class="sd">        do_exit : boolean</span>
+<span class="sd">            What to do if the directory is not present.</span>
+<span class="sd">        '''</span>
+        <span class="n">dir_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">path_key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dir_path</span><span class="p">):</span>
+            <span class="n">Manifest</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">fatal</span><span class="p">(</span><span class="s1">'Directory </span><span class="si">%s</span><span class="s1"> does not exist; exiting.'</span> <span class="o">%</span>
+                               <span class="p">(</span><span class="n">dir_path</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">do_exit</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">quit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Manifest.resolve_paths">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.resolve_paths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description_dict</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">'_key'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Walk input items and expand those that refer to a manifest entry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        description_dict : dict</span>
+<span class="sd">            Any entries with key names ending in suffix will be expanded.</span>
+<span class="sd">        suffix : string</span>
+<span class="sd">            Indicates the entries to be expanded.</span>
+<span class="sd">        '''</span>
+        <span class="n">key_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">'(.*)</span><span class="si">%s</span><span class="s1">$'</span> <span class="o">%</span> <span class="p">(</span><span class="n">suffix</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">description_key</span><span class="p">,</span> <span class="n">manifest_key</span> <span class="ow">in</span> <span class="n">description_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">key_pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">description_key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                <span class="n">real_key</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># i.e. job_dir_key -&gt; job_dir</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="n">manifest_key</span><span class="p">)</span>
+                <span class="n">description_dict</span><span class="p">[</span><span class="n">real_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">filename</span>
+                <span class="k">del</span> <span class="n">description_dict</span><span class="p">[</span><span class="n">description_key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Manifest.as_dataframe">
+<a class="viewcode-back" href="../../../allensdk.config.manifest.html#allensdk.config.manifest.Manifest.as_dataframe">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">as_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_info</span><span class="p">,</span>
+                                      <span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,414 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Software Architecture &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Software Process" href="software_process.html" />
+    <link rel="prev" title="Installing PyNWB for Developers" href="install_developers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Software Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#main-concepts">Main Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#container">Container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#builder">Builder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spec">Spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#objectmapper">ObjectMapper</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-concepts">Additional Concepts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#namespace-namespacecatalog-namespacebuilder">Namespace, NamespaceCatalog, NamespaceBuilder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#typemap">TypeMap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#buildmanager">BuildManager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hdmfio">HDMFIO</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Software Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/overview_software_architecture.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="software-architecture">
+<span id="id1"></span><h1>Software Architecture<a class="headerlink" href="#software-architecture" title="Link to this heading"></a></h1>
+<p>The main goal of PyNWB is to enable users and developers to efficiently interact with the NWB data format,
+format files, and specifications. The following figures provide an overview of the high-level architecture of
+PyNWB and functionality of the various components.</p>
+<figure class="align-default" id="id2">
+<span id="fig-software-architecture"></span><a class="reference internal image-reference" href="_images/software_architecture.png"><img alt="PyNWB Software Architecture" src="_images/software_architecture.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Overview of the high-level software architecture of PyNWB (click to enlarge).</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id3">
+<span id="fig-software-architecture-purpose"></span><a class="reference internal image-reference" href="_images/software_architecture_design_choices.png"><img alt="PyNWB Software Architecture Functions" src="_images/software_architecture_design_choices.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">We choose a modular design for PyNWB to enable flexibility and separate the
+various aspects of the NWB:N ecosystem (click to enlarge).</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<section id="main-concepts">
+<h2>Main Concepts<a class="headerlink" href="#main-concepts" title="Link to this heading"></a></h2>
+<figure class="align-default" id="id4">
+<span id="fig-software-architecture-concepts"></span><a class="reference internal image-reference" href="_images/software_architecture_concepts.png"><img alt="PyNWB Software Architecture Concepts" src="_images/software_architecture_concepts.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Overview of the main concepts/classes in PyNWB and their location in the overall software architecture (click to enlarge).</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<section id="container">
+<h3>Container<a class="headerlink" href="#container" title="Link to this heading"></a></h3>
+<ul>
+<li><p>In memory objects</p></li>
+<li><p>Interface for (most) applications</p></li>
+<li><p>Like a table row</p></li>
+<li><p>PyNWB has many of these – one for each neurodata_type in the NWB schema. PyNWB organizes the containers
+into a set of modules based on their primary application (e.g., ophys for optophysiology):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="pynwb.base.html#module-pynwb.base" title="pynwb.base"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.base</span></code></a>, <a class="reference internal" href="pynwb.file.html#module-pynwb.file" title="pynwb.file"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.file</span></code></a></p></li>
+<li><p><a class="reference internal" href="pynwb.ecephys.html#module-pynwb.ecephys" title="pynwb.ecephys"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.ecephys</span></code></a></p></li>
+<li><p><a class="reference internal" href="pynwb.ophys.html#module-pynwb.ophys" title="pynwb.ophys"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.ophys</span></code></a></p></li>
+<li><p><a class="reference internal" href="pynwb.icephys.html#module-pynwb.icephys" title="pynwb.icephys"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.icephys</span></code></a></p></li>
+<li><p><a class="reference internal" href="pynwb.ogen.html#module-pynwb.ogen" title="pynwb.ogen"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.ogen</span></code></a></p></li>
+<li><p><a class="reference internal" href="pynwb.behavior.html#module-pynwb.behavior" title="pynwb.behavior"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.behavior</span></code></a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</section>
+<section id="builder">
+<h3>Builder<a class="headerlink" href="#builder" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Intermediary objects for I/O</p></li>
+<li><p>Interface for I/O</p></li>
+<li><p>Backend readers and writers must return and accept these</p></li>
+<li><p>There are different kinds of builders for different base types:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#hdmf.build.builders.GroupBuilder" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">GroupBuilder</span></code></a> - represents a collection of objects</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#hdmf.build.builders.DatasetBuilder" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetBuilder</span></code></a> - represents data</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#hdmf.build.builders.LinkBuilder" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinkBuilder</span></code></a> - represents soft-links</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#hdmf.build.builders.ReferenceBuilder" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReferenceBuilder</span></code></a> - represents a reference to another group or dataset</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Main Module:</strong> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#module-hdmf.build.builders" title="(in HDMF v6.2.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hdmf.build.builders</span></code></a></p></li>
+</ul>
+</section>
+<section id="spec">
+<h3>Spec<a class="headerlink" href="#spec" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Interact with format specifications</p></li>
+<li><p>Data structures to specify data types and what said types consist of</p></li>
+<li><p>Python representation for YAML specifications</p></li>
+<li><p>Interface for writing extensions or custom specification</p></li>
+<li><p>There are several main specification classes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBAttributeSpec" title="pynwb.spec.NWBAttributeSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBAttributeSpec</span></code></a> - specification for metadata</p></li>
+<li><p><a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBGroupSpec" title="pynwb.spec.NWBGroupSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBGroupSpec</span></code></a> - specification for a collection of
+objects (i.e. subgroups, datasets, link)</p></li>
+<li><p><a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBDatasetSpec" title="pynwb.spec.NWBDatasetSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDatasetSpec</span></code></a> - specification for dataset (like
+and n-dimensional array). Specifies data type, dimensions, etc.</p></li>
+<li><p><a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBLinkSpec" title="pynwb.spec.NWBLinkSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBLinkSpec</span></code></a> - specification for link (like a POSIX
+soft link)</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.spec.html#hdmf.spec.spec.RefSpec" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RefSpec</span></code></a> - specification for references
+(References are like links, but stored as data)</p></li>
+<li><p><a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBDtypeSpec" title="pynwb.spec.NWBDtypeSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDtypeSpec</span></code></a> - specification for compound data
+types. Used to build complex data type specification, e.g., to define
+tables (used only in <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.spec.html#hdmf.spec.spec.DatasetSpec" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetSpec</span></code></a> and
+correspondingly <a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBDatasetSpec" title="pynwb.spec.NWBDatasetSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBDatasetSpec</span></code></a>)</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Main Modules:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.html#module-hdmf.spec" title="(in HDMF v6.2.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hdmf.spec</span></code></a> – General specification classes.</p></li>
+<li><p><a class="reference internal" href="pynwb.spec.html#module-pynwb.spec" title="pynwb.spec"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pynwb.spec</span></code></a> – NWB specification classes. (Most of these are
+specializations of the classes from <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.html#module-hdmf.spec" title="(in HDMF v6.2.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hdmf.spec</span></code></a>)</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">data_type</span></code> (or more specifically a <code class="docutils literal notranslate"><span class="pre">neurodata_type</span></code> in the context of
+NWB) defines a reusable type in a format specification that can be
+referenced and used elsewhere in other specifications.  The specification of
+the NWB format is basically a collection of <code class="docutils literal notranslate"><span class="pre">neurodata_types</span></code>, e.g.:
+<code class="docutils literal notranslate"><span class="pre">NWBFile</span></code> defines  a GroupSpec for the top-level group of an NWB format
+file  which includes <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, <code class="docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code>, <code class="docutils literal notranslate"><span class="pre">ImagingPlane</span></code>
+and many other <code class="docutils literal notranslate"><span class="pre">neurodata_types</span></code> .  When creating a specification, two
+main keys are used to include and define new <code class="docutils literal notranslate"><span class="pre">neurodata_types</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">neurodata_type_inc</span></code> is used to include an existing type and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">neurodata_type_def</span></code> is used to define a new type</p></li>
+</ul>
+<p>I.e, if both keys are defined then we create a new type that uses/inherits
+an existing type as a base.</p>
+</div>
+</section>
+<section id="objectmapper">
+<h3>ObjectMapper<a class="headerlink" href="#objectmapper" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Maintains the mapping between <a class="reference internal" href="#container">Container</a> attributes and <a class="reference internal" href="#spec">Spec</a> components</p></li>
+<li><p>Provides a way of converting between <a class="reference internal" href="#container">Container</a> and <a class="reference internal" href="#builder">Builder</a></p></li>
+<li><p>ObjectMappers are constructed using a <a class="reference internal" href="#spec">Spec</a></p></li>
+<li><p>Ideally, one ObjectMapper for each data type</p></li>
+<li><p>Things an ObjectMapper should do:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Given a <a class="reference internal" href="#builder">Builder</a>, return a Container representation</p></li>
+<li><p>Given a <a class="reference internal" href="#container">Container</a>, return a Builder representation</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>PyNWB has many of these – one for each type in NWB schema</p></li>
+<li><p><strong>Main Module:</strong> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.objectmapper.html#module-hdmf.build.objectmapper" title="(in HDMF v6.2.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hdmf.build.objectmapper</span></code></a></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>NWB-specific ObjectMappers are locate in submodules of <a class="reference internal" href="pynwb.io.html#module-pynwb.io" title="pynwb.io"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.io</span></code></a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<figure class="align-default" id="id5">
+<span id="fig-software-architecture-mainconcepts"></span><a class="reference internal image-reference" href="_images/software_architecture_mainconcepts.png"><img alt="PyNWB Software Architecture Main Concepts" src="_images/software_architecture_mainconcepts.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Relationship between <a class="reference internal" href="#container">Container</a>, <a class="reference internal" href="#builder">Builder</a>, <a class="reference internal" href="#objectmapper">ObjectMapper</a>, and <a class="reference internal" href="#spec">Spec</a></span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="additional-concepts">
+<h2>Additional Concepts<a class="headerlink" href="#additional-concepts" title="Link to this heading"></a></h2>
+<section id="namespace-namespacecatalog-namespacebuilder">
+<h3>Namespace, NamespaceCatalog, NamespaceBuilder<a class="headerlink" href="#namespace-namespacecatalog-namespacebuilder" title="Link to this heading"></a></h3>
+<ul>
+<li><p><strong>Namespace</strong></p>
+<blockquote>
+<div><ul>
+<li><p>A namespace for specifications</p></li>
+<li><p>Necessary for making extensions</p></li>
+<li><p>Contains basic info about who created extensions</p></li>
+<li><p>Core NWB:N schema has namespace “core”</p></li>
+<li><p>Get from <a class="reference internal" href="pynwb.spec.html#pynwb.spec.NWBNamespace" title="pynwb.spec.NWBNamespace"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.spec.NWBNamespace</span></code></a></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>extension of generic Namespace class that will include core</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.namespace.html#hdmf.spec.namespace.NamespaceCatalog" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamespaceCatalog</span></code></a> – A class for managing namespaces</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.spec.write.html#hdmf.spec.write.NamespaceBuilder" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamespaceBuilder</span></code></a> – A utility for building extensions</p></li>
+</ul>
+</section>
+<section id="typemap">
+<h3>TypeMap<a class="headerlink" href="#typemap" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Map between data types, Container classes (i.e. a Python class object) and corresponding ObjectMapper classes</p></li>
+<li><p>Constructed from a NamespaceCatalog</p></li>
+<li><p>Things a TypeMap does:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Given an NWB data type, return the associated Container class</p></li>
+<li><p>Given a Container class, return the associated ObjectMapper</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>PyNWB has two of these classes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>the base class (i.e. <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.TypeMap" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeMap</span></code></a>) - handles NWB 2.x</p></li>
+<li><p><a class="reference internal" href="pynwb.legacy.map.html#pynwb.legacy.map.TypeMapLegacy" title="pynwb.legacy.map.TypeMapLegacy"><code class="xref py py-class docutils literal notranslate"><span class="pre">pynwb.legacy.map.TypeMapLegacy</span></code></a> - handles NWB 1.x</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>PyNWB provides a “global” instance of TypeMap created at runtime</p></li>
+<li><p>TypeMaps can be merged, which is useful when combining extensions</p></li>
+</ul>
+</section>
+<section id="buildmanager">
+<h3>BuildManager<a class="headerlink" href="#buildmanager" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Responsible for <a class="reference external" href="https://en.wikipedia.org/wiki/Memoization">memoizing</a> <a class="reference internal" href="#builder">Builder</a> and <a class="reference internal" href="#container">Container</a></p></li>
+<li><p>Constructed from a <a class="reference internal" href="#typemap">TypeMap</a></p></li>
+<li><p>PyNWB only has one of these: <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.manager.html#hdmf.build.manager.BuildManager" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">hdmf.build.manager.BuildManager</span></code></a></p></li>
+</ul>
+<figure class="align-default" id="id6">
+<span id="fig-software-architecture-buildmanager"></span><a class="reference internal image-reference" href="_images/software_architecture_buildmanager.png"><img alt="PyNWB Software Architecture BuildManager and TypeMap" src="_images/software_architecture_buildmanager.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Overview of <a class="reference internal" href="#buildmanager">BuildManager</a> (and <a class="reference internal" href="#typemap">TypeMap</a>) (click to enlarge).</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="hdmfio">
+<h3>HDMFIO<a class="headerlink" href="#hdmfio" title="Link to this heading"></a></h3>
+<ul>
+<li><p>Abstract base class for I/O</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFIO</span></code></a> has two key abstract methods:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.write_builder" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">write_builder</span></code></a> – given a builder, write data to storage format</p></li>
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.read_builder" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_builder</span></code></a> – given a handle to storage format, return builder representation</p></li>
+<li><p>Others: <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.open" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">open</span></code></a> and <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.close" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">close</span></code></a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Constructed with a <a class="reference internal" href="#buildmanager">BuildManager</a></p></li>
+<li><p>Extend this for creating a new I/O backend</p></li>
+<li><p>PyNWB has one extension of this:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDF5IO</span></code></a> - reading and writing HDF5</p></li>
+<li><p><a class="reference internal" href="pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> - wrapper that pulls in core NWB specification</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<figure class="align-default" id="id7">
+<span id="fig-software-architecture-formio"></span><a class="reference internal image-reference" href="_images/software_architecture_formio.png"><img alt="PyNWB Software Architecture FormIO" src="_images/software_architecture_formio.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Overview of <a class="reference internal" href="#hdmfio">HDMFIO</a> (click to enlarge).</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install_developers.html" class="btn btn-neutral float-left" title="Installing PyNWB for Developers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="software_process.html" class="btn btn-neutral float-right" title="Software Process" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

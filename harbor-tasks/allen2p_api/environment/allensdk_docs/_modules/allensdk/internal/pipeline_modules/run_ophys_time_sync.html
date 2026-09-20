@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.pipeline_modules.run_ophys_time_sync &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.pipeline_modules.run_ophys_time_sync</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_pipeline_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.brain_observatory</span><span class="w"> </span><span class="kn">import</span> <span class="n">time_sync</span> <span class="k">as</span> <span class="n">ts</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.argschema_utilities</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">check_write_access_overwrite</span>
+
+
+<div class="viewcode-block" id="TimeSyncOutputs">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncOutputs">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeSyncOutputs</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Schema for synchronization outputs</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># unique identifier for the experiment being aligned</span>
+    <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="c1"># calculated monitor delay (s)</span>
+    <span class="n">stimulus_delay</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="c1"># For each data stream, the count of "extra" timestamps (compared to the </span>
+    <span class="c1"># number of samples)</span>
+    <span class="n">ophys_delta</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">stimulus_delta</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">eye_delta</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">behavior_delta</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="c1"># aligned timestamps for each data stream (s)</span>
+    <span class="n">ophys_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> 
+    <span class="n">stimulus_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">eye_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">behavior_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+
+    <span class="c1"># for non-ophys data streams, a mapping from samples to corresponding ophys </span>
+    <span class="c1"># frames</span>
+    <span class="n">stimulus_alignment</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">eye_alignment</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">behavior_alignment</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span></div>
+
+
+
+<div class="viewcode-block" id="TimeSyncWriter">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeSyncWriter</span><span class="p">:</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">output_h5_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">output_json_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Writes synchronization outputs to h5 and (optionally) json.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_h5_path : "heavy" outputs (e.g aligned timestamps and </span>
+<span class="sd">            ophy frame correspondances) will ONLY be stored here. Lightweight </span>
+<span class="sd">            outputs (e.g. stimulus delay) will also be written here as scalars.</span>
+<span class="sd">        output_json_path : if provided, lightweight outputs will be written </span>
+<span class="sd">            here, along with provenance information, such as the date and </span>
+<span class="sd">            allensdk version.</span>
+
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_h5_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">output_h5_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_json_path</span>
+
+<div class="viewcode-block" id="TimeSyncWriter.validate_paths">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncWriter.validate_paths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Determines whether we can actually write to the specified paths, </span>
+<span class="sd">        allowing for creation of intermediate directories. It is a good idea </span>
+<span class="sd">        to run this beore doing any heavy calculations!</span>
+<span class="sd">        """</span>
+
+        <span class="n">check_write_access_overwrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_h5_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">check_write_access_overwrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TimeSyncWriter.write">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncWriter.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">TimeSyncOutputs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Convenience for writing both an output h5 and (if applicable) an </span>
+<span class="sd">        output json.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        outputs : the data to be written</span>
+
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_output_h5</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_output_json</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TimeSyncWriter.write_output_h5">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncWriter.write_output_h5">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_output_h5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Write (mainly) heaviweight data to an h5 file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        outputs : the data to be written</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_h5_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_h5_path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_h5</span><span class="p">:</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"stimulus_alignment"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">stimulus_alignment</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"eye_tracking_alignment"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">eye_alignment</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"body_camera_alignment"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">behavior_alignment</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"twop_vsync_fall"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">ophys_times</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"ophys_delta"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">ophys_delta</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"stim_delta"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">stimulus_delta</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"stim_delay"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">stimulus_delay</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"eye_delta"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">eye_delta</span>
+            <span class="n">output_h5</span><span class="p">[</span><span class="s2">"behavior_delta"</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">behavior_delta</span></div>
+
+
+<div class="viewcode-block" id="TimeSyncWriter.write_output_json">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.TimeSyncWriter.write_output_json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_output_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Write lightweight data to a json</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        outputs : the data to be written</span>
+
+<span class="sd">        """</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_json_path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_json</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span>
+                <span class="s2">"allensdk_version"</span><span class="p">:</span> <span class="n">allensdk</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+                <span class="s2">"date"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()),</span>
+                <span class="s2">"experiment_id"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">experiment_id</span><span class="p">,</span>
+                <span class="s2">"output_h5_path"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_h5_path</span><span class="p">,</span>
+                <span class="s2">"ophys_delta"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">ophys_delta</span><span class="p">,</span>
+                <span class="s2">"stim_delta"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">stimulus_delta</span><span class="p">,</span>
+                <span class="s2">"stim_delay"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">stimulus_delay</span><span class="p">,</span>
+                <span class="s2">"eye_delta"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">eye_delta</span><span class="p">,</span>
+                <span class="s2">"behavior_delta"</span><span class="p">:</span> <span class="n">outputs</span><span class="o">.</span><span class="n">behavior_delta</span>
+            <span class="p">},</span> <span class="n">output_json</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="check_stimulus_delay">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.check_stimulus_delay">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_stimulus_delay</span><span class="p">(</span><span class="n">obt_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">max_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Raise an exception if the monitor delay is not within specified bounds</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obt_delay : obtained monitor delay (s)</span>
+<span class="sd">    min_delay : lower threshold (s)</span>
+<span class="sd">    max_delay : upper threshold (s)</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">obt_delay</span> <span class="o">&lt;</span> <span class="n">min_delay</span> <span class="ow">or</span> <span class="n">obt_delay</span> <span class="o">&gt;</span> <span class="n">max_delay</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"calculated monitor delay was </span><span class="si">{</span><span class="n">obt_delay</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s "</span>
+            <span class="sa">f</span><span class="s2">"(acceptable interval: [</span><span class="si">{</span><span class="n">min_delay</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s, "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">max_delay</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s])"</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run_ophys_time_sync">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.run_ophys_time_sync">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_ophys_time_sync</span><span class="p">(</span>
+    <span class="n">aligner</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">OphysTimeAligner</span><span class="p">,</span> 
+    <span class="n">experiment_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">min_stimulus_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">max_stimulus_delay</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSyncOutputs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">""" Carry out synchronization of timestamps across the data streams of an </span>
+<span class="sd">    ophys experiment.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aligner : drives alignment. See OphysTimeAligner for details of the </span>
+<span class="sd">        attributes and properties that must be implemented.</span>
+<span class="sd">    experiment_id : unique identifier for the experiment being aligned</span>
+<span class="sd">    min_stimulus_delay : reject alignment run (raise a ValueError) if the </span>
+<span class="sd">        calculated monitor delay is below this value (s).</span>
+<span class="sd">    max_stimulus_delay : reject alignment run (raise a ValueError) if the </span>
+<span class="sd">        calculated monitor delay is above this value (s).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A TimeSyncOutputs (see definintion for more information) of output </span>
+<span class="sd">        parameters and arrays of aligned timestamps.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">stim_times</span><span class="p">,</span> <span class="n">stim_delta</span><span class="p">,</span> <span class="n">stim_delay</span> <span class="o">=</span> <span class="n">aligner</span><span class="o">.</span><span class="n">corrected_stim_timestamps</span>
+    <span class="n">check_stimulus_delay</span><span class="p">(</span><span class="n">stim_delay</span><span class="p">,</span> <span class="n">min_stimulus_delay</span><span class="p">,</span> <span class="n">max_stimulus_delay</span><span class="p">)</span>
+
+    <span class="n">ophys_times</span><span class="p">,</span> <span class="n">ophys_delta</span> <span class="o">=</span> <span class="n">aligner</span><span class="o">.</span><span class="n">corrected_ophys_timestamps</span>
+    <span class="n">eye_times</span><span class="p">,</span> <span class="n">eye_delta</span> <span class="o">=</span> <span class="n">aligner</span><span class="o">.</span><span class="n">corrected_eye_video_timestamps</span>
+    <span class="n">beh_times</span><span class="p">,</span> <span class="n">beh_delta</span> <span class="o">=</span> <span class="n">aligner</span><span class="o">.</span><span class="n">corrected_behavior_video_timestamps</span>
+
+    <span class="c1"># stim array is index of ophys frame for each stim frame to match to</span>
+    <span class="c1"># so len(stim_times)</span>
+    <span class="n">stim_alignment</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_alignment_array</span><span class="p">(</span><span class="n">ophys_times</span><span class="p">,</span> <span class="n">stim_times</span><span class="p">)</span>
+
+    <span class="c1"># camera arrays are index of camera frame for each ophys frame ...</span>
+    <span class="c1"># cam_nwb_creator depends on this so keeping it that way even though</span>
+    <span class="c1"># it makes little sense... len(video_times)</span>
+    <span class="n">eye_alignment</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_alignment_array</span><span class="p">(</span><span class="n">eye_times</span><span class="p">,</span> <span class="n">ophys_times</span><span class="p">,</span>
+                                           <span class="n">int_method</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">)</span>
+
+    <span class="n">behavior_alignment</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">get_alignment_array</span><span class="p">(</span><span class="n">beh_times</span><span class="p">,</span> <span class="n">ophys_times</span><span class="p">,</span>
+                                                <span class="n">int_method</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSyncOutputs</span><span class="p">(</span>
+        <span class="n">experiment_id</span><span class="p">,</span>
+        <span class="n">stim_delay</span><span class="p">,</span>
+        <span class="n">ophys_delta</span><span class="p">,</span>
+        <span class="n">stim_delta</span><span class="p">,</span>
+        <span class="n">eye_delta</span><span class="p">,</span>
+        <span class="n">beh_delta</span><span class="p">,</span>
+        <span class="n">ophys_times</span><span class="p">,</span>
+        <span class="n">stim_times</span><span class="p">,</span>
+        <span class="n">eye_times</span><span class="p">,</span>
+        <span class="n">beh_times</span><span class="p">,</span>
+        <span class="n">stim_alignment</span><span class="p">,</span>
+        <span class="n">eye_alignment</span><span class="p">,</span>
+        <span class="n">behavior_alignment</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_ophys_time_sync.html#allensdk.internal.pipeline_modules.run_ophys_time_sync.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="s2">"Generate brain observatory alignment."</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"input_json"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s2">"path to input json"</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"output_json"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">"?"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"path to which output json will be written"</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--log-level"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--min-stimulus-delay"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s2">"reject results if monitor delay less than this value (s)"</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--max-stimulus-delay"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span> 
+        <span class="n">help</span><span class="o">=</span><span class="s2">"reject results if monitor delay greater than this value (s)"</span>
+    <span class="p">)</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">PipelineModule</span><span class="p">(</span><span class="s2">"Generate brain observatory alignment."</span><span class="p">,</span> <span class="n">parser</span><span class="p">)</span>
+
+    <span class="n">input_data</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">input_data</span><span class="p">()</span>
+
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">TimeSyncWriter</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_file"</span><span class="p">),</span> <span class="n">mod</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">output_json</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">validate_paths</span><span class="p">()</span>
+
+    <span class="n">aligner</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">OphysTimeAligner</span><span class="p">(</span>
+        <span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sync_file"</span><span class="p">),</span> 
+        <span class="n">scanner</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"scanner"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">dff_file</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dff_file"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">stimulus_pkl</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"stimulus_pkl"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">eye_video</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"eye_video"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">behavior_video</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"behavior_video"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="n">long_stim_threshold</span><span class="o">=</span><span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"long_stim_threshold"</span><span class="p">,</span> <span class="n">ts</span><span class="o">.</span><span class="n">LONG_STIM_THRESHOLD</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">outputs</span> <span class="o">=</span> <span class="n">run_ophys_time_sync</span><span class="p">(</span>
+        <span class="n">aligner</span><span class="p">,</span> 
+        <span class="n">input_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ophys_experiment_id"</span><span class="p">),</span> 
+        <span class="n">mod</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">min_stimulus_delay</span><span class="p">,</span> 
+        <span class="n">mod</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">max_stimulus_delay</span>
+    <span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

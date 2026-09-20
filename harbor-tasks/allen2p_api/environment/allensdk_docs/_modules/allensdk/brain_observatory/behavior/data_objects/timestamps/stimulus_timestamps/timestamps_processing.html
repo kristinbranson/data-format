@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.brain_observatory.time_sync</span><span class="w"> </span><span class="kn">import</span> <span class="n">OphysTimeAligner</span>
+
+
+<div class="viewcode-block" id="get_behavior_stimulus_timestamps">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.get_behavior_stimulus_timestamps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_stimulus_timestamps</span><span class="p">(</span><span class="n">stimulus_pkl</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Obtain visual behavior stimuli timing information from a behavior</span>
+<span class="sd">    stimulus *.pkl file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stimulus_pkl : dict</span>
+<span class="sd">        A dictionary containing stimulus presentation timing information</span>
+<span class="sd">        during a behavior session. Presentation timing info is stored as</span>
+<span class="sd">        an array of times between frames (frame time intervals) in</span>
+<span class="sd">        milliseconds.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Timestamps (in seconds) for presented stimulus frames during a session.</span>
+<span class="sd">    """</span>
+    <span class="n">vsyncs</span> <span class="o">=</span> <span class="n">stimulus_pkl</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"intervalsms"</span><span class="p">]</span>
+    <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">vsyncs</span><span class="p">))</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span> <span class="o">/</span> <span class="mf">1000.0</span>
+    <span class="k">return</span> <span class="n">stimulus_timestamps</span></div>
+
+
+
+<div class="viewcode-block" id="get_ophys_stimulus_timestamps">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.get_ophys_stimulus_timestamps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ophys_stimulus_timestamps</span><span class="p">(</span><span class="n">sync_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Obtain visual behavior stimuli timing information from a sync *.h5 file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sync_path : Union[str, Path]</span>
+<span class="sd">        The path to a sync *.h5 file that contains global timing information</span>
+<span class="sd">        about multiple data streams (e.g. behavior, ophys, eye_tracking)</span>
+<span class="sd">        during a session.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Timestamps (in seconds) for presented stimulus frames during a</span>
+<span class="sd">        behavior + ophys session.</span>
+<span class="sd">    """</span>
+    <span class="n">aligner</span> <span class="o">=</span> <span class="n">OphysTimeAligner</span><span class="p">(</span><span class="n">sync_file</span><span class="o">=</span><span class="n">sync_path</span><span class="p">)</span>
+    <span class="n">stimulus_timestamps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">aligner</span><span class="o">.</span><span class="n">clipped_stim_timestamps</span>
+    <span class="k">return</span> <span class="n">stimulus_timestamps</span></div>
+
+
+
+<div class="viewcode-block" id="get_frame_indices">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.timestamps_processing.get_frame_indices">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_frame_indices</span><span class="p">(</span>
+        <span class="n">frame_timestamps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">event_timestamps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given an array of timestamps corresponding to stimulus frames</span>
+<span class="sd">    and an array of timestamps corresponding to some event (i.e.</span>
+<span class="sd">    licks), return an array of indexes indicating which frame</span>
+<span class="sd">    each event occured on. Indexes will be chosen to be the</span>
+<span class="sd">    first index satisfying</span>
+
+<span class="sd">    frame_timestamps[event_indices] &gt;= event_timestamps</span>
+<span class="sd">    event_timestamps &lt; frame_timestamps[event_indices+1]</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frame_timestamps: np.ndarray</span>
+<span class="sd">        must be in ascending order</span>
+
+<span class="sd">    event_timetamps: np.ndarray</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    event_indices: np.ndarray</span>
+<span class="sd">        integers that are all &gt;= 0 and &lt; len(frame_timestamps)</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    If a value is repeated in frame_timestamps, the first suitable</span>
+<span class="sd">    frame index is returned for a given event_timestamp</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">frame_timestamps</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1.0e-10</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"frame_timestamps are not in ascending order"</span><span class="p">)</span>
+
+    <span class="n">n_frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_timestamps</span><span class="p">)</span>
+
+    <span class="n">event_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span>
+                        <span class="n">frame_timestamps</span><span class="p">,</span>
+                        <span class="n">event_timestamps</span><span class="p">,</span>
+                        <span class="n">side</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span>
+
+    <span class="n">event_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">event_indices</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># correct for fact that searchsorted will select as</span>
+    <span class="c1"># frame index the first frame time that is larger</span>
+    <span class="c1"># than lick_times; we want the lick_times associated</span>
+    <span class="c1"># with the last frame that is smaller than the lick_time</span>
+    <span class="n">event_frame_times</span> <span class="o">=</span> <span class="n">frame_timestamps</span><span class="p">[</span><span class="n">event_indices</span><span class="p">]</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">event_timestamps</span><span class="o">-</span><span class="n">event_frame_times</span>
+    <span class="n">to_decrement</span> <span class="o">=</span> <span class="p">(</span><span class="n">delta</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">1.0e-6</span><span class="p">)</span>
+    <span class="n">event_indices</span><span class="p">[</span><span class="n">to_decrement</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="n">event_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">event_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">event_indices</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

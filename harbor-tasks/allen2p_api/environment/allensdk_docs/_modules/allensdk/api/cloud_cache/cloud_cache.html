@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.api.cloud_cache.cloud_cache &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.api.cloud_cache.cloud_cache</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">semver</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">botocore</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNSIGNED</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">botocore.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_system_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.cloud_cache.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">Manifest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.cloud_cache.file_attributes</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheFileAttributes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.cloud_cache.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">file_hash_from_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.cloud_cache.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">bucket_name_from_url</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.cloud_cache.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">relative_path_from_url</span>
+
+
+<div class="viewcode-block" id="OutdatedManifestWarning">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.OutdatedManifestWarning">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OutdatedManifestWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="MissingLocalManifestWarning">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.MissingLocalManifestWarning">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingLocalManifestWarning</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="BasicLocalCache">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BasicLocalCache</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class to handle the loading and accessing a project's data and</span>
+<span class="sd">    metadata from a local cache directory. Does NOT include any 'smart'</span>
+<span class="sd">    features like:</span>
+<span class="sd">    1. Keeping track of last loaded manifest</span>
+<span class="sd">    2. Constructing symlinks for valid data from previous dataset versions</span>
+<span class="sd">    3. Warning of outdated manifests</span>
+
+<span class="sd">    For those features (and more) see the CloudCacheBase class</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cache_dir: str or pathlib.Path</span>
+<span class="sd">        Path to the directory where data and metadata are stored on the</span>
+<span class="sd">        local system</span>
+
+<span class="sd">    project_name: str</span>
+<span class="sd">        the name of the project this cache is supposed to access. This will</span>
+<span class="sd">        be the root directory for all files stored in the bucket.</span>
+
+<span class="sd">    ui_class_name: Optional[str]</span>
+<span class="sd">        Name of the class users are actually using to manipulate this</span>
+<span class="sd">        functionality (used to populate helpful error messages)</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+        <span class="n">project_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">ui_class_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># the class users are actually interacting with</span>
+        <span class="c1"># (for warning message purposes)</span>
+        <span class="k">if</span> <span class="n">ui_class_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_user_interface_class</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_user_interface_class</span> <span class="o">=</span> <span class="n">ui_class_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span> <span class="o">=</span> <span class="n">cache_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_project_name</span> <span class="o">=</span> <span class="n">project_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_file_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_all_manifests</span><span class="p">()</span>
+
+    <span class="c1"># ====================== BasicLocalCache properties =======================</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ui</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_interface_class</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The name of the currently loaded manifest"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">project_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The name of the project that this cache is accessing"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">manifest_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""On-line prefix for manifest files"""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">project_name</span><span class="si">}</span><span class="s1">/manifests/'</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">file_id_column</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The col name in metadata files used to uniquely identify data files</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span><span class="o">.</span><span class="n">file_id_column</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The version of the dataset currently loaded"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span><span class="o">.</span><span class="n">version</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata_file_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""List of metadata file names associated with this dataset"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span><span class="o">.</span><span class="n">metadata_file_names</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">manifest_file_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Sorted list of manifest file names associated with this dataset</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_file_names</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">latest_manifest_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""parses on-line available manifest files for semver string</span>
+<span class="sd">        and returns the latest one</span>
+<span class="sd">        self.manifest_file_names are assumed to be of the form</span>
+<span class="sd">        '&lt;anything&gt;_v&lt;semver_str&gt;.json'</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            the filename whose semver string is the latest one</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_latest_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cache_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return the cache directory path.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Full cache directory path</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span>
+
+    <span class="c1"># ====================== BasicLocalCache methods ==========================</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_all_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a list of all of the file names of the manifests associated</span>
+<span class="sd">        with this dataset</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BasicLocalCache.list_all_downloaded_manifests">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache.list_all_downloaded_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_all_downloaded_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a list of all of the manifest files that have been</span>
+<span class="sd">        downloaded for this dataset</span>
+<span class="sd">        """</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="s2">".*_manifest_v.*.json"</span><span class="p">,</span> <span class="n">x</span><span class="p">)]</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_latest_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Take a list of files named like</span>
+
+<span class="sd">        {blob}_v{version}.json</span>
+
+<span class="sd">        and return the one with the latest version</span>
+<span class="sd">        """</span>
+        <span class="n">vstrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">".json"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"_v"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">file_name_list</span><span class="p">]</span>
+        <span class="n">versions</span> <span class="o">=</span> <span class="p">[</span><span class="n">semver</span><span class="o">.</span><span class="n">VersionInfo</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vstrs</span><span class="p">]</span>
+        <span class="n">imax</span> <span class="o">=</span> <span class="n">versions</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">versions</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">file_name_list</span><span class="p">[</span><span class="n">imax</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_manifest</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">use_static_project_dir</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Manifest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load and return a manifest from this dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        use_static_project_dir: bool</span>
+<span class="sd">            When determining what the local path of a remote resource</span>
+<span class="sd">            (data or metadata file) should be, the Manifest class will</span>
+<span class="sd">            typically create a versioned project subdirectory under the user</span>
+<span class="sd">            provided `cache_dir`</span>
+<span class="sd">            (e.g. f"{cache_dir}/{project_name}-{manifest_version}")</span>
+<span class="sd">            to allow the possibility of multiple manifest (and data) versions</span>
+<span class="sd">            to be used. In certain cases, like when using a project's s3 bucket</span>
+<span class="sd">            directly as the cache_dir, the project directory name needs to be</span>
+<span class="sd">            static (e.g. f"{cache_dir}/{project_name}"). When set to True,</span>
+<span class="sd">            the Manifest class will use a static project directory to determine</span>
+<span class="sd">            local paths for remote resources. Defaults to False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Manifest</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">manifest_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Manifest to load (</span><span class="si">{</span><span class="n">manifest_name</span><span class="si">}</span><span class="s2">) is not one of the "</span>
+                <span class="s2">"valid manifest names for this dataset. Valid names include:</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">use_static_project_dir</span><span class="p">:</span>
+            <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_name</span><span class="p">,</span> <span class="s2">"manifests"</span><span class="p">,</span> <span class="n">manifest_name</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">local_manifest</span> <span class="o">=</span> <span class="n">Manifest</span><span class="p">(</span>
+                <span class="n">cache_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span>
+                <span class="n">json_input</span><span class="o">=</span><span class="n">f</span><span class="p">,</span>
+                <span class="n">use_static_project_dir</span><span class="o">=</span><span class="n">use_static_project_dir</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">local_manifest</span>
+
+<div class="viewcode-block" id="BasicLocalCache.load_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache.load_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load a manifest from this dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_name</span> <span class="o">=</span> <span class="n">manifest_name</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Given a CacheFileAttributes describing a file, assess whether or</span>
+<span class="sd">        not that file exists locally.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+<span class="sd">            Description of the file to look for</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if the file exists and is valid; False otherwise</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        -----</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If file_attributes.local_path exists but is not a file.</span>
+<span class="sd">            It would be unclear how the cache should proceed in this case.</span>
+<span class="sd">        """</span>
+        <span class="n">file_exists</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="s2">"exists, but is not a file;</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="s2">"unsure how to proceed"</span><span class="p">)</span>
+
+            <span class="n">file_exists</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="n">file_exists</span>
+
+<div class="viewcode-block" id="BasicLocalCache.metadata_path">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache.metadata_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the local path to a metadata file, and test for the</span>
+<span class="sd">        file's existence</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fname: str</span>
+<span class="sd">            The name of the metadata file to be accessed</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+
+<span class="sd">            'path' will be a pathlib.Path pointing to the file's location</span>
+
+<span class="sd">            'exists' will be a boolean indicating if the file</span>
+<span class="sd">            exists in a valid state</span>
+
+<span class="sd">            'file_attributes' is a CacheFileAttributes describing the file</span>
+<span class="sd">            in more detail</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the file cannot be downloaded</span>
+<span class="sd">        """</span>
+        <span class="n">file_attributes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span><span class="o">.</span><span class="n">metadata_file_attributes</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">exists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="n">local_path</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'local_path'</span><span class="p">:</span> <span class="n">local_path</span><span class="p">,</span>
+                  <span class="s1">'exists'</span><span class="p">:</span> <span class="n">exists</span><span class="p">,</span>
+                  <span class="s1">'file_attributes'</span><span class="p">:</span> <span class="n">file_attributes</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="BasicLocalCache.data_path">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache.data_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the local path to a data file, and test for the</span>
+<span class="sd">        file's existence</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_id:</span>
+<span class="sd">            The unique identifier of the file to be accessed</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+
+<span class="sd">            'local_path' will be a pathlib.Path pointing to the file's location</span>
+
+<span class="sd">            'exists' will be a boolean indicating if the file</span>
+<span class="sd">            exists in a valid state</span>
+
+<span class="sd">            'file_attributes' is a CacheFileAttributes describing the file</span>
+<span class="sd">            in more detail</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the file cannot be downloaded</span>
+<span class="sd">        """</span>
+        <span class="n">file_attributes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file_attributes</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="n">exists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="n">local_path</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'local_path'</span><span class="p">:</span> <span class="n">local_path</span><span class="p">,</span>
+                  <span class="s1">'exists'</span><span class="p">:</span> <span class="n">exists</span><span class="p">,</span>
+                  <span class="s1">'file_attributes'</span><span class="p">:</span> <span class="n">file_attributes</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="BasicLocalCache.get_file_attributes">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.BasicLocalCache.get_file_attributes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_file_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Retrieve file attributes for a given file_id from the meatadata.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_id: str or int</span>
+<span class="sd">            The unique identifier of the file to be accessed</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        CacheFileAttributes</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span><span class="o">.</span><span class="n">data_file_attributes</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CloudCacheBase">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CloudCacheBase</span><span class="p">(</span><span class="n">BasicLocalCache</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class to handle the downloading and accessing of data served from a cloud</span>
+<span class="sd">    storage system</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cache_dir: str or pathlib.Path</span>
+<span class="sd">        Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">    project_name: str</span>
+<span class="sd">        the name of the project this cache is supposed to access. This will</span>
+<span class="sd">        be the root directory for all files stored in the bucket.</span>
+
+<span class="sd">    ui_class_name: Optional[str]</span>
+<span class="sd">        Name of the class users are actually using to manipulate this</span>
+<span class="sd">        functionality (used to populate helpful error messages)</span>
+<span class="sd">    """</span>
+
+    <span class="n">_bucket_name</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="p">,</span> <span class="n">ui_class_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">,</span>
+                         <span class="n">ui_class_name</span><span class="o">=</span><span class="n">ui_class_name</span><span class="p">)</span>
+
+        <span class="c1"># what latest_manifest was the last time an OutdatedManifestWarning</span>
+        <span class="c1"># was emitted</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_warned_on</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">c_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span>
+
+        <span class="c1"># self._manifest_last_used contains the name of the manifest</span>
+        <span class="c1"># last loaded from this cache dir (if applicable)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_used</span> <span class="o">=</span> <span class="n">c_path</span> <span class="o">/</span> <span class="s1">'_manifest_last_used.txt'</span>
+
+        <span class="c1"># self._downloaded_data_path is where we will keep a JSONized</span>
+        <span class="c1"># dict mapping paths to downloaded files to their file_hashes;</span>
+        <span class="c1"># this will be used when determining if a downloaded file</span>
+        <span class="c1"># can instead be a symlink</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span> <span class="o">=</span> <span class="n">c_path</span> <span class="o">/</span> <span class="s1">'_downloaded_data.json'</span>
+
+        <span class="c1"># if the local manifest is missing but there are</span>
+        <span class="c1"># data files in cache_dir, emit a warning</span>
+        <span class="c1"># suggesting that the user run</span>
+        <span class="c1"># self.construct_local_manifest</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">file_list</span> <span class="o">=</span> <span class="n">c_path</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">'**/*'</span><span class="p">)</span>
+            <span class="n">has_files</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fname</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="s1">'json'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fname</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                        <span class="n">has_files</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+            <span class="k">if</span> <span class="n">has_files</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s1">'This cache directory appears to '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'contain data files, but it has no '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'record of what those files are. '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'You might want to consider running</span><span class="se">\n\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="si">}</span><span class="s1">.construct_local_manifest()</span><span class="se">\n\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'to avoid needlessly downloading duplicates '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'of data files that did not change between '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'data releases. NOTE: running this method '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'will require hashing every data file you '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'have currently downloaded and could be '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'very time consuming.</span><span class="se">\n\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'To avoid this warning in the future, make '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'sure that</span><span class="se">\n\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'is not deleted between instantiations of this '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'cache'</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">MissingLocalManifestWarning</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CloudCacheBase.construct_local_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.construct_local_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">construct_local_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the dict that maps between file_hash and</span>
+<span class="sd">        absolute local path. Save it to self._downloaded_data_path</span>
+<span class="sd">        """</span>
+        <span class="n">lookup</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">files_to_hash</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">c_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">)</span>
+        <span class="n">file_iterator</span> <span class="o">=</span> <span class="n">c_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s1">'**/*'</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">file_name</span> <span class="ow">in</span> <span class="n">file_iterator</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">file_name</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                <span class="k">if</span> <span class="s1">'json'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_name</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">file_name</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_used</span><span class="p">:</span>
+                        <span class="n">files_to_hash</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">file_name</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+
+        <span class="k">with</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">files_to_hash</span><span class="p">,</span>
+                       <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">files_to_hash</span><span class="p">),</span>
+                       <span class="n">unit</span><span class="o">=</span><span class="s1">'(files hashed)'</span><span class="p">)</span> <span class="k">as</span> <span class="n">pbar</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">local_path</span> <span class="ow">in</span> <span class="n">pbar</span><span class="p">:</span>
+                <span class="n">hsh</span> <span class="o">=</span> <span class="n">file_hash_from_path</span><span class="p">(</span><span class="n">local_path</span><span class="p">)</span>
+                <span class="n">lookup</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">local_path</span><span class="o">.</span><span class="n">absolute</span><span class="p">())]</span> <span class="o">=</span> <span class="n">hsh</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+            <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">lookup</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_warn_of_outdated_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Warn that manifest_name is not the latest manifest available</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_warned_on</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_warned_on</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_warned_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'The manifest file you are loading is not the '</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'most up to date manifest file available for '</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'this dataset. The most up to data manifest file '</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'available for this dataset is </span><span class="se">\n\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'To see the differences between these manifests,'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'run</span><span class="se">\n\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="si">}</span><span class="s2">.compare_manifests('</span><span class="si">{</span><span class="n">manifest_name</span><span class="si">}</span><span class="s2">', "</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="si">}</span><span class="s2">')</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"To see all of the manifest files currently downloaded "</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"onto your local system, run</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"self.list_all_downloaded_manifests()</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"If you just want to load the latest manifest, run</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"self.load_latest_manifest()</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">OutdatedManifestWarning</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">latest_downloaded_manifest_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""parses downloaded available manifest files for semver string</span>
+<span class="sd">        and returns the latest one</span>
+<span class="sd">        self.manifest_file_names are assumed to be of the form</span>
+<span class="sd">        '&lt;anything&gt;_v&lt;semver_str&gt;.json'</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            the filename whose semver string is the latest one</span>
+<span class="sd">        """</span>
+        <span class="n">file_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_all_downloaded_manifests</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">''</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_latest_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">list_all_downloaded_manifests</span><span class="p">())</span>
+
+<div class="viewcode-block" id="CloudCacheBase.load_last_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.load_last_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_last_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        If this Cache was used previously, load the last manifest</span>
+<span class="sd">        used in this cache. If this cache has never been used, load</span>
+<span class="sd">        the latest manifest.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_used</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_latest_manifest</span><span class="p">()</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_used</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_file</span><span class="p">:</span>
+            <span class="n">to_load</span> <span class="o">=</span> <span class="n">in_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span>
+
+        <span class="k">if</span> <span class="n">to_load</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">'The manifest version recorded as last used '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'for this cache -- </span><span class="si">{</span><span class="n">to_load</span><span class="si">}</span><span class="s1">-- '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'is not a valid manifest for this dataset. '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'Loading latest version -- </span><span class="si">{</span><span class="n">latest</span><span class="si">}</span><span class="s1"> -- '</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'instead.'</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_latest_manifest</span><span class="p">()</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">latest</span> <span class="o">!=</span> <span class="n">to_load</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_warned_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"You are loading </span><span class="si">{</span><span class="n">to_load</span><span class="si">}</span><span class="s2">. A more up to date "</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"version of the dataset -- </span><span class="si">{</span><span class="n">latest</span><span class="si">}</span><span class="s2"> -- exists "</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"online. To see the changes between the two "</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"versions of the dataset, run</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="si">}</span><span class="s2">.compare_manifests('</span><span class="si">{</span><span class="n">to_load</span><span class="si">}</span><span class="s2">',"</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" '</span><span class="si">{</span><span class="n">latest</span><span class="si">}</span><span class="s2">')</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">"To load another version of the dataset, run</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="si">}</span><span class="s2">.load_manifest('</span><span class="si">{</span><span class="n">latest</span><span class="si">}</span><span class="s2">')"</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">OutdatedManifestWarning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="n">to_load</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="CloudCacheBase.load_latest_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.load_latest_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_latest_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">latest_downloaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_downloaded_manifest_file</span>
+        <span class="n">latest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span>
+        <span class="k">if</span> <span class="n">latest</span> <span class="o">!=</span> <span class="n">latest_downloaded</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">latest_downloaded</span> <span class="o">!=</span> <span class="s1">''</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'You are loading</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'which is newer than the most recent manifest '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'file you have previously been working with</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">latest_downloaded</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'It is possible that some data files have changed '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'between these two data releases, which will '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'force you to re-download those data files '</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'(currently downloaded files will not be overwritten).'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">' To continue using </span><span class="si">{</span><span class="n">latest_downloaded</span><span class="si">}</span><span class="s1">, run</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ui</span><span class="si">}</span><span class="s2">.load_manifest('</span><span class="si">{</span><span class="n">latest_downloaded</span><span class="si">}</span><span class="s2">')"</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">OutdatedManifestWarning</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="p">)</span></div>
+
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Download a manifest from the dataset</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Check if a file exists locally. If it does not, download it and</span>
+<span class="sd">        return True. Return False otherwise.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+<span class="sd">            Describes the file to download</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if the file was downloaded; False otherwise</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the path to the directory where the file is to be saved</span>
+<span class="sd">            points to something that is not a directory.</span>
+
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If it is not able to successfully download the file after</span>
+<span class="sd">            10 iterations</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CloudCacheBase.load_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.load_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load a manifest from this dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">manifest_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Manifest to load (</span><span class="si">{</span><span class="n">manifest_name</span><span class="si">}</span><span class="s2">) is not one of the "</span>
+                <span class="s2">"valid manifest names for this dataset. Valid names include:</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_file_names</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">manifest_name</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_warn_of_outdated_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="c1"># If desired manifest does not exist, try to download it</span>
+        <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_download_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="c1"># Keep track of the newly loaded manifest</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_manifest_last_used</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+            <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_name</span> <span class="o">=</span> <span class="n">manifest_name</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_list_of_downloads</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                  <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span>
+                                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Update the local file that keeps track of files that have actually</span>
+<span class="sd">        been downloaded to reflect a newly downloaded file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="c1"># This file does not exist; there is nothing to do</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_file</span><span class="p">:</span>
+                <span class="n">downloaded_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">in_file</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">downloaded_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">abs_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">abs_path</span> <span class="ow">in</span> <span class="n">downloaded_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">downloaded_data</span><span class="p">[</span><span class="n">abs_path</span><span class="p">]</span> <span class="o">==</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">file_hash</span><span class="p">:</span>
+                <span class="c1"># this file has already been logged;</span>
+                <span class="c1"># there is nothing to do</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">downloaded_data</span><span class="p">[</span><span class="n">abs_path</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">file_hash</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+            <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">downloaded_data</span><span class="p">,</span>
+                                      <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                                      <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_for_identical_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                  <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span>
+                                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Check the manifest of files that have been locally downloaded to</span>
+<span class="sd">        see if a file with an identical hash to the requested file has already</span>
+<span class="sd">        been downloaded. If it has, create a symlink to the downloaded file</span>
+<span class="sd">        at the requested file's localpath, update the manifest of downloaded</span>
+<span class="sd">        files, and return True.</span>
+
+<span class="sd">        Else return False</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+<span class="sd">            The file we are considering downloading</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_downloaded_data_path</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">in_file</span><span class="p">:</span>
+            <span class="n">available_files</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">in_file</span><span class="p">)</span>
+
+        <span class="n">matched_path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">abs_path</span> <span class="ow">in</span> <span class="n">available_files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">available_files</span><span class="p">[</span><span class="n">abs_path</span><span class="p">]</span> <span class="o">==</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">file_hash</span><span class="p">:</span>
+                <span class="n">matched_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">abs_path</span><span class="p">)</span>
+
+                <span class="c1"># check that the file still exists,</span>
+                <span class="c1"># in case someone accidentally deleted</span>
+                <span class="c1"># the file at the root of a symlink</span>
+                <span class="k">if</span> <span class="n">matched_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">matched_path</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">matched_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">local_parent</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">local_parent</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">local_parent</span><span class="p">)</span>
+
+        <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">symlink_to</span><span class="p">(</span><span class="n">matched_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_file_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Given a CacheFileAttributes describing a file, assess whether or</span>
+<span class="sd">        not that file exists locally and is valid (i.e. has the expected</span>
+<span class="sd">        file hash)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+<span class="sd">            Description of the file to look for</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if the file exists and is valid; False otherwise</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        -----</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If file_attributes.local_path exists but is not a file.</span>
+<span class="sd">            It would be unclear how the cache should proceed in this case.</span>
+<span class="sd">        """</span>
+        <span class="n">file_exists</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="s2">"exists, but is not a file;</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="s2">"unsure how to proceed"</span><span class="p">)</span>
+
+            <span class="n">file_exists</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_exists</span><span class="p">:</span>
+            <span class="n">file_exists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_for_identical_copy</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">file_exists</span>
+
+<div class="viewcode-block" id="CloudCacheBase.download_data">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.download_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_id</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the local path to a data file, downloading the file</span>
+<span class="sd">        if necessary</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_id:</span>
+<span class="sd">            The unique identifier of the file to be accessed</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pathlib.Path</span>
+<span class="sd">            The path indicating where the file is stored on the</span>
+<span class="sd">            local system</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the file cannot be downloaded</span>
+<span class="sd">        """</span>
+        <span class="n">super_attributes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">(</span><span class="n">file_id</span><span class="p">)</span>
+        <span class="n">file_attributes</span> <span class="o">=</span> <span class="n">super_attributes</span><span class="p">[</span><span class="s1">'file_attributes'</span><span class="p">]</span>
+        <span class="n">was_downloaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_file</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">was_downloaded</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_list_of_downloads</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span></div>
+
+
+<div class="viewcode-block" id="CloudCacheBase.download_metadata">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.download_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the local path to a metadata file, downloading the</span>
+<span class="sd">        file if necessary</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fname: str</span>
+<span class="sd">            The name of the metadata file to be accessed</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pathlib.Path</span>
+<span class="sd">            The path indicating where the file is stored on the</span>
+<span class="sd">            local system</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the file cannot be downloaded</span>
+<span class="sd">        """</span>
+        <span class="n">super_attributes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_path</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">file_attributes</span> <span class="o">=</span> <span class="n">super_attributes</span><span class="p">[</span><span class="s1">'file_attributes'</span><span class="p">]</span>
+        <span class="n">was_downloaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_download_file</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">was_downloaded</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_list_of_downloads</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span></div>
+
+
+<div class="viewcode-block" id="CloudCacheBase.get_metadata">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.get_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a pandas DataFrame of metadata</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fname: str</span>
+<span class="sd">            The name of the metadata file to load</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This method will check to see if the specified metadata file exists</span>
+<span class="sd">        locally. If it does not, the method will download the file. Use</span>
+<span class="sd">        self.metadata_path() to find where the file is stored</span>
+<span class="sd">        """</span>
+        <span class="n">local_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_metadata</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">local_path</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">filename_to_hash</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble list of changes between two manifests</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename_to_hash: dict</span>
+<span class="sd">            filename_to_hash[0] is a dict mapping file names to file hashes</span>
+<span class="sd">            for manifest 0</span>
+
+<span class="sd">            filename_to_hash[1] is a dict mapping file names to file hashes</span>
+<span class="sd">            for manifest 1</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[Tuple[str, str]]</span>
+<span class="sd">            List of changes between manifest 0 and manifest 1.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Changes are tuples of the form</span>
+<span class="sd">        (fname, string describing how fname changed)</span>
+
+<span class="sd">        e.g.</span>
+
+<span class="sd">        ('data/f1.txt', 'data/f1.txt renamed data/f5.txt')</span>
+<span class="sd">        ('data/f2.txt', 'data/f2.txt deleted')</span>
+<span class="sd">        ('data/f3.txt', 'data/f3.txt created')</span>
+<span class="sd">        ('data/f4.txt', 'data/f4.txt changed')</span>
+<span class="sd">        """</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">n0</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">n1</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">all_file_names</span> <span class="o">=</span> <span class="n">n0</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">n1</span><span class="p">)</span>
+
+        <span class="n">hash_to_filename</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">hash_to_filename</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="n">v</span><span class="p">]:</span>
+                <span class="n">hash_to_filename</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">filename_to_hash</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">fname</span><span class="p">]]</span> <span class="o">=</span> <span class="n">fname</span>
+
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">all_file_names</span><span class="p">:</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">h0</span> <span class="o">=</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">fname</span><span class="p">]</span>
+                <span class="n">h1</span> <span class="o">=</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">fname</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">h0</span> <span class="o">!=</span> <span class="n">h1</span><span class="p">:</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1"> changed'</span>
+            <span class="k">elif</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">h0</span> <span class="o">=</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">fname</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">h0</span> <span class="ow">in</span> <span class="n">hash_to_filename</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">f1</span> <span class="o">=</span> <span class="n">hash_to_filename</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">h0</span><span class="p">]</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1"> renamed </span><span class="si">{</span><span class="n">f1</span><span class="si">}</span><span class="s1">'</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1"> deleted'</span>
+            <span class="k">elif</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">h1</span> <span class="o">=</span> <span class="n">filename_to_hash</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">fname</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">h1</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hash_to_filename</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">delta</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">fname</span><span class="si">}</span><span class="s1"> created'</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"should never reach this line"</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">delta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">fname</span><span class="p">,</span> <span class="n">delta</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">output</span>
+
+<div class="viewcode-block" id="CloudCacheBase.summarize_comparison">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.summarize_comparison">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">summarize_comparison</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">manifest_0_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                             <span class="n">manifest_1_name</span><span class="p">:</span> <span class="nb">str</span>
+                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compare two manifests from this dataset. Return a dict</span>
+<span class="sd">        containing the list of metadata and data files that changed</span>
+<span class="sd">        between them</span>
+
+<span class="sd">        Note: this assumes that manifest_0 predates manifest_1 (i.e.</span>
+<span class="sd">        changes are listed relative to manifest_0)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_0_name: str</span>
+
+<span class="sd">        manifest_1_name: str</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        result: Dict[List[Tuple[str, str]]]</span>
+<span class="sd">            result['data_changes'] lists changes to data files</span>
+<span class="sd">            result['metadata_changes'] lists changes to metadata files</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Changes are tuples of the form</span>
+<span class="sd">        (fname, string describing how fname changed)</span>
+
+<span class="sd">        e.g.</span>
+
+<span class="sd">        ('data/f1.txt', 'data/f1.txt renamed data/f5.txt')</span>
+<span class="sd">        ('data/f2.txt', 'data/f2.txt deleted')</span>
+<span class="sd">        ('data/f3.txt', 'data/f3.txt created')</span>
+<span class="sd">        ('data/f4.txt', 'data/f4.txt changed')</span>
+<span class="sd">        """</span>
+        <span class="k">for</span> <span class="n">manifest_name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">manifest_0_name</span><span class="p">,</span> <span class="n">manifest_1_name</span><span class="p">]:</span>
+            <span class="n">manifest_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">manifest_path</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_download_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="n">man0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_manifest</span><span class="p">(</span><span class="n">manifest_0_name</span><span class="p">)</span>
+        <span class="n">man1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_manifest</span><span class="p">(</span><span class="n">manifest_1_name</span><span class="p">)</span>
+
+        <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">result_key</span><span class="p">,</span>
+             <span class="n">file_id_list</span><span class="p">,</span>
+             <span class="n">attr_lookup</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">'metadata_changes'</span><span class="p">,</span> <span class="s1">'data_changes'</span><span class="p">),</span>
+                                 <span class="p">((</span><span class="n">man0</span><span class="o">.</span><span class="n">metadata_file_names</span><span class="p">,</span>
+                                   <span class="n">man1</span><span class="o">.</span><span class="n">metadata_file_names</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="n">man0</span><span class="o">.</span><span class="n">file_id_values</span><span class="p">,</span>
+                                   <span class="n">man1</span><span class="o">.</span><span class="n">file_id_values</span><span class="p">)),</span>
+                                 <span class="p">((</span><span class="n">man0</span><span class="o">.</span><span class="n">metadata_file_attributes</span><span class="p">,</span>
+                                   <span class="n">man1</span><span class="o">.</span><span class="n">metadata_file_attributes</span><span class="p">),</span>
+                                  <span class="p">(</span><span class="n">man0</span><span class="o">.</span><span class="n">data_file_attributes</span><span class="p">,</span>
+                                   <span class="n">man1</span><span class="o">.</span><span class="n">data_file_attributes</span><span class="p">))):</span>
+
+            <span class="n">filename_to_hash</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">version</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">filename_to_hash</span><span class="p">[</span><span class="n">version</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">file_id</span> <span class="ow">in</span> <span class="n">file_id_list</span><span class="p">[</span><span class="n">version</span><span class="p">]:</span>
+                    <span class="n">obj</span> <span class="o">=</span> <span class="n">attr_lookup</span><span class="p">[</span><span class="n">version</span><span class="p">](</span><span class="n">file_id</span><span class="p">)</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="n">relative_path_from_url</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+                    <span class="n">file_name</span> <span class="o">=</span> <span class="s1">'/'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">file_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span>
+                    <span class="n">filename_to_hash</span><span class="p">[</span><span class="n">version</span><span class="p">][</span><span class="n">file_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">file_hash</span>
+            <span class="n">changes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_changes</span><span class="p">(</span><span class="n">filename_to_hash</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">result_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">changes</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="CloudCacheBase.compare_manifests">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.CloudCacheBase.compare_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                          <span class="n">manifest_0_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                          <span class="n">manifest_1_name</span><span class="p">:</span> <span class="nb">str</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compare two manifests from this dataset. Return a dict</span>
+<span class="sd">        containing the list of metadata and data files that changed</span>
+<span class="sd">        between them</span>
+
+<span class="sd">        Note: this assumes that manifest_0 predates manifest_1</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_0_name: str</span>
+
+<span class="sd">        manifest_1_name: str</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            A string summarizing all of the changes going from</span>
+<span class="sd">            manifest_0 to manifest_1</span>
+<span class="sd">        """</span>
+
+        <span class="n">changes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summarize_comparison</span><span class="p">(</span><span class="n">manifest_0_name</span><span class="p">,</span>
+                                            <span class="n">manifest_1_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">changes</span><span class="p">[</span><span class="s1">'data_changes'</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">changes</span><span class="p">[</span><span class="s1">'metadata_changes'</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">"The two manifests are equivalent"</span>
+
+        <span class="n">data_change_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">delta</span> <span class="ow">in</span> <span class="n">changes</span><span class="p">[</span><span class="s1">'data_changes'</span><span class="p">]:</span>
+            <span class="n">data_change_dict</span><span class="p">[</span><span class="n">delta</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">delta</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">metadata_change_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">delta</span> <span class="ow">in</span> <span class="n">changes</span><span class="p">[</span><span class="s1">'metadata_changes'</span><span class="p">]:</span>
+            <span class="n">metadata_change_dict</span><span class="p">[</span><span class="n">delta</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">delta</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">'Changes going from</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">manifest_0_name</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="s1">'to</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">manifest_1_name</span><span class="si">}</span><span class="se">\n\n</span><span class="s1">'</span>
+
+        <span class="n">m_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">metadata_change_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">m_keys</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">m_keys</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">metadata_change_dict</span><span class="p">[</span><span class="n">m</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="n">d_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data_change_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">d_keys</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">d_keys</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">data_change_dict</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="S3CloudCache">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.S3CloudCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">S3CloudCache</span><span class="p">(</span><span class="n">CloudCacheBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class to handle the downloading and accessing of data served from</span>
+<span class="sd">    an S3-based storage system</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cache_dir: str or pathlib.Path</span>
+<span class="sd">        Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">    bucket_name: str</span>
+<span class="sd">        for example, if bucket URI is 's3://mybucket' this value should be</span>
+<span class="sd">        'mybucket'</span>
+
+<span class="sd">    project_name: str</span>
+<span class="sd">        the name of the project this cache is supposed to access. This will</span>
+<span class="sd">        be the root directory for all files stored in the bucket.</span>
+
+<span class="sd">    ui_class_name: Optional[str]</span>
+<span class="sd">        Name of the class users are actually using to maniuplate this</span>
+<span class="sd">        functionality (used to populate helpful error messages)</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">,</span> <span class="n">bucket_name</span><span class="p">,</span> <span class="n">project_name</span><span class="p">,</span>
+                 <span class="n">ui_class_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bucket_name</span> <span class="o">=</span> <span class="n">bucket_name</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">,</span>
+                         <span class="n">ui_class_name</span><span class="o">=</span><span class="n">ui_class_name</span><span class="p">)</span>
+
+    <span class="n">_s3_client</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bucket_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bucket_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">s3_client</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3_client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">s3_config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">signature_version</span><span class="o">=</span><span class="n">UNSIGNED</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_s3_client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s1">'s3'</span><span class="p">,</span>
+                                           <span class="n">config</span><span class="o">=</span><span class="n">s3_config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3_client</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_all_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a list of all of the file names of the manifests associated</span>
+<span class="sd">        with this dataset</span>
+<span class="sd">        """</span>
+        <span class="n">paginator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">get_paginator</span><span class="p">(</span><span class="s1">'list_objects_v2'</span><span class="p">)</span>
+        <span class="n">subset_iterator</span> <span class="o">=</span> <span class="n">paginator</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span>
+            <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket_name</span><span class="p">,</span>
+            <span class="n">Prefix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_prefix</span>
+        <span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subset</span> <span class="ow">in</span> <span class="n">subset_iterator</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'Contents'</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">[</span><span class="s1">'Contents'</span><span class="p">]:</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">obj</span><span class="p">[</span><span class="s1">'Key'</span><span class="p">])</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="n">output</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                           <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Download a manifest from the dataset</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+
+        <span class="n">manifest_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_prefix</span> <span class="o">+</span> <span class="n">manifest_name</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket_name</span><span class="p">,</span>
+                                             <span class="n">Key</span><span class="o">=</span><span class="n">manifest_key</span><span class="p">)</span>
+
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="s1">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">'Body'</span><span class="p">]</span><span class="o">.</span><span class="n">iter_chunks</span><span class="p">():</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Check if a file exists locally. If it does not, download it</span>
+<span class="sd">        and return True. Return False otherwise.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_attributes: CacheFileAttributes</span>
+<span class="sd">            Describes the file to download</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if the file was downloaded; False otherwise</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If the path to the directory where the file is to be saved</span>
+<span class="sd">            points to something that is not a directory.</span>
+
+<span class="sd">        RuntimeError</span>
+<span class="sd">            If it is not able to successfully download the file after</span>
+<span class="sd">            10 iterations</span>
+<span class="sd">        """</span>
+        <span class="n">was_downloaded</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">local_path</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span>
+
+        <span class="n">local_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">safe_system_path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">local_path</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+
+        <span class="c1"># make sure Windows references to Allen Institute</span>
+        <span class="c1"># local networked file system get handled correctly</span>
+        <span class="n">local_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">safe_system_path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">local_path</span><span class="p">)))</span>
+
+        <span class="c1"># using os here rather than pathlib because safe_system_path</span>
+        <span class="c1"># returns a str</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">local_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">local_dir</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">local_dir</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="s2">"is not a directory"</span><span class="p">)</span>
+
+        <span class="n">bucket_name</span> <span class="o">=</span> <span class="n">bucket_name_from_url</span><span class="p">(</span><span class="n">file_attributes</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">obj_key</span> <span class="o">=</span> <span class="n">relative_path_from_url</span><span class="p">(</span><span class="n">file_attributes</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="n">n_iter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_iter</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># maximum number of times to try download</span>
+
+        <span class="n">version_id</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">version_id</span>
+
+        <span class="n">pbar</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">):</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">list_object_versions</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket_name</span><span class="p">,</span>
+                                                           <span class="n">Prefix</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">obj_key</span><span class="p">))</span>
+            <span class="n">object_info</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">"Versions"</span><span class="p">]</span>
+                           <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s2">"VersionId"</span><span class="p">]</span> <span class="o">==</span> <span class="n">version_id</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="n">object_info</span><span class="p">[</span><span class="s2">"Key"</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                             <span class="n">total</span><span class="o">=</span><span class="n">object_info</span><span class="p">[</span><span class="s2">"Size"</span><span class="p">],</span>
+                             <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">unit_divisor</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span>
+                             <span class="n">unit</span><span class="o">=</span><span class="s2">"MB"</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_file_exists</span><span class="p">(</span><span class="n">file_attributes</span><span class="p">):</span>
+            <span class="n">was_downloaded</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">get_object</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket_name</span><span class="p">,</span>
+                                                 <span class="n">Key</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">obj_key</span><span class="p">),</span>
+                                                 <span class="n">VersionId</span><span class="o">=</span><span class="n">version_id</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s1">'Body'</span> <span class="ow">in</span> <span class="n">response</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="s1">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">'Body'</span><span class="p">]</span><span class="o">.</span><span class="n">iter_chunks</span><span class="p">():</span>
+                        <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                        <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+
+            <span class="c1"># Verify the hash of the downloaded file</span>
+            <span class="n">full_path</span> <span class="o">=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+            <span class="n">test_checksum</span> <span class="o">=</span> <span class="n">file_hash_from_path</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">test_checksum</span> <span class="o">!=</span> <span class="n">file_attributes</span><span class="o">.</span><span class="n">file_hash</span><span class="p">:</span>
+                <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+                <span class="n">file_attributes</span><span class="o">.</span><span class="n">local_path</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+
+            <span class="n">n_iter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">n_iter</span> <span class="o">&gt;</span> <span class="n">max_iter</span><span class="p">:</span>
+                <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Could not download</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">file_attributes</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                                   <span class="s2">"In </span><span class="si">{max_iter}</span><span class="s2"> iterations"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">was_downloaded</span></div>
+
+
+
+<div class="viewcode-block" id="LocalCache">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.LocalCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalCache</span><span class="p">(</span><span class="n">CloudCacheBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A class to handle accessing of data that has already been downloaded</span>
+<span class="sd">    locally. Supports multiple manifest versions from a given dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cache_dir: str or pathlib.Path</span>
+<span class="sd">        Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">    project_name: str</span>
+<span class="sd">        the name of the project this cache is supposed to access. This will</span>
+<span class="sd">        be the root directory for all files stored in the bucket.</span>
+
+<span class="sd">    ui_class_name: Optional[str]</span>
+<span class="sd">        Name of the class users are actually using to maniuplate this</span>
+<span class="sd">        functionality (used to populate helpful error messages)</span>
+<span class="sd">    """</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="p">,</span> <span class="n">ui_class_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">,</span>
+                         <span class="n">ui_class_name</span><span class="o">=</span><span class="n">ui_class_name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_all_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_all_downloaded_manifests</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_attributes</span><span class="p">:</span> <span class="n">CacheFileAttributes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="StaticLocalCache">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.StaticLocalCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StaticLocalCache</span><span class="p">(</span><span class="n">BasicLocalCache</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A class to handle accessing data that has already been downloaded</span>
+<span class="sd">    locally and whose directory structure and/or contained files are not</span>
+<span class="sd">    expected to be changed in any way. Does NOT support multiple manifest</span>
+<span class="sd">    versions for a given dataset.</span>
+
+<span class="sd">    Example intended use case:</span>
+<span class="sd">        Calling</span>
+<span class="sd">        VisualBehaviorOphysProjectCache.from_local_cache(use_static_cache=True)</span>
+<span class="sd">        where the cache directory is a mounted S3 public bucket.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cache_dir: str or pathlib.Path</span>
+<span class="sd">        Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">    project_name: str</span>
+<span class="sd">        the name of the project this cache is supposed to access. This will</span>
+<span class="sd">        be the root directory for all files stored in the bucket.</span>
+
+<span class="sd">    ui_class_name: Optional[str]</span>
+<span class="sd">        Name of the class users are actually using to maniuplate this</span>
+<span class="sd">        functionality (used to populate helpful error messages)</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="p">,</span> <span class="n">ui_class_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">project_name</span><span class="o">=</span><span class="n">project_name</span><span class="p">,</span>
+                         <span class="n">ui_class_name</span><span class="o">=</span><span class="n">ui_class_name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_all_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a list of all of the file names of the manifests associated</span>
+<span class="sd">        with this dataset. For the StaticLocalCache only return only the</span>
+<span class="sd">        latest manifest.</span>
+<span class="sd">        """</span>
+        <span class="n">manifest_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_name</span><span class="p">,</span> <span class="s2">"manifests"</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">manifest_dir</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Expected the provided cache_dir (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_dir</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="s2">"to have the following subfolders but it did not: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">project_name</span><span class="si">}</span><span class="s2">/manifests"</span>
+            <span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">manifest_dir</span><span class="p">)</span>
+                  <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="s2">".*_manifest_v.*.json"</span><span class="p">,</span> <span class="n">x</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_latest_file</span><span class="p">(</span><span class="n">output</span><span class="p">)]</span>
+
+<div class="viewcode-block" id="StaticLocalCache.list_all_downloaded_manifests">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.StaticLocalCache.list_all_downloaded_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_all_downloaded_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a list of all of the manifest files for this dataset.</span>
+<span class="sd">        For the StaticLocalCache, this will only be the latest manifest.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_list_all_manifests</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="StaticLocalCache.load_last_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.StaticLocalCache.load_last_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_last_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""For the StaticLocalCache always load the latest manifest."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">latest_manifest_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StaticLocalCache.load_manifest">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.StaticLocalCache.load_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load a manifest from this dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_manifest</span><span class="p">(</span>
+            <span class="n">manifest_name</span><span class="p">,</span>
+            <span class="n">use_static_project_dir</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_manifest_name</span> <span class="o">=</span> <span class="n">manifest_name</span></div>
+
+
+<div class="viewcode-block" id="StaticLocalCache.compare_manifests">
+<a class="viewcode-back" href="../../../../allensdk.api.cloud_cache.cloud_cache.html#allensdk.api.cloud_cache.cloud_cache.StaticLocalCache.compare_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_0_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">manifest_1_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"The ability to load many manifest versions and use the "</span>
+            <span class="s2">"`compare_manifests()` method is not available for the "</span>
+            <span class="s2">"StaticLocalCache class!"</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

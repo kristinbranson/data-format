@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.eye_tracking_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.eye_tracking_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndimage</span><span class="p">,</span> <span class="n">stats</span>
+
+
+<div class="viewcode-block" id="EyeTrackingError">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.EyeTrackingError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EyeTrackingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="load_eye_tracking_hdf">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.load_eye_tracking_hdf">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_eye_tracking_hdf</span><span class="p">(</span><span class="n">eye_tracking_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Load a DeepLabCut hdf5 file containing eye tracking data into a</span>
+<span class="sd">    dataframe.</span>
+
+<span class="sd">    Note: The eye tracking hdf5 file contains 3 separate dataframes. One for</span>
+<span class="sd">    corneal reflection (cr), eye, and pupil ellipse fits. This function</span>
+<span class="sd">    loads and returns this data as a single dataframe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eye_tracking_file : Path</span>
+<span class="sd">        Path to an hdf5 file produced by the DeepLabCut eye tracking pipeline.</span>
+<span class="sd">        The hdf5 file will contain the following keys: "cr", "eye", "pupil".</span>
+<span class="sd">        Each key has an associated dataframe with the following</span>
+<span class="sd">        columns: "center_x", "center_y", "height", "width", "phi".</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        A dataframe containing combined corneal reflection (cr), eyelid (eye),</span>
+<span class="sd">        and pupil data. Column names for each field will be renamed by</span>
+<span class="sd">        prepending the field name. (e.g. center_x -&gt; eye_center_x)</span>
+<span class="sd">    """</span>
+    <span class="n">eye_tracking_fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cr"</span><span class="p">,</span> <span class="s2">"eye"</span><span class="p">,</span> <span class="s2">"pupil"</span><span class="p">]</span>
+
+    <span class="n">eye_tracking_dfs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">eye_tracking_fields</span><span class="p">:</span>
+        <span class="n">field_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_hdf</span><span class="p">(</span><span class="n">eye_tracking_file</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">field_name</span><span class="p">)</span>
+        <span class="n">new_col_name_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">col_name</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">col_name</span><span class="si">}</span><span class="s2">"</span>
+                            <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">field_data</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+        <span class="n">field_data</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">new_col_name_map</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">eye_tracking_dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">field_data</span><span class="p">)</span>
+
+    <span class="n">eye_tracking_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">eye_tracking_dfs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'frame'</span>
+
+    <span class="c1"># Values in the hdf5 may be complex (likely an artifact of the ellipse</span>
+    <span class="c1"># fitting process). Take only the real component.</span>
+    <span class="n">eye_tracking_data</span> <span class="o">=</span> <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()))</span>  <span class="c1"># noqa: E501</span>
+
+    <span class="k">return</span> <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="determine_outliers">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.determine_outliers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">determine_outliers</span><span class="p">(</span><span class="n">data_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+                       <span class="n">z_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Given a dataframe and some z-score threshold return a pandas boolean</span>
+<span class="sd">    Series where each entry indicates whether a given row contains at least</span>
+<span class="sd">    one outlier (where outliers are calculated along columns).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_df : pd.DataFrame</span>
+<span class="sd">        A dataframe containing only columns where outlier detection is</span>
+<span class="sd">        desired. (e.g. "cr_area", "eye_area", "pupil_area")</span>
+<span class="sd">    z_threshold : float</span>
+<span class="sd">        z-score values higher than the z_threshold will be considered outliers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.Series</span>
+<span class="sd">        A pandas boolean Series whose length == len(data_df.index).</span>
+<span class="sd">        True denotes that a row in the data_df contains at least one outlier.</span>
+<span class="sd">    """</span>
+
+    <span class="n">outliers</span> <span class="o">=</span> <span class="n">data_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">zscore</span><span class="p">,</span>
+                             <span class="n">nan_policy</span><span class="o">=</span><span class="s1">'omit'</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">z_threshold</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">outliers</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="compute_circular_area">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.compute_circular_area">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_circular_area</span><span class="p">(</span><span class="n">df_row</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Calculate the area of the pupil as a circle using the max of the</span>
+<span class="sd">    height/width as radius.</span>
+
+<span class="sd">    Note: This calculation assumes that the pupil is a perfect circle</span>
+<span class="sd">    and any eccentricity is a result of the angle at which the pupil is</span>
+<span class="sd">    being viewed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_row : pd.Series</span>
+<span class="sd">        A row from an eye tracking dataframe containing only "pupil_width"</span>
+<span class="sd">        and "pupil_height".</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The circular area of the pupil in pixels^2.</span>
+<span class="sd">    """</span>
+    <span class="n">max_dim</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">df_row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">df_row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">max_dim</span> <span class="o">*</span> <span class="n">max_dim</span></div>
+
+
+
+<div class="viewcode-block" id="compute_elliptical_area">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.compute_elliptical_area">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_elliptical_area</span><span class="p">(</span><span class="n">df_row</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Calculate the area of corneal reflection (cr) or eye ellipse fits using</span>
+<span class="sd">    the ellipse formula.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_row : pd.Series</span>
+<span class="sd">        A row from an eye tracking dataframe containing either:</span>
+<span class="sd">        "cr_width", "cr_height"</span>
+<span class="sd">        or</span>
+<span class="sd">        "eye_width", "eye_height"</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The elliptical area of the eye or cr in pixels^2</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">df_row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">df_row</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="determine_likely_blinks">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.determine_likely_blinks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">determine_likely_blinks</span><span class="p">(</span><span class="n">eye_areas</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+                            <span class="n">pupil_areas</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+                            <span class="n">outliers</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+                            <span class="n">dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Determine eye tracking frames which contain likely blinks or outliers</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eye_areas : pd.Series</span>
+<span class="sd">        A pandas series of eye areas.</span>
+<span class="sd">    pupil_areas : pd.Series</span>
+<span class="sd">        A pandas series of pupil areas.</span>
+<span class="sd">    outliers : pd.Series</span>
+<span class="sd">        A pandas series containing bool values of outlier rows.</span>
+<span class="sd">    dilation_frames : int, optional</span>
+<span class="sd">        Determines the number of additional adjacent frames to mark as</span>
+<span class="sd">        'likely_blink', by default 2.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.Series</span>
+<span class="sd">        A pandas series of bool values that has the same length as the number</span>
+<span class="sd">        of eye tracking dataframe rows (frames).</span>
+<span class="sd">    """</span>
+    <span class="n">blinks</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">eye_areas</span><span class="p">)</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">pupil_areas</span><span class="p">)</span> <span class="o">|</span> <span class="n">outliers</span>
+    <span class="k">if</span> <span class="n">dilation_frames</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">likely_blinks</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">binary_dilation</span><span class="p">(</span><span class="n">blinks</span><span class="p">,</span>
+                                                <span class="n">iterations</span><span class="o">=</span><span class="n">dilation_frames</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">likely_blinks</span> <span class="o">=</span> <span class="n">blinks</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">eye_areas</span><span class="o">.</span><span class="n">index</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="process_eye_tracking_data">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.process_eye_tracking_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_eye_tracking_data</span><span class="p">(</span><span class="n">eye_data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+                              <span class="n">frame_times</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+                              <span class="n">z_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+                              <span class="n">dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Processes and refines raw eye tracking data by adding additional</span>
+<span class="sd">    computed feature columns.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eye_data : pd.DataFrame</span>
+<span class="sd">        A 'raw' eye tracking dataframe produced by load_eye_tracking_hdf()</span>
+<span class="sd">    frame_times : pd.Series</span>
+<span class="sd">        A series of frame times acquired from a behavior + ophy session</span>
+<span class="sd">        'sync file'.</span>
+<span class="sd">    z_threshold : float</span>
+<span class="sd">        z-score values higher than the z_threshold will be considered outliers,</span>
+<span class="sd">        by default 3.0.</span>
+<span class="sd">    dilation_frames : int, optional</span>
+<span class="sd">        Determines the number of additional adjacent frames to mark as</span>
+<span class="sd">        'likely_blink', by default 2.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        A refined eye tracking dataframe that contains additional information</span>
+<span class="sd">        about frame times, eye areas, pupil areas, and frames with likely</span>
+<span class="sd">        blinks/outliers.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    EyeTrackingError</span>
+<span class="sd">        If the number of sync file frame times does not match the number of</span>
+<span class="sd">        eye tracking frames.</span>
+<span class="sd">    """</span>
+
+    <span class="n">n_sync</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_times</span><span class="p">)</span>
+    <span class="n">n_eye_frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eye_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="c1"># If n_sync exceeds n_eye_frames by &lt;= 15,</span>
+    <span class="c1"># just trim the excess sync pulses from the end</span>
+    <span class="c1"># of the timestamps array.</span>
+    <span class="c1">#</span>
+    <span class="c1"># This solution was discussed in</span>
+    <span class="c1"># https://github.com/AllenInstitute/AllenSDK/issues/1545</span>
+
+    <span class="k">if</span> <span class="n">n_eye_frames</span> <span class="o">&lt;</span> <span class="n">n_sync</span> <span class="o">&lt;=</span> <span class="n">n_eye_frames</span> <span class="o">+</span> <span class="mi">15</span><span class="p">:</span>
+        <span class="n">frame_times</span> <span class="o">=</span> <span class="n">frame_times</span><span class="p">[:</span><span class="n">n_eye_frames</span><span class="p">]</span>
+        <span class="n">n_sync</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frame_times</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">n_sync</span> <span class="o">!=</span> <span class="n">n_eye_frames</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">EyeTrackingError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error! The number of sync file frame times "</span>
+                               <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frame_times</span><span class="p">)</span><span class="si">}</span><span class="s2">) does not match the "</span>
+                               <span class="sa">f</span><span class="s2">"number of eye tracking frames "</span>
+                               <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">eye_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="si">}</span><span class="s2">)!"</span><span class="p">)</span>
+
+    <span class="n">cr_areas</span> <span class="o">=</span> <span class="p">(</span><span class="n">eye_data</span><span class="p">[[</span><span class="s2">"cr_width"</span><span class="p">,</span> <span class="s2">"cr_height"</span><span class="p">]]</span>
+                <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">compute_elliptical_area</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">eye_areas</span> <span class="o">=</span> <span class="p">(</span><span class="n">eye_data</span><span class="p">[[</span><span class="s2">"eye_width"</span><span class="p">,</span> <span class="s2">"eye_height"</span><span class="p">]]</span>
+                 <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">compute_elliptical_area</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">pupil_areas</span> <span class="o">=</span> <span class="p">(</span><span class="n">eye_data</span><span class="p">[[</span><span class="s2">"pupil_width"</span><span class="p">,</span> <span class="s2">"pupil_height"</span><span class="p">]]</span>
+                   <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">compute_circular_area</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># only use eye and pupil areas for outlier detection</span>
+    <span class="n">area_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">eye_areas</span><span class="p">,</span> <span class="n">pupil_areas</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">outliers</span> <span class="o">=</span> <span class="n">determine_outliers</span><span class="p">(</span><span class="n">area_df</span><span class="p">,</span> <span class="n">z_threshold</span><span class="o">=</span><span class="n">z_threshold</span><span class="p">)</span>
+
+    <span class="n">likely_blinks</span> <span class="o">=</span> <span class="n">determine_likely_blinks</span><span class="p">(</span><span class="n">eye_areas</span><span class="p">,</span>
+                                            <span class="n">pupil_areas</span><span class="p">,</span>
+                                            <span class="n">outliers</span><span class="p">,</span>
+                                            <span class="n">dilation_frames</span><span class="o">=</span><span class="n">dilation_frames</span><span class="p">)</span>
+
+    <span class="c1"># remove outliers/likely blinks `pupil_area`, `cr_area`, `eye_area`</span>
+    <span class="n">pupil_areas_raw</span> <span class="o">=</span> <span class="n">pupil_areas</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">cr_areas_raw</span> <span class="o">=</span> <span class="n">cr_areas</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">eye_areas_raw</span> <span class="o">=</span> <span class="n">eye_areas</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">"timestamps"</span><span class="p">,</span> <span class="n">frame_times</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"cr_area"</span><span class="p">,</span> <span class="n">cr_areas</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"eye_area"</span><span class="p">,</span> <span class="n">eye_areas</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">"pupil_area"</span><span class="p">,</span> <span class="n">pupil_areas</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s2">"likely_blink"</span><span class="p">,</span> <span class="n">likely_blinks</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s2">"pupil_area_raw"</span><span class="p">,</span> <span class="n">pupil_areas_raw</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s2">"cr_area_raw"</span><span class="p">,</span> <span class="n">cr_areas_raw</span><span class="p">)</span>
+    <span class="n">eye_data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s2">"eye_area_raw"</span><span class="p">,</span> <span class="n">eye_areas_raw</span><span class="p">)</span>
+
+    <span class="c1"># Apply blink fliter to additional columns.</span>
+    <span class="n">filter_on_blinks</span><span class="p">(</span><span class="n">eye_data</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">eye_data</span></div>
+
+
+
+<div class="viewcode-block" id="filter_on_blinks">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.eye_tracking_processing.html#allensdk.brain_observatory.behavior.eye_tracking_processing.filter_on_blinks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_on_blinks</span><span class="p">(</span><span class="n">eye_tracking_data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Set data is specified columns where likely_blink is true to NaN.</span>
+
+<span class="sd">    Modify the DataFrame in place.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    eye_tracking_data : pandas.DataFrame</span>
+<span class="sd">        Data frame containing eye tracking data.</span>
+<span class="sd">    """</span>
+    <span class="n">likely_blinks</span> <span class="o">=</span> <span class="n">eye_tracking_data</span><span class="p">[</span><span class="s2">"likely_blink"</span><span class="p">]</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"eye_area"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"pupil_area"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"cr_area"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"eye_width"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"eye_height"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"eye_phi"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"pupil_width"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"pupil_height"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">eye_tracking_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">likely_blinks</span><span class="p">,</span> <span class="s2">"pupil_phi"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

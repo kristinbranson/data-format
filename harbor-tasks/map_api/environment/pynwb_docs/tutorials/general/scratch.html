@@ -1,0 +1,351 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exploratory Data Analysis with NWB &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Extending NWB" href="extensions.html" />
+    <link rel="prev" title="Annotating Time Intervals" href="plot_timeintervals.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Exploratory Data Analysis with NWB</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#raw-data">Raw data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copying-an-nwb-file">Copying an NWB file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-scratch-data">Adding scratch data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_configurator.html">How to Configure Term Validations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Exploratory Data Analysis with NWB</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/scratch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-scratch-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="exploratory-data-analysis-with-nwb">
+<span id="scratch"></span><span id="sphx-glr-tutorials-general-scratch-py"></span><h1>Exploratory Data Analysis with NWB<a class="headerlink" href="#exploratory-data-analysis-with-nwb" title="Link to this heading"></a></h1>
+<p>This example will focus on the basics of working with an <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> to do more than
+storing standardized data for use and exchange. For example, you may want to store results from intermediate
+analyses or one-off analyses with unknown utility. This functionality is primarily accomplished with linking
+and scratch space.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The scratch space is explicitly for non-standardized data that is not intended for reuse
+by others. Standard NWB types, and extension if required, should always be used for any data that you
+intend to share. As such, published data should not include scratch data and a user should be able
+to ignore any data stored in scratch to use a file.</p>
+</div>
+<section id="raw-data">
+<h2>Raw data<a class="headerlink" href="#raw-data" title="Link to this heading"></a></h2>
+<p>To demonstrate linking and scratch space, lets assume we are starting with some acquired data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">TimeSeries</span>
+
+<span class="c1"># set up the NWBFile</span>
+<span class="n">start_time</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2019</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+<span class="n">create_date</span> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2019</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tzlocal</span><span class="p">())</span>
+
+<span class="n">nwb</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;demonstrate NWBFile scratch&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;NWB456&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">session_start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">file_create_date</span><span class="o">=</span><span class="n">create_date</span><span class="p">,</span>
+<span class="p">)</span>  <span class="c1"># optional</span>
+
+<span class="c1"># make some fake data</span>
+<span class="n">timestamps</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html#numpy.linspace" title="numpy.linspace" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">linspace</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1024</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.sin.html#numpy.sin" title="numpy.sin" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-data"><span class="n">np</span><span class="o">.</span><span class="n">sin</span></a><span class="p">(</span><span class="mf">0.333</span> <span class="o">*</span> <span class="n">timestamps</span><span class="p">)</span>
+    <span class="o">+</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.cos.html#numpy.cos" title="numpy.cos" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-data"><span class="n">np</span><span class="o">.</span><span class="n">cos</span></a><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">timestamps</span><span class="p">)</span>
+    <span class="o">+</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">timestamps</span><span class="p">))</span>
+<span class="p">)</span>
+<span class="n">test_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;raw_timeseries&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">)</span>
+
+<span class="c1"># add it to the NWBFile</span>
+<span class="n">nwb</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">test_ts</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;raw_data.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwb</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="copying-an-nwb-file">
+<span id="basic-copying"></span><h2>Copying an NWB file<a class="headerlink" href="#copying-an-nwb-file" title="Link to this heading"></a></h2>
+<p>To copy a file, we must first read the file.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">raw_io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;raw_data.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwb_in</span> <span class="o">=</span> <span class="n">raw_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>And then create a shallow copy the file with the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.copy" title="pynwb.file.NWBFile.copy"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy</span></code></a> method
+of <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> .</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwb_proc</span> <span class="o">=</span> <span class="n">nwb_in</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now that we have a copy, lets process some data, and add the results as a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.ProcessingModule" title="pynwb.base.ProcessingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessingModule</span></code></a>
+to our copy of the file. <a class="footnote-reference brackets" href="#id3" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">mod</span> <span class="o">=</span> <span class="n">nwb_proc</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="s2">&quot;filtering_module&quot;</span><span class="p">,</span> <span class="s2">&quot;a module to store filtering results&quot;</span>
+<span class="p">)</span>
+
+<span class="n">ts1</span> <span class="o">=</span> <span class="n">nwb_in</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;raw_timeseries&quot;</span><span class="p">]</span>
+<span class="n">filt_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.convolve.html#numpy.convolve" title="numpy.convolve" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">convolve</span></a><span class="p">(</span><span class="n">ts1</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ones.html#numpy.ones" title="numpy.ones" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">ones</span></a><span class="p">(</span><span class="mi">128</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;same&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="mi">128</span>
+<span class="n">ts2</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;filtered_timeseries&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">filt_data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="n">timestamps</span><span class="o">=</span><span class="n">ts1</span><span class="p">)</span>
+
+<span class="n">mod</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ts2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now write the copy, which contains the processed data. <a class="footnote-reference brackets" href="#id4" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;processed_data.nwb&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="n">raw_io</span><span class="o">.</span><span class="n">manager</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwb_proc</span><span class="p">)</span>
+</pre></div>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id3" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Notice here that we are reusing the timestamps to the original TimeSeries.</p>
+</div>
+</aside>
+<aside class="footnote brackets" id="id4" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">processed_data.nwb</span></code> file (i.e., our copy) stores our processing module and contains external
+links to all data in our original file, i.e., the data from our raw file is being linked to, not copied.
+This allows us to isolate our processing data in a separate file while still allowing us to access the
+raw data from our <code class="docutils literal notranslate"><span class="pre">processed_data.nwb</span></code> file, without having to duplicate the data.</p>
+</div>
+</aside>
+</aside>
+</section>
+<section id="adding-scratch-data">
+<span id="basic-scratch"></span><h2>Adding scratch data<a class="headerlink" href="#adding-scratch-data" title="Link to this heading"></a></h2>
+<p>You may end up wanting to store results from some one-off analysis, and writing an extension
+to get your data into an NWBFile is too much over head. This is facilitated by the scratch space
+in NWB. <a class="footnote-reference brackets" href="#id7" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p>
+<p>First, lets read our processed data and then make a copy</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">proc_io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;processed_data.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwb_proc_in</span> <span class="o">=</span> <span class="n">proc_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now make a copy to put our scratch data into <a class="footnote-reference brackets" href="#id8" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>4<span class="fn-bracket">]</span></a></p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwb_scratch</span> <span class="o">=</span> <span class="n">nwb_proc_in</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now lets do an analysis for which we do not have a specification, but we would like to store
+the results for.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">filt_ts</span> <span class="o">=</span> <span class="n">nwb_scratch</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;filtering_module&quot;</span><span class="p">][</span><span class="s2">&quot;filtered_timeseries&quot;</span><span class="p">]</span>
+
+<span class="c1"># simple power spectrum without normalization</span>
+<span class="n">ps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.fft.fft.html#numpy.fft.fft" title="numpy.fft.fft" class="sphx-glr-backref-module-numpy-fft sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span></a><span class="p">(</span><span class="n">filt_ts</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="n">nwb_scratch</span><span class="o">.</span><span class="n">add_scratch</span><span class="p">(</span>
+    <span class="n">ps</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;power_spectrum&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;power spectrum from filtered data&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, write the results.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;scratch_analysis.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="n">proc_io</span><span class="o">.</span><span class="n">manager</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwb_scratch</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To get your results back, you can index into <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.scratch" title="pynwb.file.NWBFile.scratch"><code class="xref py py-attr docutils literal notranslate"><span class="pre">scratch</span></code></a> or use
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_scratch" title="pynwb.file.NWBFile.get_scratch"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_scratch</span></code></a>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scratch_io</span> <span class="o">=</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;scratch_analysis.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="n">nwb_scratch_in</span> <span class="o">=</span> <span class="n">scratch_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">fft_in</span> <span class="o">=</span> <span class="n">nwb_scratch_in</span><span class="o">.</span><span class="n">scratch</span><span class="p">[</span><span class="s2">&quot;power_spectrum&quot;</span><span class="p">]</span>
+
+<span class="n">fft_in</span> <span class="o">=</span> <span class="n">nwb_scratch_in</span><span class="o">.</span><span class="n">get_scratch</span><span class="p">(</span><span class="s2">&quot;power_spectrum&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id7" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">3</a><span class="fn-bracket">]</span></span>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This scratch space only exists if you add scratch data.</p>
+</div>
+</aside>
+<aside class="footnote brackets" id="id8" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">4</a><span class="fn-bracket">]</span></span>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We recommend writing scratch data into copies of files only. This will make it easier to
+isolate and discard scratch data and avoids updating files that store precious data.</p>
+</div>
+</aside>
+</aside>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># close the IO objects</span>
+<span class="n">raw_io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">proc_io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">scratch_io</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-scratch-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/93f31e1140de50ed039befb0425b8ce2/scratch.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">scratch.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/a61fb6e34fb6549f1c7f205d293f38a7/scratch.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">scratch.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/8a85207fc7482df15e28da3b6f7bf6ac/scratch.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">scratch.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_timeintervals.html" class="btn btn-neutral float-left" title="Annotating Time Intervals" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="extensions.html" class="btn btn-neutral float-right" title="Extending NWB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

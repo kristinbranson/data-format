@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>allensdk.model.glif.glif_neuron_methods module &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="allensdk.model.glif.simulate_neuron module" href="allensdk.model.glif.simulate_neuron.html" />
+    <link rel="prev" title="allensdk.model.glif.glif_neuron module" href="allensdk.model.glif.glif_neuron.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-allensdk.model.glif.glif_neuron_methods">
+<span id="allensdk-model-glif-glif-neuron-methods-module"></span><h1>allensdk.model.glif.glif_neuron_methods module<a class="headerlink" href="#module-allensdk.model.glif.glif_neuron_methods" title="Link to this heading">¶</a></h1>
+<p>The methods in this module are used for configuring dynamics and reset rules for the GlifNeuron.  
+For more details on how to use these methods, see <a class="reference internal" href="glif_models.html"><span class="doc">Generalized LIF Models</span></a>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">GlifNeuronMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#GlifNeuronMethod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A simple class to keep track of the name and parameters associated with a neuron method.
+This class is initialized with a name, function, and parameters to pass to the function.  The
+function then has those passed parameters fixed to a partial function using functools.partial.  
+This class then mimics a function itself using the __call__ convention. Parameters that are not 
+fixed in this way are assumed to be passed into the method when it is called.  If the passed
+parameters contain an argument that is not part of the function signature, an exception will
+be raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>method_name</strong><span class="classifier">string</span></dt><dd><p>A shorthand name that will be used to reference this method in the <cite>GlifNeuron</cite>.</p>
+</dd>
+<dt><strong>method</strong><span class="classifier">function</span></dt><dd><p>A python function to be called when this instance is called.</p>
+</dd>
+<dt><strong>method_params</strong><span class="classifier">dict</span></dt><dd><p>A dictionary mapping function arguments to values for values that should be fixed.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod.modify_parameter">
+<span class="sig-name descname"><span class="pre">modify_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">param</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operator</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#GlifNeuronMethod.modify_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod.modify_parameter" title="Link to this definition">¶</a></dt>
+<dd><p>Modify a function parameter needs to be modified after initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>param</strong><span class="classifier">string</span></dt><dd><p>the name of the parameter to modify</p>
+</dd>
+<dt><strong>operator</strong><span class="classifier">callable</span></dt><dd><p>a function or lambda that returns the desired modified value</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>type</dt><dd><p>the new value of the variable that was just modified.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#GlifNeuronMethod.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.GlifNeuronMethod.to_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_AScurrent_exp">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_AScurrent_exp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_time_steps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_AScurrent_exp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_AScurrent_exp" title="Link to this definition">¶</a></dt>
+<dd><p>Exponential afterspike current dynamics method takes a current at t0 and returns the current at
+a time step later.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_AScurrent_none">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_AScurrent_none</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_step</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_time_steps</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_AScurrent_none"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_AScurrent_none" title="Link to this definition">¶</a></dt>
+<dd><p>This method always returns zeros for the afterspike currents, regardless of input.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_threshold_inf">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_threshold_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_threshold_inf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_threshold_inf" title="Link to this definition">¶</a></dt>
+<dd><p>Set threshold to the neuron’s instantaneous threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>neuron</strong><span class="classifier">class</span></dt><dd></dd>
+<dt><strong>threshold_t0</strong><span class="classifier">not used here</span></dt><dd></dd>
+<dt><strong>voltage_t0</strong><span class="classifier">not used here</span></dt><dd></dd>
+<dt><strong>AScurrents_t0</strong><span class="classifier">not used here</span></dt><dd></dd>
+<dt><strong>inj</strong><span class="classifier">not used here</span></dt><dd></dd>
+<dt><strong>AScurrents_t0</strong><span class="classifier">not used here</span></dt><dd></dd>
+<dt><strong>inj</strong><span class="classifier">not used here</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_threshold_spike_component">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_threshold_spike_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_voltage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_threshold_spike_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_threshold_spike_component" title="Link to this definition">¶</a></dt>
+<dd><p>Analytical solution for spike component of threshold. The threshold will adapt via 
+a component initiated by a spike which decays as an exponential.  The component is in 
+reference to threshold infinity and are recorded in the neuron’s threshold components.  The voltage 
+component of the threshold is set to zero in the threshold components  because it is zero here  
+The third component refers to th_inf which is added separately as opposed to being 
+included in the voltage component of the threshold as is done in equation 2.1 of
+Mihalas and Nieber 2009.  Threshold infinity is removed for simple optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>neuron</strong><span class="classifier">class</span></dt><dd></dd>
+<dt><strong>threshold_t0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>voltage_t0</strong><span class="classifier">float</span></dt><dd><p>voltage input to function</p>
+</dd>
+<dt><strong>AScurrents_t0</strong><span class="classifier">vector</span></dt><dd><p>values of after spike currents</p>
+</dd>
+<dt><strong>inj</strong><span class="classifier">float</span></dt><dd><p>current injected into the neuron</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_threshold_three_components_exact">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_threshold_three_components_exact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_voltage</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_threshold_three_components_exact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_threshold_three_components_exact" title="Link to this definition">¶</a></dt>
+<dd><p>Analytical solution for threshold dynamics. The threshold will adapt via two mechanisms: 
+1. a voltage dependent adaptation.  
+2. a component initiated by a spike which decays as an exponential.  
+These two component are in reference to threshold infinity and are recorded 
+in the neuron’s threshold components.
+The third component refers to th_inf which is added separately as opposed to being 
+included in the voltage component of the threshold as is done in equation 2.1 of
+Mihalas and Nieber 2009.  Threshold infinity is removed for simple optimization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>neuron</strong><span class="classifier">class</span></dt><dd></dd>
+<dt><strong>threshold_t0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>voltage_t0</strong><span class="classifier">float</span></dt><dd><p>voltage input to function</p>
+</dd>
+<dt><strong>AScurrents_t0</strong><span class="classifier">vector</span></dt><dd><p>values of after spike currents</p>
+</dd>
+<dt><strong>inj</strong><span class="classifier">float</span></dt><dd><p>current injected into the neuron</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_voltage_linear_exact">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_voltage_linear_exact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_voltage_linear_exact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_voltage_linear_exact" title="Link to this definition">¶</a></dt>
+<dd><p>(TODO) Linear voltage dynamics.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.dynamics_voltage_linear_forward_euler">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">dynamics_voltage_linear_forward_euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#dynamics_voltage_linear_forward_euler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.dynamics_voltage_linear_forward_euler" title="Link to this definition">¶</a></dt>
+<dd><p>(TODO) Linear voltage dynamics.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.max_of_line_and_const">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">max_of_line_and_const</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#max_of_line_and_const"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.max_of_line_and_const" title="Link to this definition">¶</a></dt>
+<dd><p>Find the maximum of a value and a position on a line</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x: float</strong></dt><dd><p>x position on line 1</p>
+</dd>
+<dt><strong>c: float</strong></dt><dd><p>slope of line 1</p>
+</dd>
+<dt><strong>d: float</strong></dt><dd><p>y-intercept of line 1</p>
+</dd>
+<dt><strong>b: float</strong></dt><dd><p>y-intercept of line 2</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>float</dt><dd><p>the max of a line value and a constant</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.min_of_line_and_zero">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">min_of_line_and_zero</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#min_of_line_and_zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.min_of_line_and_zero" title="Link to this definition">¶</a></dt>
+<dd><p>Find the minimum of a value and a position on a line</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x: float</strong></dt><dd><p>x position on line 1</p>
+</dd>
+<dt><strong>c: float</strong></dt><dd><p>slope of line 1</p>
+</dd>
+<dt><strong>d: float</strong></dt><dd><p>y-intercept of line 1</p>
+</dd>
+<dt><strong>b: float</strong></dt><dd><p>y-intercept of line 2</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt>float</dt><dd><p>the max of a line value and a constant</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_AScurrent_none">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_AScurrent_none</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_AScurrent_none"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_AScurrent_none" title="Link to this definition">¶</a></dt>
+<dd><p>Reset afterspike currents to zero.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_AScurrent_sum">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_AScurrent_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AScurrents_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_AScurrent_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_AScurrent_sum" title="Link to this definition">¶</a></dt>
+<dd><p>Reset afterspike currents by adding summed exponentials. Left over currents from last spikes as 
+well as newly initiated currents from current spike.  Currents amplitudes in neuron.asc_amp_array need
+to be the amplitudes advanced though the spike cutting.  I.e. In the preprocessor if the after spike currents 
+are calculated via the GLM from spike initiation the amplitude at the time after the spike cutting needs to 
+be calculated and neuron.asc_amp_array needs to be set to this value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>r</strong><span class="classifier">np.ndarray</span></dt><dd><p>a coefficient vector applied to the afterspike currents</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_threshold_inf">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_threshold_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_v1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_threshold_inf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_threshold_inf" title="Link to this definition">¶</a></dt>
+<dd><p>Reset the threshold to instantaneous threshold.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_threshold_three_components">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_threshold_three_components</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_v1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_threshold_three_components"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_threshold_three_components" title="Link to this definition">¶</a></dt>
+<dd><p>This method calculates the two components of the threshold: a spike (fast)
+component and a voltage (slow) component.  The threshold_components vectors are then 
+updated so that the traces match the voltage, current, and total threshold traces.  The
+spike component of the threshold decays via an exponential fit specified by the amplitude
+a_spike and the time constant b_spike fit via the multiblip data.  The voltage component 
+does not change during the duration of the spike.  The 
+spike component are threshold component are summed along with threshold infinity to 
+return the total threshold.  Note that in the current implementation a_spike is added to 
+the last value of the threshold_components which means that a_spike is the amplitude after 
+spike cutting (if there is any).</p>
+<dl class="simple">
+<dt>Inputs:  </dt><dd><dl class="simple">
+<dt>neuron: class</dt><dd><p>contains attributes of the neuron</p>
+</dd>
+<dt>threshold_t0, voltage_t0: float</dt><dd><p>are not used but are here for consistency with other methods</p>
+</dd>
+<dt>a_spike: float </dt><dd><p>amplitude of the exponential decay of spike component of threshold after spike
+cutting has been implemented.</p>
+</dd>
+<dt>b_spike: float</dt><dd><p>amplitude of the exponential decay of spike component of threshold</p>
+</dd>
+</dl>
+</dd>
+<dt>Outputs:</dt><dd><dl class="simple">
+<dt>Returns: float</dt><dd><p>the total threshold which is the sum of the spike component of threshold, the voltage 
+component of threshold and threshold infinity (with it’s corresponding coefficient)</p>
+</dd>
+<dt>neuron.threshold_components: dictionary containing</dt><dd><dl class="simple">
+<dt>a spike: list</dt><dd><p>vector of spiking component of threshold that corresponds to the voltage, current, 
+and total threshold traces</p>
+</dd>
+<dt>b_spike: list</dt><dd><dl class="simple">
+<dt>vector of voltage component of threshold that corresponds to the voltage, current, </dt><dd><p>and total threshold traces.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Note that this function can be changed to use a_spike at the time of the spike and then have the 
+the spike component plus the residual decay thought the spike.  There are benefits and drawbacks to
+this.  This potential change would be beneficial as it perhaps makes more biological sense for the 
+threshold to go up at the time of spike if the traces are ever used.  Also this would mean that a_spike
+would not have to be adjusted thought the spike cutting after the multiblip fit.  However the current 
+implementation makes sense in that it is similar to how afterspike currents are implemented.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_voltage_v_before">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_voltage_v_before</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_voltage_v_before"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_voltage_v_before" title="Link to this definition">¶</a></dt>
+<dd><p>Reset voltage to the previous value with a scale and offset applied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>a</strong><span class="classifier">float</span></dt><dd><p>voltage scale constant</p>
+</dd>
+<dt><strong>b</strong><span class="classifier">float</span></dt><dd><p>voltage offset constant</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.reset_voltage_zero">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">reset_voltage_zero</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">neuron</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage_t0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#reset_voltage_zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.reset_voltage_zero" title="Link to this definition">¶</a></dt>
+<dd><p>Reset voltage to zero.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.spike_component_of_threshold_exact">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">spike_component_of_threshold_exact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">th0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#spike_component_of_threshold_exact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.spike_component_of_threshold_exact" title="Link to this definition">¶</a></dt>
+<dd><p>Spike component of threshold modeled as an exponential decay. Implemented 
+here as exact analytical solution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>th0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>b_spike</strong><span class="classifier">float</span></dt><dd><p>decay constant of exponential</p>
+</dd>
+<dt><strong>t</strong><span class="classifier">float or array</span></dt><dd><p>time step if used in an Euler setup
+time if used analytically</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.spike_component_of_threshold_forward_euler">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">spike_component_of_threshold_forward_euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">th_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#spike_component_of_threshold_forward_euler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.spike_component_of_threshold_forward_euler" title="Link to this definition">¶</a></dt>
+<dd><p>Spike component of threshold modeled as an exponential decay. Implemented 
+here for forward Euler</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>th_t0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>b_spike</strong><span class="classifier">float</span></dt><dd><p>decay constant of exponential</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">float</span></dt><dd><p>time step</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.voltage_component_of_threshold_exact">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">voltage_component_of_threshold_exact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">th0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">El</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#voltage_component_of_threshold_exact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.voltage_component_of_threshold_exact" title="Link to this definition">¶</a></dt>
+<dd><p>Note this function is the exact formulation; however, dt is used because t0 is the initial time and dt
+is the time the function is exactly evaluated at. Note: that here, this equation is in reference to th_inf.
+Therefore th0 is the total threshold-thr_inf (threshold_inf replaced with 0 in the equation to be verbose).  
+This is done so that th_inf can be optimized without affecting this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>th0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>v0</strong><span class="classifier">float</span></dt><dd><p>voltage input to function</p>
+</dd>
+<dt><strong>I</strong><span class="classifier">float</span></dt><dd><p>total current entering neuron (note if there are after spike currents these must be included in this value)</p>
+</dd>
+<dt><strong>t</strong><span class="classifier">float or array</span></dt><dd><p>time step if used in an Euler setup
+time if used analytically</p>
+</dd>
+<dt><strong>a_voltage</strong><span class="classifier">float</span></dt><dd><p>constant a</p>
+</dd>
+<dt><strong>b_voltage</strong><span class="classifier">float</span></dt><dd><p>constant b</p>
+</dd>
+<dt><strong>C</strong><span class="classifier">float</span></dt><dd><p>capacitance</p>
+</dd>
+<dt><strong>g</strong><span class="classifier">float</span></dt><dd><p>conductance (1/resistance)</p>
+</dd>
+<dt><strong>El</strong><span class="classifier">float</span></dt><dd><p>reversal potential</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.model.glif.glif_neuron_methods.voltage_component_of_threshold_forward_euler">
+<span class="sig-prename descclassname"><span class="pre">allensdk.model.glif.glif_neuron_methods.</span></span><span class="sig-name descname"><span class="pre">voltage_component_of_threshold_forward_euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">th_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">El</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/model/glif/glif_neuron_methods.html#voltage_component_of_threshold_forward_euler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.model.glif.glif_neuron_methods.voltage_component_of_threshold_forward_euler" title="Link to this definition">¶</a></dt>
+<dd><p>Equation 2.1 of Mihalas and Nieber, 2009 implemented for use in forward Euler. Note 
+here all variables are in reference to threshold infinity.  Therefore thr_inf is zero 
+here (replaced threshold_inf with 0 in the equation to be verbose). This is done so that 
+th_inf can be optimized without affecting this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>th_t0</strong><span class="classifier">float</span></dt><dd><p>threshold input to function</p>
+</dd>
+<dt><strong>v_t0</strong><span class="classifier">float</span></dt><dd><p>voltage input to function</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">float</span></dt><dd><p>time step</p>
+</dd>
+<dt><strong>a_voltage</strong><span class="classifier">float</span></dt><dd><p>constant a</p>
+</dd>
+<dt><strong>b_voltage</strong><span class="classifier">float</span></dt><dd><p>constant b</p>
+</dd>
+<dt><strong>El</strong><span class="classifier">float</span></dt><dd><p>reversal potential</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

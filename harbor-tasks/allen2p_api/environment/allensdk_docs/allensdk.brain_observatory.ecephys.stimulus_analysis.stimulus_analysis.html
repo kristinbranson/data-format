@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis module &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="allensdk.brain_observatory.ecephys.stimulus_table package" href="allensdk.brain_observatory.ecephys.stimulus_table.html" />
+    <link rel="prev" title="allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings module" href="allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis">
+<span id="allensdk-brain-observatory-ecephys-stimulus-analysis-stimulus-analysis-module"></span><h1>allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis module<a class="headerlink" href="#module-allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">StimulusAnalysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ecephys_session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trial_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.METRICS_COLUMNS">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">METRICS_COLUMNS</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.METRICS_COLUMNS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.conditionwise_psth">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">conditionwise_psth</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.conditionwise_psth" title="Link to this definition">¶</a></dt>
+<dd><p>For every unit and stimulus-condition construction a PSTH table.
+ie. the spike-counts at a each time-interval
+during a stimulus, averaged over all trials of the same stim condition.</p>
+<p>Each PSTH will count and average spikes over a time-window as
+determined by class parameter ‘trial_duration’
+which ideally be a similar value as the duration of each stimulus (
+in seconds). The length of each time-bin
+is determined by the class parameter ‘psth_resolution’ (in seconds).</p>
+<dl class="field-list">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt>conditionwise_psth xarray.DataArray</dt><dd><p>An 3D table that contains the PSTH for every unit/condition,
+with the following coordinates</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>stimulus_condition_id</p></li>
+<li><p>time_relative_to_stimulus_onset</p></li>
+<li><p>unit_id</p></li>
+</ul>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.conditionwise_statistics">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">conditionwise_statistics</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.conditionwise_statistics" title="Link to this definition">¶</a></dt>
+<dd><p>Create a table of spike statistics, averaged and indexed by every
+unit_id, stimulus_condition_id pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>conditionwise_statistics: pd.DataFrame</dt><dd><p>A dataframe indexed by unit_id and stimulus_condition containing
+spike_count, spike_mean, spike_sem,
+spike_std and stimulus_presentation_count information.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.ecephys_session">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ecephys_session</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.ecephys_session" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.empty_metrics_table">
+<span class="sig-name descname"><span class="pre">empty_metrics_table</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis.empty_metrics_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.empty_metrics_table" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.get_intrinsic_timescale">
+<span class="sig-name descname"><span class="pre">get_intrinsic_timescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_ids</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis.get_intrinsic_timescale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.get_intrinsic_timescale" title="Link to this definition">¶</a></dt>
+<dd><p>Calculates the intrinsic timescale for a subset of units</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.known_spontaneous_keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">known_spontaneous_keys</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.known_spontaneous_keys" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.known_stimulus_keys">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">known_stimulus_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis.known_stimulus_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.known_stimulus_keys" title="Link to this definition">¶</a></dt>
+<dd><p>Used for discovering the correct stimulus_name key for a given
+StimulusAnalysis subclass (when stimulus_key
+is not explicity set). Should return a list of “stimulus_name” strings.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metrics</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a pandas DataFrame of the stimulus response metrics for
+each unit.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics_dtypes">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metrics_dtypes</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics_dtypes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics_names">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metrics_names</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.metrics_names" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.name" title="Link to this definition">¶</a></dt>
+<dd><p>Return the stimulus name.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.null_condition">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">null_condition</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.null_condition" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.plot_conditionwise_raster">
+<span class="sig-name descname"><span class="pre">plot_conditionwise_raster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis.plot_conditionwise_raster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.plot_conditionwise_raster" title="Link to this definition">¶</a></dt>
+<dd><p>Plot a matrix of rasters for each condition (orientations x
+temporal frequencies)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.plot_raster">
+<span class="sig-name descname"><span class="pre">plot_raster</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#StimulusAnalysis.plot_raster"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.plot_raster" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.presentationwise_spike_times">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">presentationwise_spike_times</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.presentationwise_spike_times" title="Link to this definition">¶</a></dt>
+<dd><p>Constructs a table containing all the relevant spike_times plus
+the stimulus_presentation_id and unit_id
+for the given spike.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>presentationwise_spike_times</strong><span class="classifier">pd.DataFrame</span></dt><dd><p>Indexed by spike_time, each spike containing the corresponding
+stimulus_presentation_id and unit_id</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.presentationwise_statistics">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">presentationwise_statistics</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.presentationwise_statistics" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a table of the spike-counts, stimulus-conditions and
+running speed for every stimulus_presentation_id
+, unit_id pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>presentationwise_statistics: pd.DataFrame</dt><dd><p>MultiIndex : unit_id, stimulus_presentation_id
+Columns : spike_count, stimulus_condition_id, running_speed</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.running_speed">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">running_speed</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.running_speed" title="Link to this definition">¶</a></dt>
+<dd><p>Construct a dataframe with the averaged running speed for each
+stimulus_presenation_id</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.spikes">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">spikes</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.spikes" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of unit_id -&gt; spike-times.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stim_table">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stim_table</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stim_table" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stim_table_spontaneous">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stim_table_spontaneous</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stim_table_spontaneous" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a stimulus table with only ‘spontaneous’ stimulus
+selected.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stimulus_conditions">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stimulus_conditions</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.stimulus_conditions" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a table of relevant stimulus_conditions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>Index : stimulus_condition_id
+Columns : stimulus parameter types</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.total_presentations">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">total_presentations</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.total_presentations" title="Link to this definition">¶</a></dt>
+<dd><p>Total nmber of presentations / trials</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.trial_duration">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">trial_duration</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.trial_duration" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.unit_count">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">unit_count</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.unit_count" title="Link to this definition">¶</a></dt>
+<dd><p>Get the number of units.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.unit_ids">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">unit_ids</span></span><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.StimulusAnalysis.unit_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a list of unit IDs for which to apply the analysis</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.calculate_time_delayed_correlation">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">calculate_time_delayed_correlation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#calculate_time_delayed_correlation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.calculate_time_delayed_correlation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.deg2rad">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">deg2rad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#deg2rad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.deg2rad" title="Link to this definition">¶</a></dt>
+<dd><p>Converts array-like input from degrees to radians</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.dsi">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">dsi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orivals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#dsi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.dsi" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the direction selectivity of a cell. See Ringbach 2002,
+Van Hooser 2014</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ori_vals</strong><span class="classifier">complex array of length N</span></dt><dd><p>Each value the oriention of the stimulus.</p>
+</dd>
+<dt><strong>tuning</strong><span class="classifier">float array of length N</span></dt><dd><p>Each value the (averaged) response of the cell at a different
+orientation.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>osi</strong><span class="classifier">float</span></dt><dd><p>An N-dimensional array of the circular variance (scalar value,
+in radians) of the responses.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.fano_factor">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">fano_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spike_counts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#fano_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.fano_factor" title="Link to this definition">¶</a></dt>
+<dd><p>Computers the fano factor (var/mean) for the spike-counts across a
+series of trials.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>spike_counts</strong><span class="classifier">array</span></dt><dd><p>The spike counts across a series of 2 or more trials</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>fano_factor</strong><span class="classifier">float</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.fit_exp">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">fit_exp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rsc_time_matrix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#fit_exp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.fit_exp" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.get_fr">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">get_fr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spikes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_timestep_second</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sweep_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#get_fr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.get_fr" title="Link to this definition">¶</a></dt>
+<dd><p>Uses a gaussian convolution to convert the spike-times into a
+contiguous firing-rate series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>spikes</strong><span class="classifier">array</span></dt><dd><p>An array of spike times (shifted to start at 0)</p>
+</dd>
+<dt><strong>num_timestep_second</strong><span class="classifier">float</span></dt><dd><p>The sampling frequency</p>
+</dd>
+<dt><strong>sweep_length</strong><span class="classifier">float</span></dt><dd><p>The lenght of the returned array</p>
+</dd>
+<dt><strong>filter_width: float</strong></dt><dd><p>The window of the gaussian method</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>firing_rate</strong><span class="classifier">float</span></dt><dd><p>A linear-spaced array of length num_timestep_second*sweep_length of
+the smoothed firing rates series.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.lifetime_sparseness">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">lifetime_sparseness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">responses</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#lifetime_sparseness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.lifetime_sparseness" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the lifetime sparseness for one unit. See Olsen &amp; Wilson 2008.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>responses</strong><span class="classifier">array of floats</span></dt><dd><p>An array of a unit’s spike-counts over the duration of multiple
+trials within a given session</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>lifetime_sparsness</strong><span class="classifier">float</span></dt><dd><p>The lifetime sparseness for one unit</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.osi">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">osi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orivals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tuning</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#osi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.osi" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the orientation selectivity of a cell. The calculation of
+the orientation is done using the normalized
+circular variance (CirVar) as described in Ringbach 2002</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ori_vals</strong><span class="classifier">complex array of length N</span></dt><dd><p>Each value the oriention of the stimulus.</p>
+</dd>
+<dt><strong>tuning</strong><span class="classifier">float array of length N</span></dt><dd><p>Each value the (averaged) response of the cell at a different
+orientation.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>osi</strong><span class="classifier">float</span></dt><dd><p>An N-dimensional array of the circular variance (scalar value,
+in radians) of the responses.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.overall_firing_rate">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">overall_firing_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#overall_firing_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.overall_firing_rate" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the global firing rate of a series of spikes, for only those
+values within the given start and stop times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>start_times</strong><span class="classifier">array of N floats</span></dt><dd><p>A series of stimulus block start times (seconds)</p>
+</dd>
+<dt><strong>stop_times</strong><span class="classifier">array of N floats</span></dt><dd><p>Times when the stimulus block ends</p>
+</dd>
+<dt><strong>spike_times</strong><span class="classifier">array of floats</span></dt><dd><p>A list of spikes for a given unit</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>firing_rate</strong><span class="classifier">float</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.reliability">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">reliability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unit_sweeps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_timestep_second</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_beg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#reliability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.reliability" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the trial-to-trial reliability for a set of sweeps for a
+given cell</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unit_sweeps</strong></p></li>
+<li><p><strong>padding</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.running_modulation">
+<span class="sig-prename descclassname"><span class="pre">allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.</span></span><span class="sig-name descname"><span class="pre">running_modulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spike_counts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running_speeds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/brain_observatory/ecephys/stimulus_analysis/stimulus_analysis.html#running_modulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.brain_observatory.ecephys.stimulus_analysis.stimulus_analysis.running_modulation" title="Link to this definition">¶</a></dt>
+<dd><p>Given a series of trials that include the spike-counts and (averaged)
+running-speed, does a statistical
+comparison to see if there was any difference in spike firing while
+running and while stationary.</p>
+<p>Requires at least 2 trials while the mouse is running and two when the
+mouse is stationary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>spike_counts</strong><span class="classifier">array of floats of size N.</span></dt><dd><p>The spike counts for each trial</p>
+</dd>
+<dt><strong>running_speeds: array floats of size N.</strong></dt><dd><p>The running velocities (cm/s) of each trial.</p>
+</dd>
+<dt><strong>speed_threshold: float</strong></dt><dd><p>The minimum threshold for which the animal can be considered running
+(default 1.0).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>p_value</strong><span class="classifier">float or Nan</span></dt><dd><p>T-test p-value between the running and stationary trials.</p>
+</dd>
+<dt><strong>run_mod</strong><span class="classifier">float or Nan</span></dt><dd><p>Relative difference between running and stationary mean firing rates.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

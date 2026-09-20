@@ -1,0 +1,396 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recording data access &mdash; ONE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/style.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ALyx Filenames (ALF)" href="../alf_intro.html" />
+    <link rel="prev" title="Releasing data with ONE" href="data_sharing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ONE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Using ONE to access data</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../one_reference.html">Introduction to ONE (Open Neurophysiology Environment)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../one_installation.html">ONE installation and setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="one_quickstart.html">ONE Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="one_search/one_search.html">Searching with ONE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="one_list/one_list.html">Listing with ONE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="one_load/one_load.html">Loading with ONE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experiment_ids.html">Experiment IDs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Using ONE with Alyx</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="one_modes.html">ONE API modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="one_advanced/one_advanced.html">ONE REST queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="useful_alyx_queries.html">Useful Alyx REST queries</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Using ONE to share data</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="data_sharing.html">Releasing data with ONE</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Recording data access</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#How-to-set-up-and-save">How to set up and save</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#Data-reproducibility">Data reproducibility</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Saving-the-data-access-tables">Saving the data access tables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example-1:-Saving-the-access-tables">Example 1: Saving the access tables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Example-2:-Save-tables-to-different-location">Example 2: Save tables to different location</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Setting-a-revision-date">Setting a revision date</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Example:">Example:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Guide-to-running-ONE-with-multi-processes-workflows.">Guide to running ONE with multi-processes workflows.</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">ALF</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../alf_intro.html">ALyx Filenames (ALF)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="alyx_files.html">Listing Alyx Filenames</a></li>
+<li class="toctree-l1"><a class="reference internal" href="alf_paths.html">ALF Path objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="datasets_and_types.html">Datasets and their types</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Misc</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../FAQ.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../genindex.html">Index</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ONE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Recording data access</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/notebooks/recording_data_access.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <a href="recording_data_access.ipynb"><button id="download">Download tutorial notebook</button></a>
+<a href="https://github.com/int-brain-lab/ONE/tree/main/docs/notebooks/
+recording_data_access.ipynb"><button id="github">Github link</button></a><section id="Recording-data-access">
+<h1>Recording data access<a class="headerlink" href="#Recording-data-access" title="Link to this heading"></a></h1>
+<p>When working with huge data repositories it can be worthwhile to record the subset of data used for a given analysis. ONE can keep track of which datasets were loaded via the <code class="docutils literal notranslate"><span class="pre">load_*</span></code> methods.</p>
+<p>Only datasets that were successfully loaded are recorded; missing datasets are ignored.</p>
+<section id="How-to-set-up-and-save">
+<h2>How to set up and save<a class="headerlink" href="#How-to-set-up-and-save" title="Link to this heading"></a></h2>
+<p>At the top of your analysis script, after instantiating ONE, simply set the <code class="docutils literal notranslate"><span class="pre">record_loaded</span></code> attribute to True:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">one</span><span class="o">.</span><span class="n">record_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>At the end of your analysis script, you can save the data by calling <code class="docutils literal notranslate"><span class="pre">one.save_loaded_ids()</span></code>. By default this will save the dataset UUIDs to a CSV file in the root of your cache directory and will clear the list of dataset UUIDs. The <code class="docutils literal notranslate"><span class="pre">sessions_only</span></code> kwarg will save the <a class="reference external" href="./experiment_ids">eids</a> instead.</p>
+<div class="admonition note">
+<p class="admonition-title fa fa-exclamation-circle">Note.</p>
+<p>Within a Python session, calling ONE again with the same arguments (from any location) will return the previous object, therefore if you want to stop recording dataset UUIDs you must explicitly set <code class="docutils literal notranslate"><span class="pre">record_loaded</span></code> to False, e.g. <code class="docutils literal notranslate"><span class="pre">ONE().record_loaded</span> <span class="pre">=</span> <span class="pre">False</span></code>.</p>
+</div>
+</section>
+<section id="Example">
+<h2>Example<a class="headerlink" href="#Example" title="Link to this heading"></a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="s1">'https://openalyx.internationalbrainlab.org'</span><span class="p">)</span>
+
+<span class="c1"># Turn on recording of loaded dataset UUIDs</span>
+<span class="n">one</span><span class="o">.</span><span class="n">record_loaded</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="c1"># Load some trials data</span>
+<span class="n">eid</span> <span class="o">=</span> <span class="s1">'KS023/2019-12-10/001'</span>
+<span class="n">dsets</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">load_object</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="s1">'trials'</span><span class="p">)</span>
+
+<span class="c1"># Load another dataset</span>
+<span class="n">eid</span> <span class="o">=</span> <span class="s1">'CSHL049/2020-01-08/001'</span>
+<span class="n">dset</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="s1">'probes.description'</span><span class="p">)</span>
+
+<span class="c1"># Save the dataset IDs to file</span>
+<span class="n">dataset_uuids</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">save_loaded_ids</span><span class="p">(</span><span class="n">clear_list</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">'</span><span class="se">\n\n</span><span class="s1">'</span><span class="p">)</span>
+
+<span class="c1"># Save the session IDs</span>
+<span class="n">session_uuids</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">save_loaded_ids</span><span class="p">(</span><span class="n">sessions_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+F:\FlatIron\openalyx.internationalbrainlab.org\2022-02-24T13-37-07_loaded_dataset_uuids.csv
+                            dataset_uuid
+0   0bc9607d-0a72-4c5c-8b9d-e239a575ff67
+1   16c81eaf-a032-49cd-9823-09c0c7350fd2
+2   2f4cc220-55b9-4fb3-9692-9aaa5362288f
+3   4ee1110f-3ff3-4e26-87b0-41b687f75ce3
+4   63aa7dea-1ee2-4a0c-88bc-00b5cba6b8b0
+5   69236a5d-1e4a-4bea-85e9-704492756848
+6   6b94f568-9bb6-417c-9423-a84559f403d5
+7   82237144-41bb-4e7f-9ef4-cabda4381d9f
+8   91f08c6d-7ee0-487e-adf5-9c751769af06
+9   b77d2665-876e-41e7-ac57-aa2854c5d5cd
+10  c14d8683-3706-4e44-a8d2-cd0e2bfd4579
+11  c8cd43a7-b443-4342-8c37-aa93a2067447
+12  d078bfc8-214d-4682-8621-390ad74dd6d5
+13  d11d7b33-3a96-4ea6-849f-5448a97d3fc1
+14  d73f567a-5799-4051-9bc8-6f0fd6bb478b
+15  e1793e9d-cd96-4cb6-9fd7-a6b662c41971
+16  fceb8cfe-77b4-4177-a6af-44fbf51b33d0
+
+F:\FlatIron\openalyx.internationalbrainlab.org\2022-02-24T13-37-07_loaded_session_uuids.csv
+                           session_uuid
+0  4b7fbad4-f6de-43b4-9b15-c7c7ef44db4b
+1  aad23144-0e52-4eac-80c5-c4ee2decb198
+</pre></div></div>
+</div>
+</section>
+</section>
+<section id="Data-reproducibility">
+<h1>Data reproducibility<a class="headerlink" href="#Data-reproducibility" title="Link to this heading"></a></h1>
+<p>The Alyx database may be periodically updated with revised datasets. Data revisions occur when a session is preprocessed with a better algorithm. Typically the newest revision will be considered the default one to load. Therefore, to ensure the results of an analysis don’t change unexpectedly, either of the below two methods can be used to ‘freeze’ the data.</p>
+<section id="Saving-the-data-access-tables">
+<h2>Saving the data access tables<a class="headerlink" href="#Saving-the-data-access-tables" title="Link to this heading"></a></h2>
+<p>When search and load queries are made, the results are stored in memory. These access tables can be saved to disk then used by ONE in <a class="reference external" href="./one_modes">local mode</a>. First, run your analysis code with the various search and load queries to build up the access tables in memory, then save them using the <code class="docutils literal notranslate"><span class="pre">save_cache</span></code> method.</p>
+<div class="admonition note">
+<p class="admonition-title fa fa-exclamation-circle">Note.</p>
+<p>Unlike the <code class="docutils literal notranslate"><span class="pre">record_loaded</span></code> option above, these access tables contain the results of all session and dataset queries, not just a list of loaded datasets.</p>
+</div>
+<section id="Example-1:-Saving-the-access-tables">
+<h3>Example 1: Saving the access tables<a class="headerlink" href="#Example-1:-Saving-the-access-tables" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">()</span>
+
+<span class="o">...</span> <span class="c1"># Run one.search and one.load_* methods here</span>
+
+<span class="c1"># Save the tables to disk</span>
+<span class="n">one</span><span class="o">.</span><span class="n">save_cache</span><span class="p">()</span>
+
+<span class="c1"># To use these tables in a new session, initialize ONE in local mode</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'local'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>When the access tables are saved in the default location they will be loaded by default each time ONE is instantiated, however they won’t be used unless either mode is set to ‘local’, or a method is called with <code class="docutils literal notranslate"><span class="pre">query_type='local'</span></code>. The access tables can be reset at any time by calling <code class="docutils literal notranslate"><span class="pre">one.reset_cache</span></code>. Additionally, when saving, if tables already exist on disk, they will be merged and updated. To fully overwrite the tables on disk, use <code class="docutils literal notranslate"><span class="pre">clobber=True</span></code> in the <code class="docutils literal notranslate"><span class="pre">save_cache</span></code> method.</p>
+</section>
+<section id="Example-2:-Save-tables-to-different-location">
+<h3>Example 2: Save tables to different location<a class="headerlink" href="#Example-2:-Save-tables-to-different-location" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">()</span>
+
+<span class="o">...</span> <span class="c1"># Run one.search and one.load_* methods here</span>
+
+<span class="c1"># Save the tables to disk, overwriting any existing tables</span>
+<span class="n">one</span><span class="o">.</span><span class="n">save_cache</span><span class="p">(</span><span class="n">one</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s1">'my_analysis_tables'</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># To use these tables in a new session, initialize ONE in local mode</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'local'</span><span class="p">)</span>  <span class="c1"># tables_dir may also be passed as a kwarg here</span>
+<span class="c1"># The tables must be manually loaded as they are not in the default location</span>
+<span class="n">one</span><span class="o">.</span><span class="n">load_cache</span><span class="p">(</span><span class="n">one</span><span class="o">.</span><span class="n">cache_dir</span> <span class="o">/</span> <span class="s1">'my_analysis_tables'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The saved access tables are .pqt files that can also be manually shared with other users.</p>
+<div class="admonition note">
+<p class="admonition-title fa fa-exclamation-circle">Note.</p>
+<p>If a dataset is deleted from the database it will only be loadable if the file still exists locally.</p>
+</div>
+</section>
+</section>
+<section id="Setting-a-revision-date">
+<h2>Setting a revision date<a class="headerlink" href="#Setting-a-revision-date" title="Link to this heading"></a></h2>
+<p>Another way to reproduce data access on a certain date is to use the <code class="docutils literal notranslate"><span class="pre">ONE_REVISION_LAST_BEFORE</span></code> environment variable. With this variable set to an ISO formatted date, any datasets with a revision newer than this date are ignored. Similarly, a user can pass this date into the load methods using the <code class="docutils literal notranslate"><span class="pre">revision</span></code> kwarg.</p>
+<section id="Example:">
+<h3>Example:<a class="headerlink" href="#Example:" title="Link to this heading"></a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">'ONE_REVISION_LAST_BEFORE'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'2024-04-01'</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">()</span>
+
+<span class="n">eid</span> <span class="o">=</span> <span class="s1">'b52182e7-39f6-4914-9717-136db589706e'</span>
+<span class="n">dsets</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">list_datasets</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s1">'drift.times.npy'</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s1">'alf/probe00/pykilosort'</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dsets</span><span class="p">)</span>  <span class="c1"># shows at least two versions of this dataset</span>
+
+<span class="n">file</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">eid</span><span class="p">,</span> <span class="s1">'drift.times.npy'</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="s1">'alf/probe00/pykilosort'</span><span class="p">,</span> <span class="n">download_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">relative_to_session</span><span class="p">())</span>  <span class="c1"># shows the older version of this dataset</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;alf/probe00/pykilosort/#2024-05-06#/drift.times.npy&#39;, &#39;alf/probe00/pykilosort/drift.times.npy&#39;]
+alf\probe00\pykilosort\drift.times.npy
+</pre></div></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title fa fa-exclamation-circle">Warning.</p>
+<p>If a dataset’s QC is set to CRITICAL it will no longer be loadable, even with the <code class="docutils literal notranslate"><span class="pre">ONE_REVISION_LAST_BEFORE</span></code>. Additionally, if a dataset is removed from the database it will be no longer loadable. In these cases, saving data access tables is more robust.</p>
+</div>
+</section>
+</section>
+<section id="Guide-to-running-ONE-with-multi-processes-workflows.">
+<h2>Guide to running ONE with multi-processes workflows.<a class="headerlink" href="#Guide-to-running-ONE-with-multi-processes-workflows." title="Link to this heading"></a></h2>
+<p>When using ONE with multiple processes and making simultaneous requests to the remote database, these requests can lead to connection errors like JSON.DecodeError and HTTPError.</p>
+<p>To get around these errors, it is very useful to generate the above mentioned parquet files containing the cache data. Then ONE can be initialized in local mode and the saved cache can be loaded. This ensures no additional database requests are made during the parallel run, and hence no connection errors.</p>
+<p>Below is an example, where all the probe-insertions for a project which have the spike sorting data are first queried and then the cache is saved. ## Example</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">batched</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.converters</span><span class="w"> </span><span class="kn">import</span> <span class="n">datasets2records</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.alf.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_tables</span>
+
+<span class="c1"># To generate the cache, we need to use the remote mode of ONE</span>
+<span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">()</span>
+<span class="c1">#Get the list of eids that have the spikes.times.npy dataset.</span>
+<span class="n">eids</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s1">'u19_proj1_multiareacom'</span><span class="p">,</span> <span class="n">datasets</span><span class="o">=</span><span class="s1">'spikes.times.npy'</span><span class="p">)</span>
+<span class="c1"># Update datasets</span>
+<span class="c1">#Batching is being done to avoid multiple requests to the database.</span>
+<span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batched</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">eids</span><span class="p">),</span> <span class="mi">50</span><span class="p">):</span>
+    <span class="c1"># these rest queries update the one._cache object in memory</span>
+    <span class="n">dsets</span> <span class="o">=</span> <span class="n">one</span><span class="o">.</span><span class="n">alyx</span><span class="o">.</span><span class="n">rest</span><span class="p">(</span><span class="s1">'datasets'</span><span class="p">,</span> <span class="s1">'list'</span><span class="p">,</span> <span class="n">django</span><span class="o">=</span><span class="sa">f</span><span class="s1">'session__in,</span><span class="si">{</span><span class="n">batch</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">datasets2records</span><span class="p">(</span><span class="n">dsets</span><span class="p">)</span>
+    <span class="n">merge_tables</span><span class="p">(</span><span class="n">one</span><span class="o">.</span><span class="n">_cache</span><span class="p">,</span> <span class="n">datasets</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">one</span><span class="o">.</span><span class="n">alyx</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+
+
+<span class="c1">#Provide the location of the directory where the cache will be saved.</span>
+<span class="n">one</span><span class="o">.</span><span class="n">save_cache</span><span class="p">(</span><span class="s2">"mutli_area_cache"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The above script will save <code class="docutils literal notranslate"><span class="pre">datasets.pqt</span></code> and <code class="docutils literal notranslate"><span class="pre">sessions.pqt</span></code> file in the directory <code class="docutils literal notranslate"><span class="pre">mutli_area_cache</span></code>.</p>
+<p>You can then initialize ONE in local mode within your parallelized scripts - whether using SLURM, joblib, or multiprocessing.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">one.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ONE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">joblib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">one</span> <span class="o">=</span> <span class="n">ONE</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'local'</span><span class="p">,</span> <span class="n">tables_dir</span><span class="o">=</span><span class="s2">"/path/to/mutli_area_cache"</span><span class="p">)</span>
+    <span class="n">eid_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'eid1'</span><span class="p">,</span> <span class="s1">'eid2'</span><span class="p">,</span> <span class="s1">'eid3'</span><span class="p">]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">10</span><span class="p">)(</span><span class="n">delayed</span><span class="p">(</span><span class="n">one</span><span class="o">.</span><span class="n">list_collections</span><span class="p">)(</span><span class="n">eid</span><span class="p">)</span> <span class="k">for</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">eid_list</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="data_sharing.html" class="btn btn-neutral float-left" title="Releasing data with ONE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../alf_intro.html" class="btn btn-neutral float-right" title="ALyx Filenames (ALF)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, International Brain Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

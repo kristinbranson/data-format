@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.sync.process_sync &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.sync.process_sync</h1><div class="highlight"><pre>
+<span></span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="filter_digital">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.sync.process_sync.html#allensdk.brain_observatory.behavior.sync.process_sync.filter_digital">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_digital</span><span class="p">(</span><span class="n">rising</span><span class="p">,</span> <span class="n">falling</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.0001</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Removes short transients from digital signal.</span>
+
+<span class="sd">    Rising and falling should be same length and units</span>
+<span class="sd">        in seconds.</span>
+
+<span class="sd">    Kwargs:</span>
+<span class="sd">        threshold (float): transient width</span>
+<span class="sd">    """</span>
+    <span class="c1"># forwards (removes low-to-high transients)</span>
+    <span class="n">dif_f</span> <span class="o">=</span> <span class="n">falling</span> <span class="o">-</span> <span class="n">rising</span>
+    <span class="n">falling_f</span> <span class="o">=</span> <span class="n">falling</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dif_f</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span>
+    <span class="n">rising_f</span> <span class="o">=</span> <span class="n">rising</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dif_f</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span>
+    <span class="c1"># backwards (removes high-to-low transients )</span>
+    <span class="n">dif_b</span> <span class="o">=</span> <span class="n">rising_f</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">falling_f</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dif_br</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">threshold</span> <span class="o">*</span> <span class="mi">2</span><span class="p">],</span> <span class="n">dif_b</span><span class="p">)</span>
+    <span class="n">dif_bf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dif_b</span><span class="p">,</span> <span class="p">[</span><span class="n">threshold</span> <span class="o">*</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">rising_f</span> <span class="o">=</span> <span class="n">rising_f</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dif_br</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span>
+    <span class="n">falling_f</span> <span class="o">=</span> <span class="n">falling_f</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dif_bf</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">rising_f</span><span class="p">,</span> <span class="n">falling_f</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_delay">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.sync.process_sync.html#allensdk.brain_observatory.behavior.sync.process_sync.calculate_delay">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_delay</span><span class="p">(</span><span class="n">sync_data</span><span class="p">,</span> <span class="n">stim_vsync_fall</span><span class="p">,</span> <span class="n">sample_frequency</span><span class="p">):</span>
+    <span class="c1"># from http://stash.corp.alleninstitute.org/projects/INF/repos/lims2_modules/browse/CAM/ophys_time_sync/ophys_time_sync.py</span>
+    <span class="n">DELAY_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="n">FIRST_ELEMENT_INDEX</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">ROUND_PRECISION</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">ONE</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'calculating monitor delay'</span><span class="p">)</span>
+
+    <span class="c1"># try:</span>
+    <span class="c1"># photodiode transitions</span>
+    <span class="n">photodiode_rise</span> <span class="o">=</span> <span class="n">sync_data</span><span class="o">.</span><span class="n">get_rising_edges</span><span class="p">(</span><span class="s1">'stim_photodiode'</span><span class="p">)</span> <span class="o">/</span> <span class="n">sample_frequency</span>
+
+    <span class="c1"># Find start and stop of stimulus</span>
+    <span class="c1"># test and correct for photodiode transition errors</span>
+    <span class="n">photodiode_rise_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">photodiode_rise</span><span class="p">)</span>
+    <span class="n">min_short_photodiode_rise</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">max_short_photodiode_rise</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="n">min_medium_photodiode_rise</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">max_medium_photodiode_rise</span> <span class="o">=</span> <span class="mf">1.5</span>
+
+    <span class="c1"># find the short and medium length photodiode rises</span>
+    <span class="n">short_rise_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">photodiode_rise_diff</span> <span class="o">&gt;</span> <span class="n">min_short_photodiode_rise</span><span class="p">,</span>
+                                                    <span class="n">photodiode_rise_diff</span> <span class="o">&lt;</span> <span class="n">max_short_photodiode_rise</span><span class="p">))[</span>
+        <span class="n">FIRST_ELEMENT_INDEX</span><span class="p">]</span>
+    <span class="n">medium_rise_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">photodiode_rise_diff</span> <span class="o">&gt;</span> <span class="n">min_medium_photodiode_rise</span><span class="p">,</span>
+                                                    <span class="n">photodiode_rise_diff</span> <span class="o">&lt;</span> <span class="n">max_medium_photodiode_rise</span><span class="p">))[</span>
+        <span class="n">FIRST_ELEMENT_INDEX</span><span class="p">]</span>
+
+    <span class="n">short_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">short_rise_indexes</span><span class="p">)</span>
+
+    <span class="c1"># iterate through the medium photodiode rise indexes to find the start and stop indexes</span>
+    <span class="c1"># lookng for three rise pattern</span>
+    <span class="n">next_frame</span> <span class="o">=</span> <span class="n">ONE</span>
+    <span class="n">start_pattern_index</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">end_pattern_index</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">ptd_start</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ptd_end</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">medium_rise_index</span> <span class="ow">in</span> <span class="n">medium_rise_indexes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">medium_rise_index</span> <span class="o">-</span> <span class="n">start_pattern_index</span><span class="p">,</span> <span class="n">medium_rise_index</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">short_set</span><span class="p">:</span>
+            <span class="n">ptd_start</span> <span class="o">=</span> <span class="n">medium_rise_index</span> <span class="o">+</span> <span class="n">next_frame</span>
+        <span class="k">elif</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">medium_rise_index</span> <span class="o">+</span> <span class="n">next_frame</span><span class="p">,</span> <span class="n">medium_rise_index</span> <span class="o">+</span> <span class="n">end_pattern_index</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">short_set</span><span class="p">:</span>
+            <span class="n">ptd_end</span> <span class="o">=</span> <span class="n">medium_rise_index</span>
+
+    <span class="c1"># if the photodiode signal exists</span>
+    <span class="k">if</span> <span class="n">ptd_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ptd_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># check to make sure there are no there are no photodiode errors</span>
+        <span class="c1"># sometimes two consecutive photodiode events take place close to each other</span>
+        <span class="c1"># correct this case if it happens</span>
+        <span class="n">photodiode_rise_error_threshold</span> <span class="o">=</span> <span class="mf">1.8</span>
+        <span class="n">last_frame_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># iterate until all of the errors have been corrected</span>
+        <span class="k">while</span> <span class="nb">any</span><span class="p">(</span><span class="n">photodiode_rise_diff</span><span class="p">[</span><span class="n">ptd_start</span><span class="p">:</span><span class="n">ptd_end</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">photodiode_rise_error_threshold</span><span class="p">):</span>
+            <span class="n">error_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">photodiode_rise_diff</span><span class="p">[</span><span class="n">ptd_start</span><span class="p">:</span><span class="n">ptd_end</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">photodiode_rise_error_threshold</span><span class="p">)[</span>
+                <span class="n">FIRST_ELEMENT_INDEX</span><span class="p">]</span> <span class="o">+</span> <span class="n">ptd_start</span>
+            <span class="c1"># remove the bad photodiode event</span>
+            <span class="n">photodiode_rise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">photodiode_rise</span><span class="p">,</span> <span class="n">error_frames</span><span class="p">[</span><span class="n">last_frame_index</span><span class="p">])</span>
+            <span class="n">ptd_end</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">photodiode_rise_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">photodiode_rise</span><span class="p">)</span>
+
+        <span class="c1"># Find the delay</span>
+        <span class="c1"># calculate monitor delay</span>
+        <span class="n">first_pulse</span> <span class="o">=</span> <span class="n">ptd_start</span>
+        <span class="n">number_of_photodiode_rises</span> <span class="o">=</span> <span class="n">ptd_end</span> <span class="o">-</span> <span class="n">ptd_start</span>
+        <span class="n">half_vsync_fall_events_per_photodiode_rise</span> <span class="o">=</span> <span class="mi">60</span>
+        <span class="n">vsync_fall_events_per_photodiode_rise</span> <span class="o">=</span> <span class="n">half_vsync_fall_events_per_photodiode_rise</span> <span class="o">*</span> <span class="mi">2</span>
+
+        <span class="n">delay_rise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">number_of_photodiode_rises</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">photodiode_rise_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_photodiode_rises</span><span class="p">):</span>
+            <span class="n">delay_rise</span><span class="p">[</span><span class="n">photodiode_rise_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">photodiode_rise</span><span class="p">[</span><span class="n">photodiode_rise_index</span> <span class="o">+</span> <span class="n">first_pulse</span><span class="p">]</span> <span class="o">-</span> \
+                <span class="n">stim_vsync_fall</span><span class="p">[(</span><span class="n">photodiode_rise_index</span> <span class="o">*</span> <span class="n">vsync_fall_events_per_photodiode_rise</span><span class="p">)</span> <span class="o">+</span> <span class="n">half_vsync_fall_events_per_photodiode_rise</span><span class="p">]</span>
+
+        <span class="c1"># get a single delay value by finding the mean of all of the delays - skip the last element in the array (the end of the experimenet)</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">delay_rise</span><span class="p">[:</span><span class="n">last_frame_index</span><span class="p">])</span>
+        <span class="n">delay_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">delay_rise</span><span class="p">[:</span><span class="n">last_frame_index</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">delay_std</span> <span class="o">&gt;</span> <span class="n">DELAY_THRESHOLD</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">delay</span><span class="p">)):</span>
+    
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Sync photodiode error needs to be fixed. Using assumed monitor delay: </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span> <span class="n">ROUND_PRECISION</span><span class="p">)))</span>
+            <span class="k">raise</span>
+
+    <span class="c1"># assume delay</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span>
+        <span class="c1"># delay = ASSUMED_DELAY</span>
+    <span class="c1"># except Exception as e:</span>
+    <span class="c1">#     logger.info(e)</span>
+    <span class="c1">#     delay = ASSUMED_DELAY</span>
+    <span class="c1">#     logger.error("Process without photodiode signal. Assumed delay: {}".format(round(delay, ROUND_PRECISION)))</span>
+
+    <span class="k">return</span> <span class="n">delay</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

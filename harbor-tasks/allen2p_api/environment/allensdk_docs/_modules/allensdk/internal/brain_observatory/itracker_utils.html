@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.brain_observatory.itracker_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.brain_observatory.itracker_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">fftconvolve</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.ndimage.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">sobel</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<div class="viewcode-block" id="default_ray">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.default_ray">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_ray</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="rotate_ray">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.rotate_ray">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rotate_ray</span><span class="p">(</span><span class="n">ray</span><span class="p">,</span><span class="n">theta</span><span class="p">):</span>
+
+    <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">ray</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="n">xp</span> <span class="o">=</span> <span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">yp</span> <span class="o">=</span> <span class="o">-</span><span class="n">x</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">yp</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span><span class="n">xp</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="generate_rays">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.generate_rays">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_rays</span><span class="p">(</span><span class="n">image_array</span><span class="p">,</span> <span class="n">seed_pixel</span><span class="p">):</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="mi">18</span> <span class="c1">#200</span>
+
+    <span class="c1">#mag, grad_x, grad_y = sobel_grad(image_array.astype('float'))</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="n">image_array</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">Y</span><span class="p">,</span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">*</span><span class="mf">2.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">N</span>
+    <span class="n">rays</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">tangents</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">ray_grads</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">good_coords_mask</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">y</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">,</span><span class="n">y</span><span class="o">&lt;</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">,</span><span class="n">x</span><span class="o">&lt;</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">angles</span><span class="p">:</span>
+        <span class="n">new_ray</span> <span class="o">=</span> <span class="n">rotate_ray</span><span class="p">(</span><span class="n">default_ray</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">new_ray</span> <span class="o">=</span> <span class="n">new_ray</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">seed_pixel</span>
+        <span class="n">new_ray</span> <span class="o">=</span> <span class="n">new_ray</span><span class="o">.</span><span class="n">T</span>
+
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">good_coords_mask</span><span class="p">(</span><span class="n">new_ray</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">new_ray</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">ym</span> <span class="o">=</span> <span class="n">new_ray</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+        <span class="n">xm</span> <span class="o">=</span> <span class="n">new_ray</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="n">rays</span> <span class="o">+=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">ym</span><span class="p">,</span><span class="n">xm</span><span class="p">])]</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)])</span>
+        <span class="n">tangents</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t</span><span class="p">]</span>
+
+        <span class="c1">#rg = t[1]*grad_x[ym,xm] + t[0]*grad_y[ym,xm]</span>
+        <span class="c1">#rg[rg&lt;0] = 0.0</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">image_array</span><span class="p">[</span><span class="n">ym</span><span class="p">,</span><span class="n">xm</span><span class="p">]</span>
+        <span class="c1">#rg = rg[1:].astype(np.float64) - rg[:-1].astype(np.float64)</span>
+        <span class="c1"># rg[rg&lt;0] = 0.0</span>
+        <span class="n">ray_grads</span> <span class="o">+=</span> <span class="p">[</span><span class="n">rg</span><span class="p">]</span>
+
+
+    <span class="k">return</span> <span class="n">rays</span><span class="p">,</span> <span class="n">ray_grads</span></div>
+
+
+<div class="viewcode-block" id="initial_pupil_point">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.initial_pupil_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">initial_pupil_point</span><span class="p">(</span><span class="n">image_array</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""bbox is a tuple of (xmin, xmax, ymin, ymax)"""</span>
+
+    <span class="k">if</span> <span class="n">bbox</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">bbox</span>
+        <span class="n">crop_im</span> <span class="o">=</span> <span class="n">image_array</span><span class="p">[</span><span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">image_array</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">crop_distance</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">crop_im</span> <span class="o">=</span> <span class="n">image_array</span><span class="p">[</span><span class="n">crop_distance</span><span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">crop_distance</span><span class="p">,</span> <span class="n">crop_distance</span><span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">crop_distance</span><span class="p">]</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">crop_im</span><span class="p">)</span>
+
+    <span class="n">dark_square</span> <span class="o">=</span> <span class="n">m</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">30</span><span class="p">,</span><span class="mi">30</span><span class="p">])</span>
+    <span class="c1">#c = correlate2d(m-crop_im,dark_square,mode='same')</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">fftconvolve</span><span class="p">(</span><span class="n">m</span><span class="o">-</span><span class="n">crop_im</span><span class="p">,</span><span class="n">dark_square</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">mode</span><span class="o">=</span><span class="s1">'same'</span><span class="p">)</span>
+    <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">c</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">bbox</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ybar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">+</span><span class="n">ymin</span>
+        <span class="n">xbar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="n">xmin</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ybar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">+</span><span class="n">crop_distance</span>
+        <span class="n">xbar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="n">crop_distance</span>
+
+    <span class="k">return</span> <span class="n">ybar</span><span class="p">,</span> <span class="n">xbar</span></div>
+
+
+<div class="viewcode-block" id="initial_cr_point">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.initial_cr_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">initial_cr_point</span><span class="p">(</span><span class="n">image_array</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""bbox is a tuple of (xmin, xmax, ymin, ymax)"""</span>
+
+    <span class="k">if</span> <span class="n">bbox</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">bbox</span>
+        <span class="n">crop_im</span> <span class="o">=</span> <span class="n">image_array</span><span class="p">[</span><span class="n">ymin</span><span class="p">:</span><span class="n">ymax</span><span class="p">,</span> <span class="n">xmin</span><span class="p">:</span><span class="n">xmax</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">image_array</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">crop_distance</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">crop_im</span> <span class="o">=</span> <span class="n">image_array</span><span class="p">[</span><span class="n">crop_distance</span><span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">crop_distance</span><span class="p">,</span> <span class="n">crop_distance</span><span class="p">:</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">crop_distance</span><span class="p">]</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">crop_im</span><span class="p">)</span>
+    <span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">crop_im</span><span class="p">)</span>
+
+    <span class="n">Y</span><span class="p">,</span><span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+    <span class="n">bright_circle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">40</span><span class="p">,</span><span class="mi">40</span><span class="p">])</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">X</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Y</span><span class="o">**</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="mf">100.</span>
+    <span class="n">bright_circle</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+    <span class="n">bright_circle</span> <span class="o">-=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bright_circle</span><span class="p">)</span>
+
+    <span class="c1">#c = correlate2d(crop_im-mean,bright_circle,mode='same')</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">fftconvolve</span><span class="p">(</span><span class="n">crop_im</span><span class="o">-</span><span class="n">mean</span><span class="p">,</span><span class="n">bright_circle</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">mode</span><span class="o">=</span><span class="s1">'same'</span><span class="p">)</span>
+    <span class="n">y</span><span class="p">,</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">c</span><span class="o">==</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">bbox</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ybar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">+</span><span class="n">ymin</span>
+        <span class="n">xbar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="n">xmin</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ybar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">+</span><span class="n">crop_distance</span>
+        <span class="n">xbar</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">+</span><span class="n">crop_distance</span>
+
+    <span class="k">return</span> <span class="n">ybar</span><span class="p">,</span> <span class="n">xbar</span></div>
+
+
+<div class="viewcode-block" id="sobel_grad">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.sobel_grad">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sobel_grad</span><span class="p">(</span><span class="n">image_array</span><span class="p">):</span>
+
+    <span class="n">grad_y</span> <span class="o">=</span> <span class="n">sobel</span><span class="p">(</span><span class="n">image_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">grad_x</span> <span class="o">=</span> <span class="n">sobel</span><span class="p">(</span><span class="n">image_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1">#print "grad_x dtype = ", grad_x.dtype</span>
+
+    <span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">grad_y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">grad_x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1e-16</span>
+
+    <span class="k">return</span> <span class="n">mag</span><span class="p">,</span> <span class="n">grad_x</span><span class="p">,</span> <span class="n">grad_y</span></div>
+
+
+<div class="viewcode-block" id="medfilt_custom">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.medfilt_custom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">medfilt_custom</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''This median filter returns 'nan' whenever any value in the kernal width is 'nan' and the median otherwise'''</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">kernel_size</span><span class="o">/</span><span class="mi">2</span>
+
+    <span class="n">x_med</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">window</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">delta</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">window</span><span class="p">)):</span>
+        <span class="n">x_med</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x_med</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+
+    <span class="c1"># print window</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">T</span><span class="p">):</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">t</span><span class="o">-</span><span class="n">delta</span><span class="p">:</span><span class="n">t</span><span class="o">+</span><span class="n">delta</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># print window</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">window</span><span class="p">)):</span>
+            <span class="n">x_med</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x_med</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">x_med</span></div>
+
+
+<div class="viewcode-block" id="eccentricity">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.eccentricity">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">eccentricity</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">):</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span><span class="n">a2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span><span class="n">a2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="median_absolute_deviation">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.median_absolute_deviation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">median_absolute_deviation</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">consistency_constant</span><span class="o">=</span><span class="mf">1.4826</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Calculate the median absolute deviation of a univariate dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a : numpy.ndarray</span>
+<span class="sd">        Sample data.</span>
+<span class="sd">    consistency_constant : float</span>
+<span class="sd">        Constant to make the MAD a consistent estimator of the population</span>
+<span class="sd">        standard deviation (1.4826 for a normal distribution).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        Median absolute deviation of the data.</span>
+<span class="sd">    '''</span>
+    <span class="k">return</span> <span class="n">consistency_constant</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">a</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">a</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="post_process_cr">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.post_process_cr">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_process_cr</span><span class="p">(</span><span class="n">cr_params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""This will replace questionable values of the CR x and y position with 'nan'</span>
+
+<span class="sd">        1)  threshold ellipse area by 99th percentile area distribution</span>
+<span class="sd">        2)  median filter using custom median filter</span>
+<span class="sd">        3)  remove deviations from discontinuous jumps</span>
+
+<span class="sd">        The 'nan' values likely represent obscured CRs, secondary reflections, merges</span>
+<span class="sd">        with the secondary reflection, or visual distortions due to the whisker or</span>
+<span class="sd">        deformations of the eye"""</span>
+
+    <span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">cr_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">cr_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+    <span class="c1"># compute a threshold on the area of the cr ellipse</span>
+    <span class="n">dev</span> <span class="o">=</span> <span class="n">median_absolute_deviation</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dev</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Median absolute deviation is 0,"</span>
+                        <span class="s2">"falling back to standard deviation."</span><span class="p">)</span>
+        <span class="n">dev</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">area</span><span class="p">)</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">dev</span>
+
+    <span class="n">x_center</span> <span class="o">=</span> <span class="n">cr_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y_center</span> <span class="o">=</span> <span class="n">cr_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># set x,y where area is over threshold to nan</span>
+    <span class="n">x_center</span><span class="p">[</span><span class="n">area</span><span class="o">&gt;</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">y_center</span><span class="p">[</span><span class="n">area</span><span class="o">&gt;</span><span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="c1"># median filter</span>
+    <span class="n">x_center_med</span> <span class="o">=</span> <span class="n">medfilt_custom</span><span class="p">(</span><span class="n">x_center</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">y_center_med</span> <span class="o">=</span> <span class="n">medfilt_custom</span><span class="p">(</span><span class="n">y_center</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="n">x_mask_finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x_center_med</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y_mask_finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">y_center_med</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># if y increases discontinuously or x decreases discontinuously,</span>
+    <span class="c1">#  that is probably a CR secondary reflection</span>
+    <span class="n">mean_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_center_med</span><span class="p">[</span><span class="n">x_mask_finite</span><span class="p">])</span>
+    <span class="n">mean_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">y_center_med</span><span class="p">[</span><span class="n">y_mask_finite</span><span class="p">])</span>
+
+    <span class="n">std_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_center_med</span><span class="p">[</span><span class="n">x_mask_finite</span><span class="p">])</span>
+    <span class="n">std_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">y_center_med</span><span class="p">[</span><span class="n">y_mask_finite</span><span class="p">])</span>
+
+    <span class="c1"># set these extreme values to nan</span>
+    <span class="c1">#x_center_med[x_center_med &lt; mean_x - 3*std_x] = np.nan</span>
+    <span class="c1">#y_center_med[y_center_med &gt; mean_y + 3*std_y] = np.nan</span>
+    <span class="n">x_center_med</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_center_med</span> <span class="o">-</span> <span class="n">mean_x</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="n">std_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">y_center_med</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_center_med</span> <span class="o">-</span> <span class="n">mean_y</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="n">std_y</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">either_nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">x_center_med</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">y_center_med</span><span class="p">))</span>
+    <span class="n">x_center_med</span><span class="p">[</span><span class="n">either_nan_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">y_center_med</span><span class="p">[</span><span class="n">either_nan_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">new_cr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x_center_med</span><span class="p">,</span> <span class="n">y_center_med</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="n">bad_points_mask</span> <span class="o">=</span> <span class="n">either_nan_mask</span>
+
+    <span class="k">return</span> <span class="n">new_cr</span><span class="p">,</span> <span class="n">bad_points_mask</span></div>
+
+
+
+<div class="viewcode-block" id="post_process_pupil">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.post_process_pupil">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_process_pupil</span><span class="p">(</span><span class="n">pupil_params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Filter pupil parameters to replace outliers with nan</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pupil_params : numpy.ndarray</span>
+<span class="sd">        (Nx5) array of pupil parameters [x, y, angle, axis1, axis2].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        Pupil parameters with outliers replaced with nan</span>
+<span class="sd">    '''</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">pupil_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">pupil_params</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">area</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">area</span><span class="p">)],</span> <span class="mi">99</span><span class="p">)</span>
+    <span class="n">outlier_index</span> <span class="o">=</span> <span class="n">area</span> <span class="o">&gt;</span> <span class="n">threshold</span>
+    <span class="n">pupil_params</span><span class="p">[</span><span class="n">outlier_index</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">pupil_params</span></div>
+
+
+
+<div class="viewcode-block" id="filter_bad_params">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.itracker_utils.html#allensdk.internal.brain_observatory.itracker_utils.filter_bad_params">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_bad_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">frame_width</span><span class="p">,</span> <span class="n">frame_height</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Replace positions outside image with nan'''</span>
+    <span class="n">params</span><span class="p">[(</span><span class="n">params</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">frame_width</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">params</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">),</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">params</span><span class="p">[(</span><span class="n">params</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">frame_height</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">params</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">),</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">params</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

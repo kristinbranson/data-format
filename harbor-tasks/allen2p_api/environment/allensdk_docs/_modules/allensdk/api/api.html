@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.api.api &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.api.api</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">closing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">errno</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">requests_toolbelt</span><span class="w"> </span><span class="kn">import</span> <span class="n">exceptions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">requests_toolbelt.downloadutils</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">json_utilities</span>
+
+
+<div class="viewcode-block" id="Api">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Api</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'allensdk.api.api'</span><span class="p">)</span>
+    <span class="n">_file_download_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'allensdk.api.api.retrieve_file_over_http'</span><span class="p">)</span>
+    <span class="n">default_api_url</span> <span class="o">=</span> <span class="s1">'http://api.brain-map.org'</span>
+    <span class="n">download_url</span> <span class="o">=</span> <span class="s1">'http://download.alleninstitute.org'</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_base_url_string</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">api_base_url_string</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">api_base_url_string</span> <span class="o">=</span> <span class="n">Api</span><span class="o">.</span><span class="n">default_api_url</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_api_urls</span><span class="p">(</span><span class="n">api_base_url_string</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_working_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Api.set_api_urls">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.set_api_urls">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_api_urls</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_base_url_string</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Set the internal RMA and well known file download endpoint urls</span>
+<span class="sd">        based on a api server endpoint.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        api_base_url_string : string</span>
+<span class="sd">            url of the api to point to</span>
+<span class="sd">        '''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_url</span> <span class="o">=</span> <span class="n">api_base_url_string</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Downloading+a+WellKnownFile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">well_known_file_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/well_known_file_download'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Downloading+3-D+Expression+Grid+Data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid_data_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/grid_data'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Downloading+and+Displaying+SVG</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svg_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/svg'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">svg_download_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/svg_download'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Downloading+an+Ontology%27s+Structure+Graph</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structure_graph_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/structure_graph_download'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Searching+a+Specimen+or+Structure+Tree</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree_search_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/tree_search'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Searching+Annotated+SectionDataSets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotated_section_data_sets_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/annotated_section_data_sets'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compound_annotated_section_data_sets_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/compound_annotated_section_data_sets'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/api/Image-to-Image+Synchronization#Image-to-ImageSynchronization-ImagetoImage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_to_atlas_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/image_to_atlas'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_to_image_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/image_to_image'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_to_image_2d_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/image_to_image_2d'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_to_image_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/reference_to_image'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_to_reference_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/image_to_reference'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">structure_to_image_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/structure_to_image'</span>
+
+        <span class="c1"># http://help.brain-map.org/display/mouseconnectivity/API</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">section_image_download_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/section_image_download'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atlas_image_download_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/atlas_image_download'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">projection_image_download_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/projection_image_download'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_download_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> \
+            <span class="s1">'/api/v2/image_download'</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">informatics_archive_endpoint</span> <span class="o">=</span> <span class="n">Api</span><span class="o">.</span><span class="n">download_url</span> <span class="o">+</span> <span class="s1">'/informatics-archive'</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rma_endpoint</span> <span class="o">=</span> <span class="n">api_base_url_string</span> <span class="o">+</span> <span class="s1">'/api/v2/data'</span></div>
+
+
+<div class="viewcode-block" id="Api.set_default_working_directory">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.set_default_working_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_default_working_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">working_directory</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Set the working directory where files will be saved.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        working_directory : string</span>
+<span class="sd">             the absolute path string of the working directory.</span>
+<span class="sd">        '''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_working_directory</span> <span class="o">=</span> <span class="n">working_directory</span></div>
+
+
+<div class="viewcode-block" id="Api.read_data">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.read_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_json</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Return the message data from the parsed query.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parsed_json : dict</span>
+<span class="sd">            A python structure corresponding to the JSON data returned from the API.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        See `API Response Formats - Response Envelope &lt;http://help.brain-map.org/display/api/API+Response+Formats#APIResponseFormats-ResponseEnvelope&gt;`_</span>
+<span class="sd">        for additional documentation.</span>
+<span class="sd">        '''</span>
+        <span class="k">return</span> <span class="n">parsed_json</span><span class="p">[</span><span class="s1">'msg'</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Api.json_msg_query">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.json_msg_query">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">json_msg_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">dataframe</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Common case where the url is fully constructed</span>
+<span class="sd">            and the response data is stored in the 'msg' field.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : string</span>
+<span class="sd">            Where to get the data in json form</span>
+<span class="sd">        dataframe : boolean</span>
+<span class="sd">            True converts to a pandas dataframe, False (default) doesn't</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict or DataFrame</span>
+<span class="sd">            returned data; type depends on dataframe option</span>
+<span class="sd">        '''</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_query</span><span class="p">(</span><span class="k">lambda</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">k</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">read_data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dataframe</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"dataframe argument is deprecated"</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="Api.do_query">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.do_query">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">do_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url_builder_fn</span><span class="p">,</span> <span class="n">json_traversal_fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Bundle an query url construction function</span>
+<span class="sd">        with a corresponding response json traversal function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url_builder_fn : function</span>
+<span class="sd">            A function that takes parameters and returns an rma url.</span>
+<span class="sd">        json_traversal_fn : function</span>
+<span class="sd">            A function that takes a json-parsed python data structure and returns data from it.</span>
+<span class="sd">        post : boolean, optional kwarg</span>
+<span class="sd">            True does an HTTP POST, False (default) does a GET</span>
+<span class="sd">        args : arguments</span>
+<span class="sd">            Arguments to be passed to the url builder function.</span>
+<span class="sd">        kwargs : keyword arguments</span>
+<span class="sd">            Keyword arguments to be passed to the rma builder function.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        any type</span>
+<span class="sd">            The data extracted from the json response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        `A simple Api subclass example</span>
+<span class="sd">        &lt;data_api_client.html#creating-new-api-query-classes&gt;`_.</span>
+<span class="sd">        '''</span>
+        <span class="n">api_url</span> <span class="o">=</span> <span class="n">url_builder_fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">post</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'post'</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">json_parsed_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_parsed_json_over_http</span><span class="p">(</span><span class="n">api_url</span><span class="p">,</span> <span class="n">post</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">json_traversal_fn</span><span class="p">(</span><span class="n">json_parsed_data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Api.do_rma_query">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.do_rma_query">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">do_rma_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rma_builder_fn</span><span class="p">,</span> <span class="n">json_traversal_fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Bundle an RMA query url construction function</span>
+<span class="sd">        with a corresponding response json traversal function.</span>
+
+<span class="sd">        ..note:: Deprecated in AllenSDK 0.9.2</span>
+<span class="sd">            `do_rma_query` will be removed in AllenSDK 1.0, it is replaced by</span>
+<span class="sd">            `do_query` because the latter is more general.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rma_builder_fn : function</span>
+<span class="sd">            A function that takes parameters and returns an rma url.</span>
+<span class="sd">        json_traversal_fn : function</span>
+<span class="sd">            A function that takes a json-parsed python data structure and returns data from it.</span>
+<span class="sd">        args : arguments</span>
+<span class="sd">            Arguments to be passed to the rma builder function.</span>
+<span class="sd">        kwargs : keyword arguments</span>
+<span class="sd">            Keyword arguments to be passed to the rma builder function.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        any type</span>
+<span class="sd">            The data extracted from the json response.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        `A simple Api subclass example</span>
+<span class="sd">        &lt;data_api_client.html#creating-new-api-query-classes&gt;`_.</span>
+<span class="sd">        '''</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_query</span><span class="p">(</span><span class="n">rma_builder_fn</span><span class="p">,</span> <span class="n">json_traversal_fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Api.load_api_schema">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.load_api_schema">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_api_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Download the RMA schema from the current RMA endpoint</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            the parsed json schema message</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This information and other</span>
+<span class="sd">        `Allen Brain Atlas Data Portal Data Model &lt;http://help.brain-map.org/display/api/Data+Model&gt;`_</span>
+<span class="sd">        documentation is also available as a</span>
+<span class="sd">        `Class Hierarchy &lt;http://api.brain-map.org/class_hierarchy&gt;`_</span>
+<span class="sd">        and `Class List &lt;http://api.brain-map.org/class_hierarchy&gt;`_.</span>
+
+<span class="sd">        '''</span>
+        <span class="n">schema_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rma_endpoint</span> <span class="o">+</span> <span class="s1">'/enumerate.json'</span>
+        <span class="n">json_parsed_schema_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_parsed_json_over_http</span><span class="p">(</span>
+            <span class="n">schema_url</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">json_parsed_schema_data</span></div>
+
+
+<div class="viewcode-block" id="Api.construct_well_known_file_download_url">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.construct_well_known_file_download_url">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">construct_well_known_file_download_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">well_known_file_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Join data api endpoint and id.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        well_known_file_id : integer or string representing an integer</span>
+<span class="sd">            well known file id</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        string</span>
+<span class="sd">            the well-known-file download url for the current api api server</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        retrieve_file_over_http: Can be used to retrieve the file from the url.</span>
+<span class="sd">        '''</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">well_known_file_endpoint</span> <span class="o">+</span> <span class="s1">'/'</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">well_known_file_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Api.cleanup_truncated_file">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.cleanup_truncated_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_truncated_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Helper for removing files.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        file_path : string</span>
+<span class="sd">            Absolute path including the file name to remove.'''</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">errno</span><span class="o">.</span><span class="n">ENOENT</span><span class="p">:</span>
+                <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="Api.retrieve_file_over_http">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.retrieve_file_over_http">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_file_over_http</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">zipped</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get a file from the data api and save it.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : string</span>
+<span class="sd">            Url[1]_ from which to get the file.</span>
+<span class="sd">        file_path : string</span>
+<span class="sd">            Absolute path including the file name to save.</span>
+<span class="sd">        zipped : bool, optional</span>
+<span class="sd">            If true, assume that the response is a zipped directory and attempt </span>
+<span class="sd">            to extract contained files into the directory containing file_path. </span>
+<span class="sd">            Default is False.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        construct_well_known_file_download_url: Can be used to construct the url.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] Allen Brain Atlas Data Portal: `Downloading a WellKnownFile &lt;http://help.brain-map.org/display/api/Downloading+a+WellKnownFile&gt;`_.</span>
+<span class="sd">        '''</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Downloading URL: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">zipped</span><span class="p">:</span>
+                <span class="n">stream_zip_directory_over_http</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stream_file_over_http</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">StreamingError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Couldn't retrieve file </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2"> (streaming)."</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_path</span><span class="p">,</span><span class="n">url</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_truncated_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Couldn't retrieve file </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2"> (connection)."</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_path</span><span class="p">,</span><span class="n">url</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_truncated_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Couldn't retrieve file </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2"> (timeout)."</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_path</span><span class="p">,</span><span class="n">url</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_truncated_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">RequestException</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Couldn't retrieve file </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2"> (request)."</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_path</span><span class="p">,</span><span class="n">url</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_truncated_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_file_download_log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Couldn't retrieve file </span><span class="si">%s</span><span class="s2"> from </span><span class="si">%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cleanup_truncated_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+
+<div class="viewcode-block" id="Api.retrieve_parsed_json_over_http">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.retrieve_parsed_json_over_http">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_parsed_json_over_http</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">post</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get the document and put it in a Python data structure</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : string</span>
+<span class="sd">            Full API query url.</span>
+<span class="sd">        post : boolean</span>
+<span class="sd">            True does an HTTP POST, False (default) encodes the URL and does a GET</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Result document as parsed by the JSON library.</span>
+<span class="sd">        '''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Downloading URL: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">post</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json_utilities</span><span class="o">.</span><span class="n">read_url_get</span><span class="p">(</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">url</span><span class="p">,</span>
+                                     <span class="s1">';/?:@&amp;=+$,'</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json_utilities</span><span class="o">.</span><span class="n">read_url_post</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="Api.retrieve_xml_over_http">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.Api.retrieve_xml_over_http">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_xml_over_http</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get the document and put it in a Python data structure</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        url : string</span>
+<span class="sd">            Full API query url.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        string</span>
+<span class="sd">            Unparsed xml string.</span>
+<span class="sd">        '''</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Downloading URL: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="stream_zip_directory_over_http">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.stream_zip_directory_over_http">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stream_zip_directory_over_http</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">directory</span><span class="p">,</span> <span class="n">members</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="p">(</span><span class="mf">9.05</span><span class="p">,</span> <span class="mf">31.1</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">''' Supply an http get request and stream the response to a file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    url : str</span>
+<span class="sd">        Send the request to this url</span>
+<span class="sd">    directory : str</span>
+<span class="sd">        Extract the response to this directory</span>
+<span class="sd">    members : list of str, optional</span>
+<span class="sd">        Extract only these files</span>
+<span class="sd">    timeout : float or tuple of float, optional</span>
+<span class="sd">        Specify a timeout for the request. If a tuple, specify seperate connect </span>
+<span class="sd">        and read timeouts.</span>
+
+<span class="sd">    '''</span>
+
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span> <span class="p">)</span> <span class="k">as</span> <span class="n">request</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">stream_response_to_file</span><span class="p">(</span> <span class="n">request</span><span class="p">,</span> <span class="n">buf</span> <span class="p">)</span>
+
+    <span class="n">zipper</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+    <span class="n">zipper</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">directory</span><span class="p">,</span> <span class="n">members</span><span class="o">=</span><span class="n">members</span><span class="p">)</span>
+    <span class="n">zipper</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="stream_file_over_http">
+<a class="viewcode-back" href="../../../allensdk.api.api.html#allensdk.api.api.stream_file_over_http">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stream_file_over_http</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="p">(</span><span class="mf">9.05</span><span class="p">,</span> <span class="mf">31.1</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">''' Supply an http get request and stream the response to a file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    url : str</span>
+<span class="sd">        Send the request to this url</span>
+<span class="sd">    file_path : str</span>
+<span class="sd">        Stream the response to this path</span>
+<span class="sd">    timeout : float or tuple of float, optional</span>
+<span class="sd">        Specify a timeout for the request. If a tuple, specify seperate connect </span>
+<span class="sd">        and read timeouts.</span>
+
+<span class="sd">    '''</span>
+
+    <span class="k">with</span> <span class="n">closing</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">))</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">'wb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">fil</span><span class="p">:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">stream_response_to_file</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">fil</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

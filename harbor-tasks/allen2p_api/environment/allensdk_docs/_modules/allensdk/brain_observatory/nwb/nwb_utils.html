@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.nwb.nwb_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.nwb.nwb_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># All of the omitted stimuli have a duration of 250ms as defined</span>
+<span class="c1"># by the Visual Behavior team. For questions about duration contact that</span>
+<span class="c1"># team.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_session</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorSession</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.date_of_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">DateOfAcquisition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.image_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.session_api_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sessions_are_equal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">db_connection_creator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">ProcessingModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Images</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">GrayscaleImage</span>
+
+
+<div class="viewcode-block" id="get_column_name">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.nwb.nwb_utils.html#allensdk.brain_observatory.nwb.nwb_utils.get_column_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_column_name</span><span class="p">(</span><span class="n">table_cols</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">possible_names</span><span class="p">:</span> <span class="nb">set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This function returns a column name, given a table with unknown</span>
+<span class="sd">    column names and a set of possible column names which are expected.</span>
+<span class="sd">    The table column name returned should be the only name contained in</span>
+<span class="sd">    the "expected" possible names.</span>
+<span class="sd">    :param table_cols: the table columns to search for the possible name within</span>
+<span class="sd">    :param possible_names: the names that could exist within the data columns</span>
+<span class="sd">    :return: the first entry of the intersection between the possible names</span>
+<span class="sd">             and the names of the columns of the stimulus table</span>
+<span class="sd">    """</span>
+
+    <span class="n">column_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">table_cols</span><span class="p">)</span>
+    <span class="n">column_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">column_set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">possible_names</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">column_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+            <span class="s2">"Table expected one name column in intersection, found:"</span>
+            <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">column_names</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">column_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="get_image">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.nwb.nwb_utils.html#allensdk.brain_observatory.nwb.nwb_utils.get_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_image</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="p">:</span>
+    <span class="n">nwb_img</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="n">module</span><span class="p">]</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"images"</span><span class="p">)[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">nwb_img</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">resolution</span> <span class="o">=</span> <span class="n">nwb_img</span><span class="o">.</span><span class="n">resolution</span>  <span class="c1"># px/cm</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="p">[</span><span class="n">resolution</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="n">resolution</span> <span class="o">*</span> <span class="mi">10</span><span class="p">]</span>
+
+    <span class="n">img</span> <span class="o">=</span> <span class="n">ImageApi</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="s2">"mm"</span><span class="p">)</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">ImageApi</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">img</span><span class="o">=</span><span class="n">img</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">img</span></div>
+
+
+
+<div class="viewcode-block" id="add_image_to_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.nwb.nwb_utils.html#allensdk.brain_observatory.nwb.nwb_utils.add_image_to_nwb">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_image_to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">image_data</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Adds image given by image_data with name image_name to nwbfile</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nwbfile</span>
+<span class="sd">        nwbfile to add image to</span>
+<span class="sd">    image_data</span>
+<span class="sd">        The image data</span>
+<span class="sd">    image_name</span>
+<span class="sd">        Image name</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">    """</span>
+    <span class="n">module_name</span> <span class="o">=</span> <span class="s2">"ophys"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"</span><span class="si">{}</span><span class="s2"> image at pixels/cm resolution"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_name</span><span class="p">)</span>
+
+    <span class="n">data</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">unit</span> <span class="o">=</span> <span class="n">image_data</span>
+
+    <span class="k">assert</span> <span class="n">spacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">spacing</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">spacing</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">unit</span> <span class="o">==</span> <span class="s2">"mm"</span>
+
+    <span class="k">if</span> <span class="n">module_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">:</span>
+        <span class="n">ophys_mod</span> <span class="o">=</span> <span class="n">ProcessingModule</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="s2">"Ophys processing module"</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_processing_module</span><span class="p">(</span><span class="n">ophys_mod</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ophys_mod</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="n">module_name</span><span class="p">]</span>
+
+    <span class="n">image</span> <span class="o">=</span> <span class="n">GrayscaleImage</span><span class="p">(</span>
+        <span class="n">image_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="n">spacing</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">"images"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ophys_mod</span><span class="o">.</span><span class="n">containers</span><span class="p">:</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="n">Images</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"images"</span><span class="p">)</span>
+        <span class="n">ophys_mod</span><span class="o">.</span><span class="n">add_data_interface</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="n">ophys_mod</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>
+    <span class="n">images</span><span class="o">.</span><span class="n">add_image</span><span class="p">(</span><span class="n">image</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NWBWriter">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.nwb.nwb_utils.html#allensdk.brain_observatory.nwb.nwb_utils.NWBWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NWBWriter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Base class for writing NWB files"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">nwb_filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">session_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">serializer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">JsonReadableInterface</span><span class="p">,</span> <span class="n">NwbReadableInterface</span><span class="p">,</span> <span class="n">NwbWritableInterface</span>
+        <span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwb_filepath: path to write nwb</span>
+<span class="sd">        session_data: dict representation of data to instantiate `serializer`</span>
+<span class="sd">            and write nwb</span>
+<span class="sd">        serializer: The class to use to read `session_data` and write nwb.</span>
+<span class="sd">            Must implement `JsonReadableInterface`, `NwbReadableInterface`,</span>
+<span class="sd">            `NwbWritableInterface`</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span> <span class="o">=</span> <span class="n">serializer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session_data</span> <span class="o">=</span> <span class="n">session_data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath</span> <span class="o">=</span> <span class="n">nwb_filepath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span> <span class="o">=</span> <span class="n">nwb_filepath</span> <span class="o">+</span> <span class="s2">".inprogress"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath_error</span> <span class="o">=</span> <span class="n">nwb_filepath</span> <span class="o">+</span> <span class="s2">".error"</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span>
+            <span class="nb">format</span><span class="o">=</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(process)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Clean out files from previous runs:</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath_error</span><span class="p">,</span>
+            <span class="n">nwb_filepath</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nwb_filepath</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Path to write nwb file"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath</span>
+
+<div class="viewcode-block" id="NWBWriter.write_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.nwb.nwb_utils.html#allensdk.brain_observatory.nwb.nwb_utils.NWBWriter.write_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_nwb</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">id_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"behavior_session_id"</span><span class="p">,</span>
+        <span class="n">skip_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">skip_stim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Tries to write nwb to disk. If it fails, the filepath has ".error"</span>
+<span class="sd">        appended</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        id_column_name : str</span>
+<span class="sd">            Name of the id column to pull from metadata.</span>
+<span class="sd">        skip_metadata : list of str</span>
+<span class="sd">            Name of key in session_data to skip when comparing to session.</span>
+<span class="sd">        skip_stim : list of str</span>
+<span class="sd">            Name of key in stimulus file to skip when comparing to session.</span>
+<span class="sd">        kwargs: kwargs sent to `from_nwb`, `to_nwb`</span>
+
+<span class="sd">        """</span>
+        <span class="n">from_lims_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="o">.</span><span class="n">from_lims</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">}</span>
+        <span class="n">lims_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_session_data</span><span class="p">[</span><span class="n">id_column_name</span><span class="p">],</span> <span class="o">**</span><span class="n">from_lims_kwargs</span>
+        <span class="p">)</span>
+        <span class="n">lims_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_session</span><span class="p">(</span><span class="n">lims_session</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_nwb</span><span class="p">(</span><span class="n">session</span><span class="o">=</span><span class="n">lims_session</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compare_metadata</span><span class="p">(</span>
+                <span class="n">input_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_data</span><span class="p">[</span><span class="n">id_column_name</span><span class="p">],</span>
+                <span class="n">input_session</span><span class="o">=</span><span class="n">lims_session</span><span class="p">,</span>
+                <span class="n">skip_metadata</span><span class="o">=</span><span class="n">skip_metadata</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compare_stimulus_file</span><span class="p">(</span>
+                <span class="n">input_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_session_data</span><span class="p">[</span><span class="n">id_column_name</span><span class="p">],</span>
+                <span class="n">input_session</span><span class="o">=</span><span class="n">lims_session</span><span class="p">,</span>
+                <span class="n">skip_stim</span><span class="o">=</span><span class="n">skip_stim</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_compare_sessions</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">loaded_session</span><span class="o">=</span><span class="n">lims_session</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nwb_filepath_error</span>
+                <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_session</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">lims_session</span><span class="p">:</span> <span class="n">BehaviorSession</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BehaviorSession</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Call session methods to update certain values within the session.</span>
+
+<span class="sd">        Should be used as part of a datarelease to resolve known data issues.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">lims_session</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">BehaviorSession</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_data</span>
+<span class="sd">        kwargs: kwargs to pass to `to_nwb`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        """</span>
+        <span class="n">to_nwb_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">}</span>
+        <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="o">**</span><span class="n">to_nwb_kwargs</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nwb_filepath_inprogress</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">nwb_file_writer</span><span class="p">:</span>
+            <span class="n">nwb_file_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nwbfile</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_metadata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">input_session</span><span class="p">:</span> <span class="n">BehaviorSession</span><span class="p">,</span>
+        <span class="n">skip_metadata</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Compare data in the metadata table and behavior/experiment session</span>
+<span class="sd">        to each other. Raise on conflicts.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_id : int</span>
+<span class="sd">            Id of the session/experiment to compare.</span>
+<span class="sd">        input_session : BehaviorSession or BehaviorOphysExperiment</span>
+<span class="sd">            Session object we are creating an NWB file for.</span>
+<span class="sd">        skip_metadata : list of strings</span>
+<span class="sd">            Names of metadata keys to skip during comparison.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">skip_metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">skip_metadata</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="c1"># Test BehaviorSession object metadata against the metadata from the</span>
+        <span class="c1"># behavior session table.</span>
+        <span class="n">bs_metadata</span> <span class="o">=</span> <span class="n">input_session</span><span class="o">.</span><span class="n">metadata</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">bs_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">skip_metadata</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Skipping metadata table </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> comparison..."</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">bs_val</span> <span class="o">!=</span> <span class="n">bs_metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+                <span class="n">error_message</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Value for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> does not match for id=</span><span class="si">{</span><span class="n">input_id</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"when comparing session object metadata and associated "</span>
+                    <span class="s2">"metadata table.</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">Object data=</span><span class="si">{</span><span class="n">bs_metadata</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">Table data=</span><span class="si">{</span><span class="n">bs_val</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_stimulus_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">input_session</span><span class="p">:</span> <span class="n">BehaviorSession</span><span class="p">,</span>
+        <span class="n">skip_stim</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Compare data in the stimulus file and loaded session/experiment to</span>
+<span class="sd">        each other. Raise on conflicts.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_id : int</span>
+<span class="sd">            Id of the session/experiment to compare.</span>
+<span class="sd">        input_session : BehaviorSession or BehaviorOphysExperiment</span>
+<span class="sd">            Session object we are creating an NWB file for.</span>
+<span class="sd">        skip_stim : list of strings</span>
+<span class="sd">            Names of stimulus file keys to skip during comparison.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">skip_stim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">skip_stim</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="n">behavior_session_id</span> <span class="o">=</span> <span class="n">input_session</span><span class="o">.</span><span class="n">behavior_session_id</span>
+        <span class="n">db_conn</span> <span class="o">=</span> <span class="n">db_connection_creator</span><span class="p">(</span>
+            <span class="n">fallback_credentials</span><span class="o">=</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_file</span> <span class="o">=</span> <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="n">db</span><span class="o">=</span><span class="n">db_conn</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="n">stim_file_methods</span> <span class="o">=</span> <span class="nb">dir</span><span class="p">(</span><span class="n">stimulus_file</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">bs_val</span> <span class="ow">in</span> <span class="n">input_session</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">skip_stim</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Skipping stimulus file </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> comparison..."</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stim_file_methods</span><span class="p">:</span>
+                <span class="n">stim_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">stimulus_file</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">"date_of_acquisition"</span><span class="p">:</span>
+                    <span class="n">stim_value</span> <span class="o">=</span> <span class="n">DateOfAcquisition</span><span class="p">(</span><span class="n">stim_value</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">if</span> <span class="n">bs_val</span> <span class="o">!=</span> <span class="n">stim_value</span><span class="p">:</span>
+                    <span class="n">error_message</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"Value for </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> does not match for id=</span><span class="si">{</span><span class="n">input_id</span><span class="si">}</span><span class="s2"> "</span>
+                        <span class="s2">"when comparing session object metadata and data from "</span>
+                        <span class="s2">"the behavior stimulus pickle file.</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">Object data=</span><span class="si">{</span><span class="n">bs_val</span><span class="si">}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">"</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="se">\t</span><span class="s2">Stim data=</span><span class="si">{</span><span class="n">stim_value</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compare_sessions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">loaded_session</span><span class="p">:</span> <span class="n">DataObject</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="p">}</span>
+        <span class="n">nwb_session</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_serializer</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">sessions_are_equal</span><span class="p">(</span><span class="n">loaded_session</span><span class="p">,</span> <span class="n">nwb_session</span><span class="p">,</span> <span class="n">reraise</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

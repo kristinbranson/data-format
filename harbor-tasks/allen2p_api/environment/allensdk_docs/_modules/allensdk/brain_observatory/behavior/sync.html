@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.sync &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.sync</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Created on Sunday July 15 2018</span>
+
+<span class="sd">@author: marinag</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.sync_dataset</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">Dataset</span> <span class="k">as</span> <span class="n">SyncDataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+<div class="viewcode-block" id="get_raw_stimulus_frames">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_raw_stimulus_frames">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_raw_stimulus_frames</span><span class="p">(</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+        <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">""" Report the raw timestamps of each stimulus frame. This corresponds to</span>
+<span class="sd">    the time at which the psychopy window's flip method returned, but not</span>
+<span class="sd">    necessarily to the time at which the stimulus frame was displayed.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start).</span>
+
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"falling"</span><span class="p">,</span>
+                                 <span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"vsync_stim"</span><span class="p">,</span> <span class="s2">"stim_vsync"</span><span class="p">],</span>
+                                 <span class="n">units</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">permissive</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">return</span></div>
+
+
+
+<div class="viewcode-block" id="get_ophys_frames">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_ophys_frames">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ophys_frames</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">""" Report the timestamps of each optical physiology video frame</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    use rising edge for Scientifica, falling edge for Nikon</span>
+<span class="sd">    http://confluence.corp.alleninstitute.org/display/IT/Ophys+Time+Sync</span>
+<span class="sd">    This function uses rising edges</span>
+
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"rising"</span><span class="p">,</span>
+                                 <span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"vsync_2p"</span><span class="p">,</span> <span class="s2">"2p_vsync"</span><span class="p">],</span>
+                                 <span class="n">units</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">permissive</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">return</span></div>
+
+
+
+<div class="viewcode-block" id="get_lick_times">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_lick_times">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_lick_times</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""" Report the timestamps of each detected lick</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start)</span>
+<span class="sd">        or None. If None, no lick timestamps were found in this sync</span>
+<span class="sd">        dataset.</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span>
+        <span class="s2">"rising"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"lick_times"</span><span class="p">,</span> <span class="s2">"lick_sensor"</span><span class="p">],</span> <span class="s2">"seconds"</span><span class="p">,</span> <span class="n">permissive</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_stim_photodiode">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_stim_photodiode">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stim_photodiode</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">""" Report the timestamps of each detected sync square transition (both</span>
+<span class="sd">    black -&gt; white and white -&gt; black) in this experiment.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start) or None. If None, no photodiode timestamps were found in this sync</span>
+<span class="sd">    dataset.</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span>
+        <span class="s2">"all"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"stim_photodiode"</span><span class="p">,</span> <span class="s2">"photodiode"</span><span class="p">],</span> <span class="s2">"seconds"</span><span class="p">,</span> <span class="n">permissive</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_trigger">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_trigger">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_trigger</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""" Returns (as a 1-element array) the time at which optical physiology</span>
+<span class="sd">    acquisition was started.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">   Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    timestamps (floating point; seconds; relative to experiment start)</span>
+<span class="sd">    or None. If None, no timestamps were found in this sync dataset.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Ophys frame timestamps can be recorded before acquisition start when</span>
+<span class="sd">    experimenters are setting up the recording session. These do not</span>
+<span class="sd">    correspond to acquired ophys frames.</span>
+
+<span class="sd">    """</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"2p_trigger"</span><span class="p">,</span> <span class="s2">"acq_trigger"</span><span class="p">,</span> <span class="s2">"2p_acq_trigger"</span><span class="p">,</span> <span class="s2">"2p_acquiring"</span><span class="p">,</span>
+            <span class="s2">"stim_running"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"rising"</span><span class="p">,</span>
+                             <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span>
+                             <span class="n">units</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">,</span>
+                             <span class="n">permissive</span><span class="o">=</span><span class="n">permissive</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_eye_tracking">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_eye_tracking">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_eye_tracking</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""" Report the timestamps of each frame of the eye tracking video</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start) or None. If None, no eye tracking timestamps were found in this</span>
+<span class="sd">    sync dataset.</span>
+
+<span class="sd">    """</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cam2_exposure"</span><span class="p">,</span> <span class="s2">"eye_tracking"</span><span class="p">,</span> <span class="s2">"eye_frame_received"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"rising"</span><span class="p">,</span>
+                             <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span>
+                             <span class="n">units</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">,</span>
+                             <span class="n">permissive</span><span class="o">=</span><span class="n">permissive</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_behavior_monitoring">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_behavior_monitoring">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_monitoring</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">SyncDataset</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""" Report the timestamps of each frame of the behavior</span>
+<span class="sd">    monitoring video</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset : describes experiment timing</span>
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    array of timestamps (floating point; seconds; relative to experiment</span>
+<span class="sd">    start) or None. If None, no behavior monitoring timestamps were found in</span>
+<span class="sd">    this sync dataset.</span>
+
+<span class="sd">    """</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"cam1_exposure"</span><span class="p">,</span> <span class="s2">"behavior_monitoring"</span><span class="p">,</span> <span class="s2">"beh_frame_received"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_edges</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"rising"</span><span class="p">,</span>
+                             <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span>
+                             <span class="n">units</span><span class="o">=</span><span class="s2">"seconds"</span><span class="p">,</span>
+                             <span class="n">permissive</span><span class="o">=</span><span class="n">permissive</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_sync_data">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.sync.html#allensdk.brain_observatory.behavior.sync.get_sync_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sync_data</span><span class="p">(</span>
+    <span class="n">sync_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">""" Convenience function for extracting several timestamp arrays from a</span>
+<span class="sd">    sync file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sync_path : The hdf5 file here ought to be a Visual Behavior sync output</span>
+<span class="sd">    file. See allensdk.brain_observatory.sync_dataset for more details of</span>
+<span class="sd">    this format.</span>
+
+<span class="sd">    permissive : If True, None will be returned if timestamps are not found.</span>
+<span class="sd">        If False, a KeyError will be raised</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dictionary with the following keys. All timestamps in seconds:</span>
+<span class="sd">        ophys_frames : timestamps of each optical physiology frame</span>
+<span class="sd">        lick_times : timestamps of each detected lick</span>
+<span class="sd">        ophys_trigger : The time at which ophys acquisition was started</span>
+<span class="sd">        eye_tracking : timestamps of each eye tracking video frame</span>
+<span class="sd">        behavior_monitoring : timestamps of behavior monitoring video frame</span>
+<span class="sd">        stim_photodiode : timestamps of each photodiode transition</span>
+<span class="sd">        stimulus_times_no_delay : raw stimulus frame timestamps</span>
+<span class="sd">    Some values may be None. This indicates that the corresponding timestamps</span>
+<span class="sd">    were not located in this sync file.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">sync_dataset</span> <span class="o">=</span> <span class="n">SyncDataset</span><span class="p">(</span><span class="n">sync_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s1">'ophys_frames'</span><span class="p">:</span> <span class="n">get_ophys_frames</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span> <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'lick_times'</span><span class="p">:</span> <span class="n">get_lick_times</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span> <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'ophys_trigger'</span><span class="p">:</span> <span class="n">get_trigger</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span> <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'eye_tracking'</span><span class="p">:</span> <span class="n">get_eye_tracking</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span> <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'behavior_monitoring'</span><span class="p">:</span> <span class="n">get_behavior_monitoring</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span>
+                                                       <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'stim_photodiode'</span><span class="p">:</span> <span class="n">get_stim_photodiode</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span> <span class="n">permissive</span><span class="p">),</span>
+        <span class="s1">'stimulus_times_no_delay'</span><span class="p">:</span> <span class="n">get_raw_stimulus_frames</span><span class="p">(</span><span class="n">sync_dataset</span><span class="p">,</span>
+                                                           <span class="n">permissive</span><span class="p">)</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

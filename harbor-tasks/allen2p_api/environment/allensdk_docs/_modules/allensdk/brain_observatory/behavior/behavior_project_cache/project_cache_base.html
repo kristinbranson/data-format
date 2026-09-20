@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.</span>\
+    <span class="n">project_apis</span><span class="o">.</span><span class="n">data_io</span> <span class="kn">import</span><span class="w"> </span><span class="nn">ProjectCloudApiBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.authentication</span><span class="w"> </span><span class="kn">import</span> <span class="n">DbCredentials</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.</span>\
+    <span class="n">project_apis</span><span class="o">.</span><span class="n">data_io</span> <span class="kn">import</span><span class="w"> </span><span class="nn">BehaviorProjectLimsApi</span>
+
+
+<div class="viewcode-block" id="ProjectCacheBase">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProjectCacheBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">BUCKET_NAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">PROJECT_NAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fetch_api</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ProjectCloudApiBase</span><span class="p">,</span> <span class="n">BehaviorProjectLimsApi</span><span class="p">],</span>
+            <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        fetch_api :</span>
+<span class="sd">            Used to pull data from remote sources, after which it is locally</span>
+<span class="sd">            cached.</span>
+<span class="sd">        fetch_tries :</span>
+<span class="sd">            Maximum number of times to attempt a download before giving up and</span>
+<span class="sd">            raising an exception. Note that this is total tries, not retries.</span>
+<span class="sd">            Default=2.</span>
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span> <span class="o">=</span> <span class="n">fetch_api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span> <span class="o">=</span> <span class="n">fetch_tries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">api_name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"A </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> "</span>
+                                      <span class="sa">f</span><span class="s2">"based on </span><span class="si">{</span><span class="n">api_name</span><span class="si">}</span><span class="s2"> "</span>
+                                      <span class="s2">"does not have an accessible manifest "</span>
+                                      <span class="s2">"property"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">manifest</span>
+
+<div class="viewcode-block" id="ProjectCacheBase.from_s3_cache">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.from_s3_cache">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_s3_cache</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+            <span class="n">bucket_name_override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ProjectCacheBase"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""instantiates this object with a connection to an s3 bucket and/or</span>
+<span class="sd">        a local cache related to that bucket.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cache_dir: str or pathlib.Path</span>
+<span class="sd">            Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">        bucket_name_override: str</span>
+<span class="sd">            Overrides the default bucket name for this class.</span>
+<span class="sd">            Useful for testing</span>
+<span class="sd">            for example, if bucket URI is 's3://mybucket' this value should be</span>
+<span class="sd">            'mybucket'</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ProjectCacheBase instance</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">fetch_api</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_s3_cache</span><span class="p">(</span>
+            <span class="n">cache_dir</span><span class="p">,</span>
+            <span class="n">bucket_name</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">bucket_name_override</span> <span class="k">if</span> <span class="n">bucket_name_override</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="bp">cls</span><span class="o">.</span><span class="n">BUCKET_NAME</span><span class="p">),</span>
+            <span class="n">project_name</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">PROJECT_NAME</span><span class="p">,</span>
+            <span class="n">ui_class_name</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.from_local_cache">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.from_local_cache">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_local_cache</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+        <span class="n">use_static_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ProjectCacheBase"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""instantiates this object with a local cache.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cache_dir: str or pathlib.Path</span>
+<span class="sd">            Path to the directory where data will be stored on the local system</span>
+
+<span class="sd">        project_name: str</span>
+<span class="sd">            the name of the project this cache is supposed to access. This</span>
+<span class="sd">            project name is the first part of the prefix of the release data</span>
+<span class="sd">            objects. I.e. s3://&lt;bucket_name&gt;/&lt;project_name&gt;/&lt;object tree&gt;</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ProjectCacheBase instance</span>
+
+<span class="sd">        """</span>
+        <span class="n">fetch_api</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_local_cache</span><span class="p">(</span>
+            <span class="n">cache_dir</span><span class="p">,</span>
+            <span class="n">project_name</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">PROJECT_NAME</span><span class="p">,</span>
+            <span class="n">ui_class_name</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="n">use_static_cache</span><span class="o">=</span><span class="n">use_static_cache</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.from_lims">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                  <span class="n">lims_credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DbCredentials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">mtrain_credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DbCredentials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">scheme</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">asynchronous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                  <span class="n">data_release_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">passed_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ProjectCacheBase"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct a ProjectCacheBase with a lims api.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        manifest : str or Path</span>
+<span class="sd">            full path at which manifest json will be stored</span>
+<span class="sd">        version : str</span>
+<span class="sd">            version of manifest file. If this mismatches the version</span>
+<span class="sd">            recorded in the file at manifest, an error will be raised.</span>
+<span class="sd">        cache : bool</span>
+<span class="sd">            Whether to write to the cache</span>
+<span class="sd">        fetch_tries : int</span>
+<span class="sd">            Maximum number of times to attempt a download before giving up and</span>
+<span class="sd">            raising an exception. Note that this is total tries, not retries</span>
+<span class="sd">        lims_credentials : DbCredentials</span>
+<span class="sd">            Optional credentials to access LIMS database.</span>
+<span class="sd">            If not set, will look for credentials in environment variables.</span>
+<span class="sd">        mtrain_credentials: DbCredentials</span>
+<span class="sd">            Optional credentials to access mtrain database.</span>
+<span class="sd">            If not set, will look for credentials in environment variables.</span>
+<span class="sd">        host : str</span>
+<span class="sd">            Web host for the app_engine. Currently unused. This argument is</span>
+<span class="sd">            included for consistency with EcephysProjectCache.from_lims.</span>
+<span class="sd">        scheme : str</span>
+<span class="sd">            URI scheme, such as "http". Currently unused. This argument is</span>
+<span class="sd">            included for consistency with EcephysProjectCache.from_lims.</span>
+<span class="sd">        asynchronous : bool</span>
+<span class="sd">            Whether to fetch from web asynchronously. Currently unused.</span>
+<span class="sd">        data_release_date: str or list of str</span>
+<span class="sd">            Use to filter tables to only include data released on date</span>
+<span class="sd">            ie 2021-03-25 or ['2021-03-25', '2021-08-12']</span>
+<span class="sd">        passed_only</span>
+<span class="sd">            Whether to limit to data with `workflow_state` set to 'passed'</span>
+<span class="sd">            and 'published'</span>
+<span class="sd">        Returns</span>
+<span class="sd">        =======</span>
+<span class="sd">        ProjectCacheBase</span>
+<span class="sd">            ProjectCacheBase instance with a LIMS fetch API</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">host</span> <span class="ow">and</span> <span class="n">scheme</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"host"</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="s2">"scheme"</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span>
+                          <span class="s2">"asynchronous"</span><span class="p">:</span> <span class="n">asynchronous</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">fetch_api</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">lims_api_class</span><span class="p">()</span><span class="o">.</span><span class="n">default</span><span class="p">(</span>
+            <span class="n">lims_credentials</span><span class="o">=</span><span class="n">lims_credentials</span><span class="p">,</span>
+            <span class="n">mtrain_credentials</span><span class="o">=</span><span class="n">mtrain_credentials</span><span class="p">,</span>
+            <span class="n">data_release_date</span><span class="o">=</span><span class="n">data_release_date</span><span class="p">,</span>
+            <span class="n">app_kwargs</span><span class="o">=</span><span class="n">app_kwargs</span><span class="p">,</span>
+            <span class="n">passed_only</span><span class="o">=</span><span class="n">passed_only</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api</span><span class="p">,</span> <span class="n">manifest</span><span class="o">=</span><span class="n">manifest</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
+                   <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">fetch_tries</span><span class="o">=</span><span class="n">fetch_tries</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cache_not_implemented</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Raise a NotImplementedError explaining that method_name</span>
+<span class="sd">        does not exist for VisualBehaviorNeuropixelsProjectCache</span>
+<span class="sd">        that does not have a fetch_api based on LIMS</span>
+<span class="sd">        """</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Method </span><span class="si">{</span><span class="n">method_name</span><span class="si">}</span><span class="s2"> does not exist for this "</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, which is based on "</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProjectCacheBase.construct_local_manifest">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.construct_local_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">construct_local_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the local file used to determine if two files are</span>
+<span class="sd">        duplicates of each other or not. Save it into the expected</span>
+<span class="sd">        place in the cache. (You will see a warning if the cache</span>
+<span class="sd">        thinks that you need to run this method).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'construct_local_manifest'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">construct_local_manifest</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.compare_manifests">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.compare_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                          <span class="n">manifest_0_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                          <span class="n">manifest_1_name</span><span class="p">:</span> <span class="nb">str</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Compare two manifests from this dataset. Return a dict</span>
+<span class="sd">        containing the list of metadata and data files that changed</span>
+<span class="sd">        between them</span>
+
+<span class="sd">        Note: this assumes that manifest_0 predates manifest_1</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_0_name: str</span>
+
+<span class="sd">        manifest_1_name: str</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            A string summarizing all of the changes going from</span>
+<span class="sd">            manifest_0 to manifest_1</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'compare_manifests'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">compare_manifests</span><span class="p">(</span><span class="n">manifest_0_name</span><span class="p">,</span>
+                                                      <span class="n">manifest_1_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.load_latest_manifest">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.load_latest_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_latest_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load the manifest corresponding to the most up to date</span>
+<span class="sd">        version of the dataset.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'load_latest_manifest'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">load_latest_manifest</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_manifest</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.latest_downloaded_manifest_file">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.latest_downloaded_manifest_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">latest_downloaded_manifest_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the name of the most up to date data manifest</span>
+<span class="sd">        available on your local system.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'latest_downloaded_manifest_file'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">latest_downloaded_manifest_file</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.latest_manifest_file">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.latest_manifest_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">latest_manifest_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the name of the most up to date data manifest</span>
+<span class="sd">        corresponding to this dataset, checking in the cloud</span>
+<span class="sd">        if this is a cloud-backed cache.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'latest_manifest_file'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">latest_manifest_file</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.load_manifest">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.load_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Load a specific versioned manifest for this dataset.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        manifest_name: str</span>
+<span class="sd">            The name of the manifest to load. Must be an element in</span>
+<span class="sd">            self.manifest_file_names</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'load_manifest'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">load_manifest</span><span class="p">(</span><span class="n">manifest_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.list_all_downloaded_manifests">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.list_all_downloaded_manifests">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_all_downloaded_manifests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a sorted list of the names of the manifest files</span>
+<span class="sd">        that have been downloaded to this cache.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'list_all_downloaded_manifests'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">list_all_downloaded_manifests</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.list_manifest_file_names">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.list_manifest_file_names">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_manifest_file_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a sorted list of the names of the manifest files</span>
+<span class="sd">        associated with this dataset.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'list_manifest_file_names'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">manifest_file_names</span></div>
+
+
+<div class="viewcode-block" id="ProjectCacheBase.current_manifest">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.html#allensdk.brain_observatory.behavior.behavior_project_cache.project_cache_base.ProjectCacheBase.current_manifest">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_manifest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the name of the dataset manifest currently being</span>
+<span class="sd">        used by this cache.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cloud_api_class</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache_not_implemented</span><span class="p">(</span><span class="s1">'current_manifest'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">current_manifest</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,1369 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intracellular Electrophysiology &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Query Intracellular Electrophysiology Metadata" href="plot_icephys_pandas.html" />
+    <link rel="prev" title="Calcium Imaging Data" href="ophys.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="ecephys.html">Extracellular Electrophysiology Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ophys.html">Calcium Imaging Data</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Intracellular Electrophysiology</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#imports-used-in-the-tutorial">Imports used in the tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#a-brief-example">A brief example</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-an-nwb-file-for-intracellular-electrophysiology">Creating an NWB file for Intracellular electrophysiology</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-an-intracellular-recording">Adding an intracellular recording</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-a-simultaneous-recording">Add a simultaneous recording</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-a-sequential-recording">Add a sequential recording</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-a-repetition">Add a repetition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#add-an-experimental-condition">Add an experimental condition</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#read-write-the-nwbfile">Read/write the NWBFile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-the-tables">Accessing the tables</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys_pandas.html">Query Intracellular Electrophysiology Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_behavior.html">Behavior Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="images.html">Storing Image Data in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Intracellular Electrophysiology</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/plot_icephys.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-plot-icephys-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="intracellular-electrophysiology">
+<span id="icephys-tutorial-new"></span><span id="sphx-glr-tutorials-domain-plot-icephys-py"></span><h1>Intracellular Electrophysiology<a class="headerlink" href="#intracellular-electrophysiology" title="Link to this heading"></a></h1>
+<p>The following tutorial describes storage of intracellular electrophysiology data in NWB.
+NWB supports storage of the time series describing the stimulus and response, information
+about the electrode and device used, as well as metadata about the organization of the
+experiment.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a video tutorial on intracellular electrophysiology in NWB see also the
+<a class="extlink-incf_lesson reference external" href="https://training.incf.org/lesson/intracellular-electrophysiology-basics-nwb">Intracellular electrophysiology basics in NWB</a> and
+<a class="extlink-incf_lesson reference external" href="https://training.incf.org/lesson/intracellular-electrophysiology-structured-metadata-nwb">Intracellular ephys metadata</a>
+tutorials as part of the <a class="extlink-incf_collection reference external" href="https://training.incf.org/collection/neurodata-without-borders-neurophysiology-nwbn">NWB Course</a>
+at the INCF Training Space.</p>
+</div>
+<figure class="align-default" id="id2" style="width: 100%">
+<img alt="Intracellular electrophysiology metadata table hierarchy" src="../../_images/plot_icephys_table_hierarchy.png" />
+<figcaption>
+<p><span class="caption-text">Illustration of the hierarchy of metadata tables used to describe the organization of
+intracellular electrophysiology experiments.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Recordings of intracellular electrophysiology stimuli and responses are represented
+with subclasses of <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.PatchClampSeries" title="pynwb.icephys.PatchClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">PatchClampSeries</span></code></a> using the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularElectrode" title="pynwb.icephys.IntracellularElectrode"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularElectrode</span></code></a> and <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a>
+type to describe the electrode and device used.</p>
+<p>To describe the organization of intracellular experiments, the metadata is organized
+hierarchically in a sequence of tables. All of the tables are so-called DynamicTables
+enabling users to add columns for custom metadata.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> relates electrode, stimulus
+and response pairs and describes metadata specific to individual recordings.</p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> groups intracellular
+recordings from the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>
+together that were recorded simultaneously from different electrodes and/or cells
+and describes metadata that is constant across the simultaneous recordings.
+In practice a simultaneous recording is often  also referred to as a sweep.</p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SequentialRecordingsTable" title="pynwb.icephys.SequentialRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialRecordingsTable</span></code></a> groups simultaneously
+recorded intracellular recordings from the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> together and describes
+metadata that is constant across the simultaneous recordings. In practice a
+sequential recording is often also referred to as a sweep sequence. A common
+use of sequential recordings is to group together simultaneous recordings
+where a sequence of stimuli of the same type with varying parameters
+have been presented in a sequence (e.g., a sequence of square waveforms with
+varying amplitude).</p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.RepetitionsTable" title="pynwb.icephys.RepetitionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepetitionsTable</span></code></a> groups sequential recordings from
+the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SequentialRecordingsTable" title="pynwb.icephys.SequentialRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialRecordingsTable</span></code></a>. In practice a
+repetition is often also referred to a run. A typical use of the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.RepetitionsTable" title="pynwb.icephys.RepetitionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepetitionsTable</span></code></a> is to group sets of different stimuli
+that are applied in sequence that may be repeated.</p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a> groups repetitions of
+intracellular recording from the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.RepetitionsTable" title="pynwb.icephys.RepetitionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepetitionsTable</span></code></a>
+together that belong to the same experimental conditions.</p></li>
+</ul>
+<p>Storing data in hierarchical tables has the advantage that it allows us to avoid duplication of
+metadata. E.g., for a single experiment we only need to describe the metadata that is constant
+across an experimental condition as a single row in the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.ExperimentalConditionsTable" title="pynwb.icephys.ExperimentalConditionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExperimentalConditionsTable</span></code></a>
+without having to replicate the same information across all repetitions and sequential-, simultaneous-, and
+individual intracellular recordings. For analysis, this means that we can easily focus on individual
+aspects of an experiment while still being able to easily access information about information from
+related tables.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All of the above mentioned metadata tables are optional and are created automatically
+by the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> class the first time data is being
+added to a table via the corresponding add functions. However, as tables at higher
+levels of the hierarchy link to the other tables that are lower in the hierarchy,
+we may only exclude tables from the top of the hierarchy. This means, for example,
+a file containing a <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> then
+must also always contain a corresponding <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>.</p>
+</div>
+<section id="imports-used-in-the-tutorial">
+<h2>Imports used in the tutorial<a class="headerlink" href="#imports-used-in-the-tutorial" title="Link to this heading"></a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard Python imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="c1"># Set pandas rendering option to avoid very wide tables in the html docs</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_colwidth&quot;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_rows&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Import I/O class used for reading and writing NWB files</span>
+<span class="c1"># Import main NWB file class</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a>
+
+<span class="c1"># Import additional core datatypes used in the example</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.core</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">DynamicTable</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">VectorData</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReference</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReferenceVectorData</span></a>
+
+<span class="c1"># Import icephys TimeSeries types used</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.icephys</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampSeries</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampStimulusSeries</span></a>
+</pre></div>
+</div>
+</section>
+<section id="a-brief-example">
+<h2>A brief example<a class="headerlink" href="#a-brief-example" title="Link to this heading"></a></h2>
+<p>The following brief example provides a quick overview of the main steps
+to create an NWBFile for intracelluar electrophysiology data. We then
+discuss the individual steps in more detail afterwards.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an ICEphysFile</span>
+<span class="n">ex_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure with thirteen dwarves &quot;</span>
+    <span class="s2">&quot;to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Add a device</span>
+<span class="n">ex_device</span> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Heka ITC-1600&quot;</span><span class="p">)</span>
+
+<span class="c1"># Add an intracellular electrode</span>
+<span class="n">ex_electrode</span> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">create_icephys_electrode</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;elec0&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a mock intracellular electrode&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">ex_device</span>
+<span class="p">)</span>
+
+<span class="c1"># Create an ic-ephys stimulus</span>
+<span class="n">ex_stimulus</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampStimulusSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stimulus&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">ex_electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Create an ic-response</span>
+<span class="n">ex_response</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;response&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+    <span class="n">conversion</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">20e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">ex_electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">capacitance_slow</span><span class="o">=</span><span class="mf">100e-12</span><span class="p">,</span>
+    <span class="n">resistance_comp_correction</span><span class="o">=</span><span class="mf">70.0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># (A) Add an intracellular recording to the file</span>
+<span class="c1">#     NOTE: We can optionally define time-ranges for the stimulus/response via</span>
+<span class="c1">#     the corresponding optional _start_index and _index_count parameters.</span>
+<span class="c1">#     NOTE: It is allowed to add a recording with just a stimulus or a response</span>
+<span class="c1">#     NOTE: We can  add custom columns to any of our tables in steps (A)-(E)</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_ir_index</span></a> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">add_intracellular_recording</span><span class="p">(</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">ex_electrode</span><span class="p">,</span> <span class="n">stimulus</span><span class="o">=</span><span class="n">ex_stimulus</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="n">ex_response</span>
+<span class="p">)</span>
+
+<span class="c1"># (B) Add a list of sweeps to the simultaneous recordings table</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_sweep_index</span></a> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">add_icephys_simultaneous_recording</span><span class="p">(</span>
+    <span class="n">recordings</span><span class="o">=</span><span class="p">[</span>
+        <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_ir_index</span></a><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># (C) Add a list of simultaneous recordings table indices as a sequential recording</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_sequence_index</span></a> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">add_icephys_sequential_recording</span><span class="p">(</span>
+    <span class="n">simultaneous_recordings</span><span class="o">=</span><span class="p">[</span>
+        <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_sweep_index</span></a><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">stimulus_type</span><span class="o">=</span><span class="s2">&quot;square&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># (D) Add a list of sequential recordings table indices as a repetition</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">run_index</span></a> <span class="o">=</span> <span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">add_icephys_repetition</span><span class="p">(</span>
+    <span class="n">sequential_recordings</span><span class="o">=</span><span class="p">[</span>
+        <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_sequence_index</span></a><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># (E) Add a list of repetition table indices as a experimental condition</span>
+<span class="n">ex_nwbfile</span><span class="o">.</span><span class="n">add_icephys_experimental_condition</span><span class="p">(</span>
+    <span class="n">repetitions</span><span class="o">=</span><span class="p">[</span>
+        <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">run_index</span></a><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Write our test file</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_testpath</span></a> <span class="o">=</span> <span class="s2">&quot;ex_test_icephys_file.nwb&quot;</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_testpath</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">ex_nwbfile</span><span class="p">)</span>
+
+<span class="c1"># Read the data back in</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_testpath</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">infile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+
+<span class="c1"># Optionally plot the organization of our example NWB file</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">hdmf_docutils.doctools.render</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">HierarchyDescription</span><span class="p">,</span>
+        <span class="n">NXGraphHierarchyDescription</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ex_file_hierarchy</span> <span class="o">=</span> <span class="n">HierarchyDescription</span><span class="o">.</span><span class="n">from_hdf5</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ex_testpath</span></a><span class="p">)</span>
+    <span class="n">ex_file_graph</span> <span class="o">=</span> <span class="n">NXGraphHierarchyDescription</span><span class="p">(</span><span class="n">ex_file_hierarchy</span><span class="p">)</span>
+    <span class="n">ex_fig</span> <span class="o">=</span> <span class="n">ex_file_graph</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
+        <span class="n">show_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span>
+        <span class="n">label_offset</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0065</span><span class="p">),</span>
+        <span class="n">label_font_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="p">)</span>
+    <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># ignore in case hdmf_docutils is not installed</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Now that we have seen a brief example, we are going to start from the beginning and
+go through each of the steps in more detail in the following sections.</p>
+</section>
+<section id="creating-an-nwb-file-for-intracellular-electrophysiology">
+<h2>Creating an NWB file for Intracellular electrophysiology<a class="headerlink" href="#creating-an-nwb-file-for-intracellular-electrophysiology" title="Link to this heading"></a></h2>
+<p>When creating an NWB file, the first step is to create the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>. The first
+argument is a brief description of the dataset.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the file</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN001&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="device-metadata">
+<h3>Device metadata<a class="headerlink" href="#device-metadata" title="Link to this heading"></a></h3>
+<p>Device metadata is represented by <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> objects.
+To create a device, you can use the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> instance method
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_device" title="pynwb.file.NWBFile.create_device"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_device</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Heka ITC-1600&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="electrode-metadata">
+<h3>Electrode metadata<a class="headerlink" href="#electrode-metadata" title="Link to this heading"></a></h3>
+<p>Intracellular electrode metadata is represented by <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularElectrode" title="pynwb.icephys.IntracellularElectrode"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularElectrode</span></code></a> objects.
+To create an electrode group, you can use the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> instance method
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_icephys_electrode" title="pynwb.file.NWBFile.create_icephys_electrode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_icephys_electrode</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">electrode</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_icephys_electrode</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;elec0&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;a mock intracellular electrode&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stimulus-and-response-data">
+<h3>Stimulus and response data<a class="headerlink" href="#stimulus-and-response-data" title="Link to this heading"></a></h3>
+<p>Intracellular stimulus and response data are represented with subclasses of
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.PatchClampSeries" title="pynwb.icephys.PatchClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">PatchClampSeries</span></code></a>. A stimulus is described by a
+time series representing voltage or current stimulation with a particular
+set of parameters. There are two classes for representing stimulus data:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.VoltageClampStimulusSeries" title="pynwb.icephys.VoltageClampStimulusSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">VoltageClampStimulusSeries</span></code></a></p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.CurrentClampStimulusSeries" title="pynwb.icephys.CurrentClampStimulusSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">CurrentClampStimulusSeries</span></code></a></p></li>
+</ul>
+<p>The response is then described by a time series representing voltage or current
+recorded from a single cell using a single intracellular electrode via one of
+the following classes:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.VoltageClampSeries" title="pynwb.icephys.VoltageClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">VoltageClampSeries</span></code></a></p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.CurrentClampSeries" title="pynwb.icephys.CurrentClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">CurrentClampSeries</span></code></a></p></li>
+<li><p><a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IZeroClampSeries" title="pynwb.icephys.IZeroClampSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">IZeroClampSeries</span></code></a></p></li>
+</ul>
+<p>Below we create a simple example stimulus/response recording data pair.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an example icephys stimulus.</span>
+<span class="n">stimulus</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampStimulusSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ccss&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">sweep_number</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint64" title="numpy.uint64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint64</span></a><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># Create and icephys response</span>
+<span class="n">response</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;vcs&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+    <span class="n">conversion</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">20e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">capacitance_slow</span><span class="o">=</span><span class="mf">100e-12</span><span class="p">,</span>
+    <span class="n">resistance_comp_correction</span><span class="o">=</span><span class="mf">70.0</span><span class="p">,</span>
+    <span class="n">sweep_number</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint64" title="numpy.uint64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint64</span></a><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>You can add current clamp in the same way.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.icephys</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CurrentClampStimulusSeries</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CurrentClampSeries</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">IZeroClampSeries</span></a>
+
+<span class="n">ccs</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CurrentClampSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ccs&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+    <span class="n">conversion</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">20e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">bias_current</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">bridge_balance</span><span class="o">=</span><span class="mf">70e6</span><span class="p">,</span>
+    <span class="n">capacitance_compensation</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">sweep_number</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint64" title="numpy.uint64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint</span></a><span class="p">(</span><span class="mi">16</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">ccss</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">CurrentClampStimulusSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ccss&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">123.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">sweep_number</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint64" title="numpy.uint64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint</span></a><span class="p">(</span><span class="mi">16</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1"># IZeroClampSeries is used when the current is clamped to 0.</span>
+<span class="n">izcs</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">IZeroClampSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;izcs&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">nan</span></a><span class="p">,</span>
+    <span class="n">conversion</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">345.6</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">20e3</span><span class="p">,</span>
+    <span class="n">sweep_number</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.uint64" title="numpy.uint64" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-attribute"><span class="n">np</span><span class="o">.</span><span class="n">uint</span></a><span class="p">(</span><span class="mi">17</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="adding-an-intracellular-recording">
+<h2>Adding an intracellular recording<a class="headerlink" href="#adding-an-intracellular-recording" title="Link to this heading"></a></h2>
+<p>As mentioned earlier, intracellular recordings are organized in the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> which relates electrode, stimulus
+and response pairs and describes metadata specific to individual recordings.</p>
+<figure class="align-default" id="id3" style="width: 90%">
+<img alt="IntracellularRecordingsTable" src="../../_images/plot_icephys_intracellular_recordings_table.png" />
+<figcaption>
+<p><span class="caption-text">Illustration of the structure of the IntracellularRecordingsTable</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>We can add an intracellular recording to the file via <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_intracellular_recording" title="pynwb.file.NWBFile.add_intracellular_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_intracellular_recording</span></code></a>.
+The function will record the data in the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>
+and add the given electrode, stimulus, or response to the NWBFile object if necessary.
+Any time we add a row to one of our tables, the corresponding add function (here
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_intracellular_recording" title="pynwb.file.NWBFile.add_intracellular_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_intracellular_recording</span></code></a>) returns the integer index of the
+newly created row. The <code class="docutils literal notranslate"><span class="pre">rowindex</span></code> is used in subsequent tables that reference rows in our table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_intracellular_recording</span><span class="p">(</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span> <span class="n">stimulus</span><span class="o">=</span><span class="n">stimulus</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_intracellular_recording" title="pynwb.file.NWBFile.add_intracellular_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_intracellular_recording</span></code></a> can automatically add
+the objects to the NWBFile we do not need to separately call
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_stimulus" title="pynwb.file.NWBFile.add_stimulus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_stimulus</span></code></a> and <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_acquisition" title="pynwb.file.NWBFile.add_acquisition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_acquisition</span></code></a>
+to add our stimulus and response, but it is still fine to do so.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">id</span></code> parameter in the call is optional and if the <code class="docutils literal notranslate"><span class="pre">id</span></code> is omitted then PyNWB will
+automatically number recordings in sequences (i.e., id is the same as the rowindex)</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The IntracellularRecordigns, SimultaneousRecordings, SequentialRecordingsTable,
+RepetitionsTable and ExperimentalConditionsTable tables all enforce unique ids
+when adding rows. I.e., adding an intracellular recording with the same id twice
+results in a ValueError.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We may optionally also specify the relevant time range for a stimulus and/or response as part of
+the intracellular_recording. This is useful, e.g., in case where the recording of the stimulus
+and response do not align (e.g., in case the recording of the response started before
+the recording of the stimulus).</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex2</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_intracellular_recording</span><span class="p">(</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">stimulus</span><span class="o">=</span><span class="n">stimulus</span><span class="p">,</span>
+    <span class="n">stimulus_start_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">stimulus_index_count</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+    <span class="n">response_start_index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">response_index_count</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="nb">id</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A recording may optionally also consist of just an electrode and stimulus or electrode
+and response, but at least one of stimulus or response is required. If either stimulus or response
+is missing, then the stimulus and response are internally set to the same TimeSeries and the
+start_index and index_count for the missing parameter are set to -1. When retrieving
+data from the <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeriesReferenceVectorData" title="pynwb.base.TimeSeriesReferenceVectorData"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeriesReferenceVectorData</span></code></a>, the missing values
+will be represented via masked numpy arrays, i.e., as masked values in a
+<code class="docutils literal notranslate"><span class="pre">numpy.ma.masked_array</span></code> or as a <code class="docutils literal notranslate"><span class="pre">np.ma.core.MaskedConstant</span></code>.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex3</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_intracellular_recording</span><span class="p">(</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">12</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>For brevity we reused in the above example the same response and stimulus in
+all rows of the intracellular_recordings. While this is allowed, in most practical
+cases the stimulus and response will change between intracellular_recordings.</p>
+</div>
+<section id="adding-custom-columns-to-the-intracellular-recordings-table">
+<h3>Adding custom columns to the intracellular recordings table<a class="headerlink" href="#adding-custom-columns-to-the-intracellular-recordings-table" title="Link to this heading"></a></h3>
+<p>We can add a column to the main intracellular recordings table as follows.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;recording_tag&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;A1&quot;</span><span class="p">,</span> <span class="s2">&quot;A2&quot;</span><span class="p">,</span> <span class="s2">&quot;A3&quot;</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;String with a recording tag&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> table is not just a <code class="docutils literal notranslate"><span class="pre">DynamicTable</span></code>
+but an <code class="docutils literal notranslate"><span class="pre">AlignedDynamicTable</span></code>. The <code class="docutils literal notranslate"><span class="pre">AlignedDynamicTable</span></code> type is itself a <code class="docutils literal notranslate"><span class="pre">DynamicTable</span></code>
+that may contain an arbitrary number of additional <code class="docutils literal notranslate"><span class="pre">DynamicTable</span></code>, each of which defines
+a “category”. This is similar to a table with “sub-headings”. In the case of the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a>, we have three predefined categories,
+i.e., electrodes, stimuli, and responses. We can also dynamically add new categories to
+the table. As each category corresponds to a <code class="docutils literal notranslate"><span class="pre">DynamicTable</span></code>, this means we have to create a
+new <code class="docutils literal notranslate"><span class="pre">DynamicTable</span></code> and add it to our table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a new DynamicTable for our category that contains a location column of type VectorData</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">location_column</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">VectorData</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;location&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Mordor&quot;</span><span class="p">,</span> <span class="s2">&quot;Gondor&quot;</span><span class="p">,</span> <span class="s2">&quot;Rohan&quot;</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Recording location in Middle Earth&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lab_category</span></a> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">DynamicTable</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;recording_lab_data&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;category table for lab-specific recording metadata&quot;</span><span class="p">,</span>
+    <span class="n">colnames</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;location&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+        <a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">location_column</span></a><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="c1"># Add the table as a new category to our intracellular_recordings</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">add_category</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="hdmf.common.table.DynamicTable" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">lab_category</span></a><span class="p">)</span>
+<span class="c1"># Note, the name of the category is name of the table, i.e., &#39;recording_lab_data&#39;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In an <code class="docutils literal notranslate"><span class="pre">AlignedDynamicTable</span></code> all category tables MUST align with the main table,
+i.e., all tables must have the same number of rows and rows are expected to
+correspond to each other by index</p>
+</div>
+<p>We can also add custom columns to any of the subcategory tables, i.e.,
+the electrodes, stimuli, and responses tables, and any custom subcategory tables.
+All we need to do is indicate the name of the category we want to add the column to.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;voltage_threshold&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.12</span><span class="p">,</span> <span class="mf">0.13</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Just an example column on the electrodes category table&quot;</span><span class="p">,</span>
+    <span class="n">category</span><span class="o">=</span><span class="s2">&quot;electrodes&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="adding-stimulus-templates">
+<h3>Adding stimulus templates<a class="headerlink" href="#adding-stimulus-templates" title="Link to this heading"></a></h3>
+<p>One predefined subcategory column is the <code class="docutils literal notranslate"><span class="pre">stimulus_template</span></code> column in the stimuli table. This column is
+used to store template waveforms of stimuli in addition to the actual recorded stimulus that is stored in the
+<code class="docutils literal notranslate"><span class="pre">stimulus</span></code> column. The <code class="docutils literal notranslate"><span class="pre">stimulus_template</span></code> column contains an idealized version of the template waveform used as
+the stimulus. This can be useful as a noiseless version of the stimulus for data analysis or to validate that the
+recorded stimulus matches the expected waveform of the template. Similar to the <code class="docutils literal notranslate"><span class="pre">stimulus</span></code> and <code class="docutils literal notranslate"><span class="pre">response</span></code>
+columns, we can specify a relevant time range.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">stimulus_template</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">VoltageClampStimulusSeries</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ccst&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">gain</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_stimulus_template</span><span class="p">(</span><span class="n">stimulus_template</span><span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stimulus_template&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span><a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReference</span></a><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">stimulus_template</span><span class="p">),</span>  <span class="c1"># (start_index, index_count, stimulus_template)</span>
+          <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReference</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">stimulus_template</span><span class="p">),</span>
+          <a href="https://docs.python.org/3.11/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReference</span></a><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">stimulus_template</span><span class="p">)],</span>  <span class="c1"># if there was no data for that recording, use empty reference</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Column storing the reference to the stimulus template for the recording (rows).&quot;</span><span class="p">,</span>
+    <span class="n">category</span><span class="o">=</span><span class="s2">&quot;stimuli&quot;</span><span class="p">,</span>
+    <span class="n">col_cls</span><span class="o">=</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.VectorData" title="hdmf.common.table.VectorData" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-class"><span class="n">TimeSeriesReferenceVectorData</span></a>
+<span class="p">)</span>
+
+<span class="c1"># we can also add stimulus template data as follows</span>
+<a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_intracellular_recording</span><span class="p">(</span>
+    <span class="n">electrode</span><span class="o">=</span><span class="n">electrode</span><span class="p">,</span>
+    <span class="n">stimulus</span><span class="o">=</span><span class="n">stimulus</span><span class="p">,</span>
+    <span class="n">stimulus_template</span><span class="o">=</span><span class="n">stimulus_template</span><span class="p">,</span>  <span class="c1"># the full time range of the stimulus template will be used unless specified</span>
+    <span class="n">recording_tag</span><span class="o">=</span><span class="s1">&#39;A4&#39;</span><span class="p">,</span>
+    <span class="n">recording_lab_data</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="s1">&#39;Isengard&#39;</span><span class="p">},</span>
+    <span class="n">electrode_metadata</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;voltage_threshold&#39;</span><span class="p">:</span> <span class="mf">0.14</span><span class="p">},</span>
+    <span class="nb">id</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a stimulus template column exists but there is no stimulus template data for that recording, then
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_intracellular_recording" title="pynwb.file.NWBFile.add_intracellular_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_intracellular_recording</span></code></a> will internally set the stimulus template to the
+provided stimulus or response TimeSeries and the start_index and index_count for the missing parameter are
+set to -1. The missing values will be represented via masked numpy arrays.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since stimulus templates are often reused across many recordings, the timestamps in the templates are not
+usually aligned with the recording nor with the reference time of the file. The timestamps often start
+at 0 and are relative to the time of the application of the stimulus.</p>
+</div>
+</section>
+</section>
+<section id="add-a-simultaneous-recording">
+<h2>Add a simultaneous recording<a class="headerlink" href="#add-a-simultaneous-recording" title="Link to this heading"></a></h2>
+<p>Before adding a simultaneous recording, we will take a brief discourse to illustrate
+how we can add custom columns to tables before and after we have populated the table with data</p>
+<section id="define-a-custom-column-for-a-simultaneous-recording-before-populating-the-table">
+<h3>Define a custom column for a simultaneous recording before populating the table<a class="headerlink" href="#define-a-custom-column-for-a-simultaneous-recording-before-populating-the-table" title="Link to this heading"></a></h3>
+<p>Before we add a simultaneous recording, let’s create a custom data column in our
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a>. We can create columns at the
+beginning (i.e., before we populate the table with rows/data) or we can add columns
+after we have already populated the table with rows. Here we will show the former.
+For this, we first need to get access to our table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>None
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a> is optional, and since we have
+not populated it with any data yet, we can see that the table does not actually exist yet.
+In order to make sure the table is being created we can use
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_icephys_simultaneous_recordings" title="pynwb.file.NWBFile.get_icephys_simultaneous_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_icephys_simultaneous_recordings</span></code></a>, which ensures
+that the table is being created if it does not exist yet.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">icephys_simultaneous_recordings</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_icephys_simultaneous_recordings</span><span class="p">()</span>
+<a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;simultaneous_recording_tag&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A custom tag for simultaneous_recordings&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.colnames" title="hdmf.common.table.DynamicTable.colnames" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-property"><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">colnames</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&#39;recordings&#39;, &#39;simultaneous_recording_tag&#39;)
+</pre></div>
+</div>
+<p>As we can see, we now have successfully created a new custom column.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The same process applies to all our other tables as well. We can use the
+corresponding <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_intracellular_recordings" title="pynwb.file.NWBFile.get_intracellular_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_intracellular_recordings</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_icephys_sequential_recordings" title="pynwb.file.NWBFile.get_icephys_sequential_recordings"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_icephys_sequential_recordings</span></code></a>,
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.get_icephys_repetitions" title="pynwb.file.NWBFile.get_icephys_repetitions"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_icephys_repetitions</span></code></a> functions instead.
+In general, we can always use the get functions instead of accessing the property
+of the file.</p>
+</div>
+</section>
+<section id="id1">
+<h3>Add a simultaneous recording<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Add a single simultaneous recording consisting of a set of intracellular recordings.
+Again, setting the id for a simultaneous recording is optional. The recordings
+argument of the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_icephys_simultaneous_recording" title="pynwb.file.NWBFile.add_icephys_simultaneous_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_icephys_simultaneous_recording</span></code></a> function
+here is simply a list of ints with the indices of the corresponding rows in
+the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since we created our custom <code class="docutils literal notranslate"><span class="pre">simultaneous_recording_tag</span> <span class="pre">column</span></code> earlier,
+we now also need to populate this custom field for every row we add to
+the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a>.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_icephys_simultaneous_recording</span><span class="p">(</span>
+    <span class="n">recordings</span><span class="o">=</span><span class="p">[</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex2</span></a><span class="p">,</span> <a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex3</span></a><span class="p">],</span>
+    <span class="nb">id</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">simultaneous_recording_tag</span><span class="o">=</span><span class="s2">&quot;LabTag1&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">recordings</span></code> argument is the list of indices of the rows in the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.IntracellularRecordingsTable" title="pynwb.icephys.IntracellularRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntracellularRecordingsTable</span></code></a> that we want
+to reference. The indices are determined by the order in which we
+added the elements to the table. If we don’t know the row indices,
+but only the ids of the relevant intracellular recordings, then
+we can search for them as follows:</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">temp_row_indices</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">temp_row_indices</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[0 1]
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The same is true for our other tables as well, i.e., referencing is
+done always by indices of rows (NOT ids). If we only know ids then we
+can search for them in the same manner on the other tables as well,
+e.g,. via  <code class="docutils literal notranslate"><span class="pre">nwbfile.simultaneous_recordings.id</span> <span class="pre">==</span> <span class="pre">15</span></code>. In the search
+we can use a list of integer ids or a single int.</p>
+</div>
+</section>
+<section id="define-a-custom-column-for-a-simultaneous-recording-after-adding-rows">
+<h3>Define a custom column for a simultaneous recording after adding rows<a class="headerlink" href="#define-a-custom-column-for-a-simultaneous-recording-after-adding-rows" title="Link to this heading"></a></h3>
+<p>Depending on the lab workflow, it may be useful to add complete columns to a table
+after we have already populated the table with rows. We can do this the same way as
+before, only now we need to provide a data array to populate the values for
+the existing rows. E.g.:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><a href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable.add_column" title="hdmf.common.table.DynamicTable.add_column" class="sphx-glr-backref-module-hdmf-common-table sphx-glr-backref-type-py-method"><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">add_column</span></a><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;simultaneous_recording_type&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Description of the type of simultaneous_recording&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;SimultaneousRecordingType1&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="add-a-sequential-recording">
+<h2>Add a sequential recording<a class="headerlink" href="#add-a-sequential-recording" title="Link to this heading"></a></h2>
+<p>Add a single sequential recording consisting of a set of simultaneous recordings.
+Again, setting the id for a sequential recording is optional. Also this table is
+optional and will be created automatically by NWBFile. The <code class="docutils literal notranslate"><span class="pre">simultaneous_recordings</span></code>
+argument of the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_icephys_sequential_recording" title="pynwb.file.NWBFile.add_icephys_sequential_recording"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_icephys_sequential_recording</span></code></a> function
+here is simply a list of ints with the indices of the corresponding rows in
+the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SimultaneousRecordingsTable" title="pynwb.icephys.SimultaneousRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimultaneousRecordingsTable</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_icephys_sequential_recording</span><span class="p">(</span>
+    <span class="n">simultaneous_recordings</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stimulus_type</span><span class="o">=</span><span class="s2">&quot;square&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="mi">15</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="add-a-repetition">
+<h2>Add a repetition<a class="headerlink" href="#add-a-repetition" title="Link to this heading"></a></h2>
+<p>Add a single repetition consisting of a set of sequential recordings. Again, setting
+the id for a repetition is optional. Also this table is optional and will be created
+automatically by NWBFile. The <code class="docutils literal notranslate"><span class="pre">sequential_recordings</span> <span class="pre">argument</span></code> of the
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_icephys_repetition" title="pynwb.file.NWBFile.add_icephys_repetition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_icephys_repetition</span></code></a> function here is simply
+a list of ints with the indices of the corresponding rows in
+the <a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.SequentialRecordingsTable" title="pynwb.icephys.SequentialRecordingsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialRecordingsTable</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_icephys_repetition</span><span class="p">(</span><span class="n">sequential_recordings</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">id</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="add-an-experimental-condition">
+<h2>Add an experimental condition<a class="headerlink" href="#add-an-experimental-condition" title="Link to this heading"></a></h2>
+<p>Add a single experimental condition consisting of a set of repetitions. Again,
+setting the id for a condition is optional. Also this table is optional and
+will be created automatically by NWBFile. The <code class="docutils literal notranslate"><span class="pre">repetitions</span></code> argument of
+the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_icephys_experimental_condition" title="pynwb.file.NWBFile.add_icephys_experimental_condition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_icephys_experimental_condition</span></code></a> function again is
+simply a list of ints with the indices of the correspondingto rows in the
+<a class="reference internal" href="../../pynwb.icephys.html#pynwb.icephys.RepetitionsTable" title="pynwb.icephys.RepetitionsTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">RepetitionsTable</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_icephys_experimental_condition</span><span class="p">(</span><span class="n">repetitions</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">id</span><span class="o">=</span><span class="mi">19</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As mentioned earlier, to add additional columns to any of the tables, we can
+use the <code class="docutils literal notranslate"><span class="pre">.add_column</span></code> function on the corresponding table after they have
+been created.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tag&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;integer tag for a experimental condition&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>When we add new items, then we now also need to set the values for the new column, e.g.:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">rowindex</span></a> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_icephys_experimental_condition</span><span class="p">(</span><span class="n">repetitions</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">id</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="read-write-the-nwbfile">
+<h2>Read/write the NWBFile<a class="headerlink" href="#read-write-the-nwbfile" title="Link to this heading"></a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Write our test file</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">testpath</span></a> <span class="o">=</span> <span class="s2">&quot;test_icephys_file.nwb&quot;</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">testpath</span></a><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="hdmf.backends.hdf5.h5tools.HDF5IO.write" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="c1"># Read the data back in</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">testpath</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">infile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-the-tables">
+<h2>Accessing the tables<a class="headerlink" href="#accessing-the-tables" title="Link to this heading"></a></h2>
+<p>All of the icephys metadata tables are available as attributes on the NWBFile object.
+For display purposes, we convert the tables to pandas DataFrames to show their content.
+For a more in-depth discussion of how to access and use the tables,
+see the tutorial on <a class="reference internal" href="plot_icephys_pandas.html#icephys-pandas-tutorial"><span class="std std-ref">Query Intracellular Electrophysiology Metadata</span></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_columns&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># avoid oversize table in the html docs</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead tr th {
+        text-align: left;
+    }
+
+    .dataframe thead tr:last-of-type th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>intracellular_recordings</th>
+      <th colspan="2" halign="left">electrodes</th>
+      <th>...</th>
+      <th>responses</th>
+      <th colspan="2" halign="left">recording_lab_data</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>recording_tag</th>
+      <th>id</th>
+      <th>electrode</th>
+      <th>...</th>
+      <th>response</th>
+      <th>id</th>
+      <th>location</th>
+    </tr>
+    <tr>
+      <th>(intracellular_recordings, id)</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10</th>
+      <td>A1</td>
+      <td>0</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(0, 5, vcs pynwb.icephys.V...</td>
+      <td>0</td>
+      <td>Mordor</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>A2</td>
+      <td>1</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(2, 3, vcs pynwb.icephys.V...</td>
+      <td>1</td>
+      <td>Gondor</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>A3</td>
+      <td>2</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(0, 5, vcs pynwb.icephys.V...</td>
+      <td>2</td>
+      <td>Rohan</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>A4</td>
+      <td>3</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(None, None, None)</td>
+      <td>3</td>
+      <td>Isengard</td>
+    </tr>
+  </tbody>
+</table>
+<p>4 rows × 11 columns</p>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># optionally we can ignore the id columns of the category subtables</span>
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.set_option.html#pandas.set_option" title="pandas.set_option" class="sphx-glr-backref-module-pandas sphx-glr-backref-type-py-function"><span class="n">pandas</span><span class="o">.</span><span class="n">set_option</span></a><span class="p">(</span><span class="s2">&quot;display.max_columns&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># avoid oversize table in the html docs</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">ignore_category_ids</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead tr th {
+        text-align: left;
+    }
+
+    .dataframe thead tr:last-of-type th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th>intracellular_recordings</th>
+      <th>electrodes</th>
+      <th>...</th>
+      <th>responses</th>
+      <th>recording_lab_data</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>recording_tag</th>
+      <th>electrode</th>
+      <th>...</th>
+      <th>response</th>
+      <th>location</th>
+    </tr>
+    <tr>
+      <th>(intracellular_recordings, id)</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>10</th>
+      <td>A1</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(0, 5, vcs pynwb.icephys.V...</td>
+      <td>Mordor</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>A2</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(2, 3, vcs pynwb.icephys.V...</td>
+      <td>Gondor</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>A3</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(0, 5, vcs pynwb.icephys.V...</td>
+      <td>Rohan</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>A4</td>
+      <td>elec0 pynwb.icephys.Intrac...</td>
+      <td>...</td>
+      <td>(None, None, None)</td>
+      <td>Isengard</td>
+    </tr>
+  </tbody>
+</table>
+<p>4 rows × 7 columns</p>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>recordings</th>
+      <th>simultaneous_recording_tag</th>
+      <th>simultaneous_recording_type</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>12</th>
+      <td>...</td>
+      <td>LabTag1</td>
+      <td>SimultaneousRecordingType1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>simultaneous_recordings</th>
+      <th>stimulus_type</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>15</th>
+      <td>rec...</td>
+      <td>square</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>sequential_recordings</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>17</th>
+      <td>simultaneous_rec...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>repetitions</th>
+      <th>tag</th>
+    </tr>
+    <tr>
+      <th>id</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>19</th>
+      <td>sequential_rec...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>sequential_rec...</td>
+      <td>3</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+<br />
+<br /><section id="validate-data">
+<h3>Validate data<a class="headerlink" href="#validate-data" title="Link to this heading"></a></h3>
+<p>This section is for internal testing purposes only to validate that the roundtrip
+of the data (i.e., generate –&gt; write –&gt; read) produces the correct results.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read the data back in</span>
+<span class="k">with</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO" title="hdmf.backends.hdf5.h5tools.HDF5IO" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-class"><span class="n">NWBHDF5IO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">testpath</span></a><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">infile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.read" title="hdmf.backends.hdf5.h5tools.HDF5IO.read" class="sphx-glr-backref-module-hdmf-backends-hdf5-h5tools sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+
+    <span class="c1"># assert intracellular_recordings</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span> <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">intracellular_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Assert that the ids and the VectorData, VectorIndex, and table target of the</span>
+    <span class="c1"># recordings column of the Sweeps table are correct</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_simultaneous_recordings</span><span class="p">[</span><span class="s2">&quot;recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Assert that the ids and the VectorData, VectorIndex, and table target of the simultaneous</span>
+    <span class="c1">#  recordings column of the SweepSequences table are correct</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span><span class="s2">&quot;simultaneous_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span><span class="s2">&quot;simultaneous_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="p">:</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span><span class="s2">&quot;simultaneous_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span><span class="s2">&quot;simultaneous_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span>
+            <span class="s2">&quot;simultaneous_recordings&quot;</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_sequential_recordings</span><span class="p">[</span>
+            <span class="s2">&quot;simultaneous_recordings&quot;</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Assert that the ids and the VectorData, VectorIndex, and table target of the</span>
+    <span class="c1"># sequential_recordings column of the Repetitions table are correct</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span><span class="n">infile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span> <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="o">.</span><span class="n">id</span><span class="p">[:])</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_repetitions</span><span class="p">[</span><span class="s2">&quot;sequential_recordings&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Assert that the ids and the VectorData, VectorIndex, and table target of the</span>
+    <span class="c1"># repetitions column of the Conditions table are correct</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="o">.</span><span class="n">id</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;repetitions&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.all.html#numpy.all" title="numpy.all" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">all</span></a><span class="p">(</span>
+        <span class="n">infile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">][:]</span>
+        <span class="o">==</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">icephys_experimental_conditions</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">][:]</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-plot-icephys-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/5df2e9d78ab96c19ddefb60483bbda7e/plot_icephys.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_icephys.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/eb4dfc038b119bbe6b846f43654b4a0e/plot_icephys.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_icephys.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/14797e56dcc9da421178ee85dfc992e9/plot_icephys.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_icephys.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ophys.html" class="btn btn-neutral float-left" title="Calcium Imaging Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_icephys_pandas.html" class="btn btn-neutral float-right" title="Query Intracellular Electrophysiology Metadata" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

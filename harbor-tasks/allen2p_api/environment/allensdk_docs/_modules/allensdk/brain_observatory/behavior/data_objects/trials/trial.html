@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.trials.trial &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.trials.trial</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk</span><span class="w"> </span><span class="kn">import</span> <span class="n">one</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">BehaviorStimulusFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusTimestamps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.licks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Licks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.rewards</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rewards</span>
+
+
+<div class="viewcode-block" id="Trial">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.trials.trial.html#allensdk.brain_observatory.behavior.data_objects.trials.trial.Trial">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Trial</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">trial</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="n">start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">end</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+            <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="p">:</span> <span class="n">StimulusTimestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="p">:</span> <span class="n">Licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="p">:</span> <span class="n">Rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        sync_file is an argument that will be used by</span>
+<span class="sd">        sub-classes that have a more subtle way of handling</span>
+<span class="sd">        monitor delay.</span>
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span> <span class="o">=</span> <span class="n">trial</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_trial_end</span><span class="p">(</span>
+            <span class="n">trial_end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index</span> <span class="o">=</span> <span class="n">index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span> <span class="o">=</span> <span class="n">stimulus_timestamps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_file</span> <span class="o">=</span> <span class="n">sync_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_match_to_sync_timestamps</span><span class="p">(</span>
+            <span class="n">raw_stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="o">=</span><span class="n">stimuli</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_match_to_sync_timestamps</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">raw_stimulus_timestamps</span><span class="p">:</span> <span class="n">StimulusTimestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="p">:</span> <span class="n">Licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="p">:</span> <span class="n">Rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        raw_stimulus_timestamps include monitor_delay</span>
+<span class="sd">        """</span>
+
+        <span class="c1"># need to separate out the monitor_delay from the</span>
+        <span class="c1"># un-corrected timestamps</span>
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">raw_stimulus_timestamps</span><span class="o">.</span><span class="n">subtract_monitor_delay</span><span class="p">()</span>
+
+        <span class="n">event_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span> <span class="p">{</span>
+                <span class="s1">'timestamp'</span><span class="p">:</span> <span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">e</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span>
+                <span class="s1">'frame'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">3</span><span class="p">]}</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s1">'events'</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="n">tr_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"trial"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"index"</span><span class="p">]}</span>
+        <span class="n">lick_frames</span> <span class="o">=</span> <span class="n">licks</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">'frame'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">reward_times</span> <span class="o">=</span> <span class="n">rewards</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">'timestamps'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="c1"># this block of code is trying to mimic</span>
+        <span class="c1"># https://github.com/AllenInstitute/visual_behavior_analysis</span>
+        <span class="c1"># /blob/master/visual_behavior/translator/foraging2</span>
+        <span class="c1"># /stimulus_processing.py</span>
+        <span class="c1"># #L377-L381</span>
+        <span class="c1"># https://github.com/AllenInstitute/visual_behavior_analysis</span>
+        <span class="c1"># /blob/master/visual_behavior/translator/foraging2</span>
+        <span class="c1"># /extract_movies.py#L59-L94</span>
+        <span class="c1"># https://github.com/AllenInstitute/visual_behavior_analysis</span>
+        <span class="c1"># /blob/master/visual_behavior/translator/core/annotate.py#L11-L36</span>
+        <span class="c1">#</span>
+        <span class="c1"># In summary: there are cases where an "epilogue movie" is shown</span>
+        <span class="c1"># after the proper stimuli; we do not want licks that occur</span>
+        <span class="c1"># during this epilogue movie to be counted as belonging to</span>
+        <span class="c1"># the last trial</span>
+        <span class="c1"># https://github.com/AllenInstitute/visual_behavior_analysis</span>
+        <span class="c1"># /issues/482</span>
+
+        <span class="c1"># select licks that fall between trial_start and trial_end;</span>
+        <span class="c1"># licks on the boundary get assigned to the trial that is ending,</span>
+        <span class="c1"># rather than the trial that is starting</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_end</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">valid_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">lick_frames</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">,</span>
+                                                <span class="n">lick_frames</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_end</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">valid_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lick_frames</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span>
+
+        <span class="n">valid_licks</span> <span class="o">=</span> <span class="n">lick_frames</span><span class="p">[</span><span class="n">valid_idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_licks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s2">"lick_times"</span><span class="p">]</span> <span class="o">=</span> <span class="n">timestamps</span><span class="p">[</span><span class="n">valid_licks</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s2">"lick_times"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="n">tr_data</span><span class="p">[</span><span class="s2">"reward_time"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_reward_time</span><span class="p">(</span>
+            <span class="n">reward_times</span><span class="p">,</span>
+            <span class="n">event_dict</span><span class="p">[(</span><span class="s1">'trial_start'</span><span class="p">,</span> <span class="s1">''</span><span class="p">)][</span><span class="s1">'timestamp'</span><span class="p">],</span>
+            <span class="n">event_dict</span><span class="p">[(</span><span class="s1">'trial_end'</span><span class="p">,</span> <span class="s1">''</span><span class="p">)][</span><span class="s1">'timestamp'</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">tr_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_trial_data</span><span class="p">())</span>
+        <span class="n">tr_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_trial_timing</span><span class="p">(</span>
+            <span class="n">event_dict</span><span class="p">,</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'lick_times'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'go'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'catch'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'auto_rewarded'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'hit'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s1">'false_alarm'</span><span class="p">],</span>
+            <span class="n">tr_data</span><span class="p">[</span><span class="s2">"aborted"</span><span class="p">],</span>
+        <span class="p">))</span>
+        <span class="n">tr_data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_trial_image_names</span><span class="p">(</span><span class="n">stimuli</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_trial_condition_exclusivity</span><span class="p">(</span><span class="n">tr_data</span><span class="o">=</span><span class="n">tr_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tr_data</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_reward_time</span><span class="p">(</span><span class="n">rebased_reward_times</span><span class="p">,</span>
+                         <span class="n">start_time</span><span class="p">,</span>
+                         <span class="n">stop_time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""extract reward times in time range"""</span>
+        <span class="n">reward_times</span> <span class="o">=</span> <span class="n">rebased_reward_times</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+            <span class="n">rebased_reward_times</span> <span class="o">&gt;=</span> <span class="n">start_time</span><span class="p">,</span>
+            <span class="n">rebased_reward_times</span> <span class="o">&lt;=</span> <span class="n">stop_time</span>
+        <span class="p">))]</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">'nan'</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reward_times</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">one</span><span class="p">(</span>
+            <span class="n">reward_times</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_trial_end</span><span class="p">(</span>
+            <span class="n">trial_end</span><span class="p">,</span>
+            <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">trial_end</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">bhv</span> <span class="o">=</span> <span class="n">behavior_stimulus_file</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'items'</span><span class="p">][</span><span class="s1">'behavior'</span><span class="p">][</span><span class="s1">'items'</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">'fingerprint'</span> <span class="ow">in</span> <span class="n">bhv</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">trial_end</span> <span class="o">=</span> <span class="n">bhv</span><span class="p">[</span><span class="s1">'fingerprint'</span><span class="p">][</span><span class="s1">'starting_frame'</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">trial_end</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_trial_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Infer trial logic from trial log. Returns a dictionary.</span>
+
+<span class="sd">        * reward volume: volume of water delivered on the trial, in mL</span>
+
+<span class="sd">        Each of the following values is boolean:</span>
+
+<span class="sd">        Trial category values are mutually exclusive</span>
+<span class="sd">        * go: trial was a go trial (trial with a stimulus change)</span>
+<span class="sd">        * catch: trial was a catch trial (trial with a sham stimulus change)</span>
+
+<span class="sd">        stimulus_change/sham_change are mutually exclusive</span>
+<span class="sd">        * stimulus_change: did the stimulus change (True on 'go' trials)</span>
+<span class="sd">        * sham_change: stimulus did not change, but response was evaluated</span>
+<span class="sd">                       (True on 'catch' trials)</span>
+
+<span class="sd">        Each trial can be one (and only one) of the following:</span>
+<span class="sd">        * hit (stimulus changed, animal responded in response window)</span>
+<span class="sd">        * miss (stimulus changed, animal did not respond in response window)</span>
+<span class="sd">        * false_alarm (stimulus did not change,</span>
+<span class="sd">                       animal responded in response window)</span>
+<span class="sd">        * correct_reject (stimulus did not change,</span>
+<span class="sd">                          animal did not respond in response window)</span>
+<span class="sd">        * aborted (animal responded before change time)</span>
+<span class="sd">        * auto_rewarded (reward was automatically delivered following the</span>
+<span class="sd">        change.</span>
+<span class="sd">                         This will bias the animals choice and should not be</span>
+<span class="sd">                         categorized as hit/miss)</span>
+<span class="sd">        """</span>
+        <span class="n">trial_event_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s1">'events'</span><span class="p">]]</span>
+        <span class="n">hit</span> <span class="o">=</span> <span class="s1">'hit'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+        <span class="n">false_alarm</span> <span class="o">=</span> <span class="s1">'false_alarm'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+        <span class="n">miss</span> <span class="o">=</span> <span class="s1">'miss'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+        <span class="n">sham_change</span> <span class="o">=</span> <span class="s1">'sham_change'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+        <span class="n">stimulus_change</span> <span class="o">=</span> <span class="s1">'stimulus_changed'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+        <span class="n">aborted</span> <span class="o">=</span> <span class="s1">'abort'</span> <span class="ow">in</span> <span class="n">trial_event_names</span>
+
+        <span class="k">if</span> <span class="n">aborted</span><span class="p">:</span>
+            <span class="n">go</span> <span class="o">=</span> <span class="n">catch</span> <span class="o">=</span> <span class="n">auto_rewarded</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">catch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"trial_params"</span><span class="p">][</span><span class="s2">"catch"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>
+            <span class="n">auto_rewarded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"trial_params"</span><span class="p">][</span><span class="s2">"auto_reward"</span><span class="p">]</span>
+            <span class="n">go</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">catch</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">auto_rewarded</span>
+
+        <span class="n">correct_reject</span> <span class="o">=</span> <span class="n">catch</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">false_alarm</span>
+
+        <span class="k">if</span> <span class="n">auto_rewarded</span><span class="p">:</span>
+            <span class="n">hit</span> <span class="o">=</span> <span class="n">miss</span> <span class="o">=</span> <span class="n">correct_reject</span> <span class="o">=</span> <span class="n">false_alarm</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"reward_volume"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">([</span>
+                <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"rewards"</span><span class="p">,</span> <span class="p">[])]),</span>
+            <span class="s2">"hit"</span><span class="p">:</span> <span class="n">hit</span><span class="p">,</span>
+            <span class="s2">"false_alarm"</span><span class="p">:</span> <span class="n">false_alarm</span><span class="p">,</span>
+            <span class="s2">"miss"</span><span class="p">:</span> <span class="n">miss</span><span class="p">,</span>
+            <span class="s2">"sham_change"</span><span class="p">:</span> <span class="n">sham_change</span><span class="p">,</span>
+            <span class="s2">"stimulus_change"</span><span class="p">:</span> <span class="n">stimulus_change</span><span class="p">,</span>
+            <span class="s2">"aborted"</span><span class="p">:</span> <span class="n">aborted</span><span class="p">,</span>
+            <span class="s2">"go"</span><span class="p">:</span> <span class="n">go</span><span class="p">,</span>
+            <span class="s2">"catch"</span><span class="p">:</span> <span class="n">catch</span><span class="p">,</span>
+            <span class="s2">"auto_rewarded"</span><span class="p">:</span> <span class="n">auto_rewarded</span><span class="p">,</span>
+            <span class="s2">"correct_reject"</span><span class="p">:</span> <span class="n">correct_reject</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_trial_timing</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">event_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="n">licks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+            <span class="n">go</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">catch</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">auto_rewarded</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">hit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">false_alarm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">aborted</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Extract a dictionary of trial timing data.</span>
+<span class="sd">        See trial_data_from_log for a description of the trial types.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        event_dict: dict</span>
+<span class="sd">            Dictionary of trial events in the well-known `pkl` file</span>
+<span class="sd">        licks: List[float]</span>
+<span class="sd">            list of lick timestamps, from the `get_licks` response for</span>
+<span class="sd">            the BehaviorOphysExperiment.api.</span>
+<span class="sd">        go: bool</span>
+<span class="sd">            True if "go" trial, False otherwise. Mutually exclusive with</span>
+<span class="sd">            `catch`.</span>
+<span class="sd">        catch: bool</span>
+<span class="sd">            True if "catch" trial, False otherwise. Mutually exclusive</span>
+<span class="sd">            with `go.`</span>
+<span class="sd">        auto_rewarded: bool</span>
+<span class="sd">            True if "auto_rewarded" trial, False otherwise.</span>
+<span class="sd">        hit: bool</span>
+<span class="sd">            True if "hit" trial, False otherwise</span>
+<span class="sd">        false_alarm: bool</span>
+<span class="sd">            True if "false_alarm" trial, False otherwise</span>
+<span class="sd">        aborted: bool</span>
+<span class="sd">            True if "aborted" trial, False otherwise</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        =======</span>
+<span class="sd">        dict</span>
+<span class="sd">            start_time: float</span>
+<span class="sd">                The time the trial started (in seconds elapsed from</span>
+<span class="sd">                recording start)</span>
+<span class="sd">            stop_time: float</span>
+<span class="sd">                The time the trial ended (in seconds elapsed from</span>
+<span class="sd">                recording start)</span>
+<span class="sd">            trial_length: float</span>
+<span class="sd">                Duration of the trial in seconds</span>
+<span class="sd">            response_time: float</span>
+<span class="sd">                The response time, for non-aborted trials. This is equal</span>
+<span class="sd">                to the first lick in the trial. For aborted trials or trials</span>
+<span class="sd">                without licks, `response_time` is NaN.</span>
+<span class="sd">            change_frame: int</span>
+<span class="sd">                The frame number that the stimulus changed</span>
+<span class="sd">            change_time: float</span>
+<span class="sd">                The time in seconds that the stimulus changed</span>
+<span class="sd">            response_latency: float or None</span>
+<span class="sd">                The time in seconds between the stimulus change and the</span>
+<span class="sd">                animal's lick response, if the trial is a "go", "catch", or</span>
+<span class="sd">                "auto_rewarded" type. If the animal did not respond,</span>
+<span class="sd">                return `float("inf")`. In all other cases, return None.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        =====</span>
+<span class="sd">        The following parameters are mutually exclusive (exactly one can</span>
+<span class="sd">        be true):</span>
+<span class="sd">            hit, miss, false_alarm, aborted, auto_rewarded</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">aborted</span> <span class="ow">and</span> <span class="p">(</span><span class="n">hit</span> <span class="ow">or</span> <span class="n">false_alarm</span> <span class="ow">or</span> <span class="n">auto_rewarded</span><span class="p">)),</span> <span class="p">(</span>
+            <span class="s2">"'aborted' trials cannot be 'hit', 'false_alarm', "</span>
+            <span class="s2">"or 'auto_rewarded'"</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">hit</span> <span class="ow">and</span> <span class="n">false_alarm</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">"both `hit` and `false_alarm` cannot be True, they are mutually "</span>
+            <span class="s2">"exclusive categories"</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">go</span> <span class="ow">and</span> <span class="n">catch</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">"both `go` and `catch` cannot be True, they are mutually "</span>
+            <span class="s2">"exclusive "</span>
+            <span class="s2">"categories"</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">go</span> <span class="ow">and</span> <span class="n">auto_rewarded</span><span class="p">),</span> <span class="p">(</span>
+            <span class="s2">"both `go` and `auto_rewarded` cannot be True, they are mutually "</span>
+            <span class="s2">"exclusive categories"</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_response_time</span><span class="p">(</span><span class="n">licks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">aborted</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">            </span><span class="sd">"""</span>
+<span class="sd">            Return the time the first lick occurred in a non-"aborted" trial.</span>
+<span class="sd">            A response time is not returned for on an "aborted trial", since by</span>
+<span class="sd">            definition, the animal licked before the change stimulus.</span>
+<span class="sd">            """</span>
+            <span class="k">if</span> <span class="n">aborted</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">licks</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">licks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">event_dict</span><span class="p">[</span><span class="s2">"trial_start"</span><span class="p">,</span> <span class="s2">""</span><span class="p">][</span><span class="s1">'timestamp'</span><span class="p">]</span>
+        <span class="n">stop_time</span> <span class="o">=</span> <span class="n">event_dict</span><span class="p">[</span><span class="s2">"trial_end"</span><span class="p">,</span> <span class="s2">""</span><span class="p">][</span><span class="s1">'timestamp'</span><span class="p">]</span>
+
+        <span class="n">response_time</span> <span class="o">=</span> <span class="n">_get_response_time</span><span class="p">(</span><span class="n">licks</span><span class="p">,</span> <span class="n">aborted</span><span class="p">)</span>
+
+        <span class="n">change_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_change_frame</span><span class="p">(</span>
+                <span class="n">event_dict</span><span class="o">=</span><span class="n">event_dict</span><span class="p">,</span>
+                <span class="n">go</span><span class="o">=</span><span class="n">go</span><span class="p">,</span>
+                <span class="n">catch</span><span class="o">=</span><span class="n">catch</span><span class="p">,</span>
+                <span class="n">auto_rewarded</span><span class="o">=</span><span class="n">auto_rewarded</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">start_time</span><span class="p">,</span>
+            <span class="s2">"stop_time"</span><span class="p">:</span> <span class="n">stop_time</span><span class="p">,</span>
+            <span class="s2">"trial_length"</span><span class="p">:</span> <span class="n">stop_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">,</span>
+            <span class="s2">"response_time"</span><span class="p">:</span> <span class="n">response_time</span><span class="p">,</span>
+            <span class="s2">"change_frame"</span><span class="p">:</span> <span class="n">change_frame</span>
+        <span class="p">}</span>
+
+        <span class="n">result</span><span class="p">,</span> <span class="n">change_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_change_time</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">go</span> <span class="ow">or</span> <span class="n">catch</span> <span class="ow">or</span> <span class="n">auto_rewarded</span><span class="p">):</span>
+            <span class="n">response_latency</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">licks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">response_latency</span> <span class="o">=</span> <span class="n">licks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">change_time</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">response_latency</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"inf"</span><span class="p">)</span>
+
+        <span class="n">result</span><span class="p">[</span><span class="s2">"response_latency"</span><span class="p">]</span> <span class="o">=</span> <span class="n">response_latency</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Trial.calculate_change_frame">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.trials.trial.html#allensdk.brain_observatory.behavior.data_objects.trials.trial.Trial.calculate_change_frame">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_change_frame</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">event_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="n">go</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">catch</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="n">auto_rewarded</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Calculate the frame index of a stimulus change</span>
+<span class="sd">        associated with a specific event.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        event_dict: dict</span>
+<span class="sd">            Dictionary of trial events in the well-known `pkl` file</span>
+<span class="sd">        go: bool</span>
+<span class="sd">            True if "go" trial, False otherwise. Mutually exclusive with</span>
+<span class="sd">            `catch`.</span>
+<span class="sd">        catch: bool</span>
+<span class="sd">            True if "catch" trial, False otherwise. Mutually exclusive</span>
+<span class="sd">            with `go.`</span>
+<span class="sd">        auto_rewarded: bool</span>
+<span class="sd">            True if "auto_rewarded" trial, False otherwise.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        change_frame: Union[int, float]</span>
+<span class="sd">            Index of the change frame; NaN if there is no change</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This is its own method so that child classes of Trial</span>
+<span class="sd">        can implement different logic as needed.</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">go</span> <span class="ow">or</span> <span class="n">auto_rewarded</span><span class="p">:</span>
+            <span class="n">change_frame</span> <span class="o">=</span> <span class="n">event_dict</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="s1">'stimulus_changed'</span><span class="p">,</span> <span class="s1">''</span><span class="p">))[</span><span class="s1">'frame'</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">catch</span><span class="p">:</span>
+            <span class="n">change_frame</span> <span class="o">=</span> <span class="n">event_dict</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="s1">'sham_change'</span><span class="p">,</span> <span class="s1">''</span><span class="p">))[</span><span class="s1">'frame'</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">change_frame</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">change_frame</span></div>
+
+
+<div class="viewcode-block" id="Trial.add_change_time">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.trials.trial.html#allensdk.brain_observatory.behavior.data_objects.trials.trial.Trial.add_change_time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_change_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trial_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Add change_time to a dict representing a single trial.</span>
+
+<span class="sd">        This implementation will just take change_frame and</span>
+<span class="sd">        select the value of self._stimulus_timestamps corresponding</span>
+<span class="sd">        to that frame.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        trial_dict:</span>
+<span class="sd">            dict containing all trial parameters except</span>
+<span class="sd">            change_time</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        trial_dict:</span>
+<span class="sd">            Same as input, except change_time field has been</span>
+<span class="sd">            added</span>
+
+<span class="sd">        change_time: float</span>
+<span class="sd">            The change time value that was added</span>
+<span class="sd">            (this is returned separately so that child classes have the</span>
+<span class="sd">            option of naming the column something different than</span>
+<span class="sd">            'change_time')</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Modified trial_dict in-place, in addition to returning it</span>
+<span class="sd">        """</span>
+        <span class="n">change_frame</span> <span class="o">=</span> <span class="n">trial_dict</span><span class="p">[</span><span class="s1">'change_frame'</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">change_frame</span><span class="p">):</span>
+            <span class="n">change_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">change_frame</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">change_frame</span><span class="p">)</span>
+            <span class="n">change_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">change_frame</span><span class="p">]</span>
+
+        <span class="n">trial_dict</span><span class="p">[</span><span class="s1">'change_time'</span><span class="p">]</span> <span class="o">=</span> <span class="n">change_time</span>
+        <span class="k">return</span> <span class="n">trial_dict</span><span class="p">,</span> <span class="n">change_time</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_trial_image_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimuli</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Gets the name of the stimulus presented at the beginning of the</span>
+<span class="sd">        trial and</span>
+<span class="sd">        what is it changed to at the end of the trial.</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimuli: The stimuli presentation log for the behavior session</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            A dictionary indicating the starting_stimulus and what the</span>
+<span class="sd">            stimulus is</span>
+<span class="sd">            changed to.</span>
+
+<span class="sd">        """</span>
+        <span class="n">grating_oris</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'horizontal'</span><span class="p">,</span> <span class="s1">'vertical'</span><span class="p">}</span>
+        <span class="n">trial_start_frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"events"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">initial_image_category_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">initial_image_name</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_initial_image</span><span class="p">(</span>
+                <span class="n">stimuli</span><span class="p">,</span> <span class="n">trial_start_frame</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"stimulus_changes"</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">change_image_name</span> <span class="o">=</span> <span class="n">initial_image_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">((</span><span class="n">from_set</span><span class="p">,</span> <span class="n">from_name</span><span class="p">),</span>
+             <span class="p">(</span><span class="n">to_set</span><span class="p">,</span> <span class="n">to_name</span><span class="p">),</span>
+             <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trial</span><span class="p">[</span><span class="s2">"stimulus_changes"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># do this to fix names if the stimuli is a grating</span>
+            <span class="k">if</span> <span class="n">from_set</span> <span class="ow">in</span> <span class="n">grating_oris</span><span class="p">:</span>
+                <span class="n">from_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'gratings_</span><span class="si">{</span><span class="n">from_name</span><span class="si">}</span><span class="s1">'</span>
+            <span class="k">if</span> <span class="n">to_set</span> <span class="ow">in</span> <span class="n">grating_oris</span><span class="p">:</span>
+                <span class="n">to_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'gratings_</span><span class="si">{</span><span class="n">to_name</span><span class="si">}</span><span class="s1">'</span>
+            <span class="k">assert</span> <span class="n">from_name</span> <span class="o">==</span> <span class="n">initial_image_name</span>
+            <span class="n">change_image_name</span> <span class="o">=</span> <span class="n">to_name</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"initial_image_name"</span><span class="p">:</span> <span class="n">initial_image_name</span><span class="p">,</span>
+            <span class="s2">"change_image_name"</span><span class="p">:</span> <span class="n">change_image_name</span>
+        <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_initial_image</span><span class="p">(</span><span class="n">stimuli</span><span class="p">,</span> <span class="n">start_frame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Attempts to resolve the initial image for a given start_frame for</span>
+<span class="sd">        a trial</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimuli: Mapping</span>
+<span class="sd">            foraging2 shape stimuli mapping</span>
+<span class="sd">        start_frame: int</span>
+<span class="sd">            start frame of the trial</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        initial_image_category_name: str</span>
+<span class="sd">            stimulus category of initial image</span>
+<span class="sd">        initial_image_group: str</span>
+<span class="sd">            group name of the initial image</span>
+<span class="sd">        initial_image_name: str</span>
+<span class="sd">            name of the initial image</span>
+<span class="sd">        """</span>
+        <span class="n">max_frame</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
+        <span class="n">initial_image_group</span> <span class="o">=</span> <span class="s1">''</span>
+        <span class="n">initial_image_name</span> <span class="o">=</span> <span class="s1">''</span>
+        <span class="n">initial_image_category_name</span> <span class="o">=</span> <span class="s1">''</span>
+
+        <span class="k">for</span> <span class="n">stim_category_name</span><span class="p">,</span> <span class="n">stim_dict</span> <span class="ow">in</span> <span class="n">stimuli</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">set_event</span> <span class="ow">in</span> <span class="n">stim_dict</span><span class="p">[</span><span class="s2">"set_log"</span><span class="p">]:</span>
+                <span class="n">set_frame</span> <span class="o">=</span> <span class="n">set_event</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">start_frame</span> <span class="o">&gt;=</span> <span class="n">set_frame</span> <span class="o">&gt;=</span> <span class="n">max_frame</span><span class="p">:</span>
+                    <span class="c1"># hack assumes initial_image_group == initial_image_name,</span>
+                    <span class="c1"># only initial_image_name is present for natual_scenes</span>
+                    <span class="n">initial_image_group</span> <span class="o">=</span> <span class="n">initial_image_name</span> <span class="o">=</span> <span class="n">set_event</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">initial_image_category_name</span> <span class="o">=</span> <span class="n">stim_category_name</span>
+                    <span class="k">if</span> <span class="n">initial_image_category_name</span> <span class="o">==</span> <span class="s1">'grating'</span><span class="p">:</span>
+                        <span class="n">initial_image_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'gratings_</span><span class="si">{</span><span class="n">initial_image_name</span><span class="si">}</span><span class="s1">'</span>
+                    <span class="n">max_frame</span> <span class="o">=</span> <span class="n">set_frame</span>
+
+        <span class="k">return</span> <span class="n">initial_image_category_name</span><span class="p">,</span> <span class="n">initial_image_group</span><span class="p">,</span> \
+            <span class="n">initial_image_name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_trial_condition_exclusivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tr_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""ensure that only one of N possible mutually</span>
+<span class="sd">        exclusive trial conditions is True"""</span>
+        <span class="n">trial_conditions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'hit'</span><span class="p">,</span>
+                    <span class="s1">'miss'</span><span class="p">,</span>
+                    <span class="s1">'false_alarm'</span><span class="p">,</span>
+                    <span class="s1">'correct_reject'</span><span class="p">,</span>
+                    <span class="s1">'auto_rewarded'</span><span class="p">,</span>
+                    <span class="s1">'aborted'</span><span class="p">]:</span>
+            <span class="n">trial_conditions</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">tr_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="n">on</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">condition</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">trial_conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">on</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">on</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">all_conditions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">trial_conditions</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"expected exactly 1 trial condition out of "</span> \
+                  <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">all_conditions</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"to be True, instead </span><span class="si">{</span><span class="n">on</span><span class="si">}</span><span class="s2"> were True (trial </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_index</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

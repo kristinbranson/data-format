@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">ProcessingModule</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">LimsReadableInterface</span><span class="p">,</span> <span class="n">NwbReadableInterface</span><span class="p">,</span> <span class="n">JsonReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.sync_file</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">SyncFileReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">StimulusFileReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+    <span class="n">MappingStimulusFile</span><span class="p">,</span>
+    <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+    <span class="n">SyncFile</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbWritableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.timestamps</span>\
+    <span class="o">.</span><span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">timestamps_processing</span> <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+        <span class="n">get_behavior_stimulus_timestamps</span><span class="p">,</span> <span class="n">get_ophys_stimulus_timestamps</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.sync_stim_aligner</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_stim_timestamps_from_stimulus_blocks</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="StimulusTimestamps">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StimulusTimestamps</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span>
+                         <span class="n">StimulusFileReadableInterface</span><span class="p">,</span>
+                         <span class="n">SyncFileReadableInterface</span><span class="p">,</span>
+                         <span class="n">NwbReadableInterface</span><span class="p">,</span>
+                         <span class="n">LimsReadableInterface</span><span class="p">,</span>
+                         <span class="n">NwbWritableInterface</span><span class="p">,</span>
+                         <span class="n">JsonReadableInterface</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A DataObject which contains properties and methods to load, process,</span>
+<span class="sd">    and represent visual behavior stimulus timestamp data.</span>
+
+<span class="sd">    Stimulus timestamp data is represented as:</span>
+
+<span class="sd">    Numpy array whose length is equal to the number of timestamps collected</span>
+<span class="sd">    and whose values are timestamps (in seconds)</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">timestamps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BehaviorStimulusFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"stimulus_timestamps"</span><span class="p">,</span>
+                         <span class="n">value</span><span class="o">=</span><span class="n">timestamps</span><span class="o">+</span><span class="n">monitor_delay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_file</span> <span class="o">=</span> <span class="n">stimulus_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sync_file</span> <span class="o">=</span> <span class="n">sync_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_delay</span> <span class="o">=</span> <span class="n">monitor_delay</span>
+
+<div class="viewcode-block" id="StimulusTimestamps.update_timestamps">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.update_timestamps">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_timestamps</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns newly instantiated `StimulusTimestamps` with `timestamps`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        timestamps</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `StimulusTimestamps` with `timestamps`</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">StimulusTimestamps</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_delay</span><span class="p">,</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_file</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sync_file</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.subtract_monitor_delay">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.subtract_monitor_delay">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subtract_monitor_delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return a version of this StimulusTimestamps object with</span>
+<span class="sd">        monitor_delay = 0 by subtracting self.monitor_delay from</span>
+<span class="sd">        self.value</span>
+<span class="sd">        """</span>
+        <span class="n">new_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor_delay</span>
+        <span class="k">return</span> <span class="n">StimulusTimestamps</span><span class="p">(</span>
+                    <span class="n">timestamps</span><span class="o">=</span><span class="n">new_value</span><span class="p">,</span>
+                    <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor_delay</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_delay</span>
+
+<div class="viewcode-block" id="StimulusTimestamps.from_stimulus_file">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_stimulus_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stimulus_file</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">get_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">stimulus_pkl</span><span class="o">=</span><span class="n">stimulus_file</span><span class="o">.</span><span class="n">data</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.from_sync_file">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_sync_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_sync_file</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="p">:</span> <span class="n">SyncFile</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">get_ophys_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_path</span><span class="o">=</span><span class="n">sync_file</span><span class="o">.</span><span class="n">filepath</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.from_json">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Reads timestamps from stimulus file or sync file.</span>
+<span class="sd">        Note that `from_multiple_stimulus_blocks` method of constructing</span>
+<span class="sd">        timestamps is not supported using `from_json`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dict_repr</span>
+<span class="sd">        monitor_delay: Monitor delay to apply to the timestamps</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        StimulusTimestamps</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s1">'sync_file'</span> <span class="ow">in</span> <span class="n">dict_repr</span><span class="p">:</span>
+            <span class="n">sync_file</span> <span class="o">=</span> <span class="n">SyncFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_sync_file</span><span class="p">(</span>
+                        <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                        <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stim_file</span> <span class="o">=</span> <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">dict_repr</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                        <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stim_file</span><span class="p">,</span>
+                        <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.from_multiple_stimulus_blocks">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_multiple_stimulus_blocks">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_multiple_stimulus_blocks</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="p">:</span> <span class="n">SyncFile</span><span class="p">,</span>
+            <span class="n">list_of_stims</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+                                      <span class="n">MappingStimulusFile</span><span class="p">,</span>
+                                      <span class="n">ReplayStimulusFile</span><span class="p">]],</span>
+            <span class="n">stims_of_interest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">frame_time_lines</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s1">'vsync_stim'</span><span class="p">,</span>
+            <span class="n">frame_time_line_direction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'rising'</span><span class="p">,</span>
+            <span class="n">frame_count_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct a StimulusTimestamps instance by registering</span>
+<span class="sd">        multiple stimulus blocks to one sync file and concatenating the results</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sync_file: SyncFile</span>
+
+<span class="sd">        list_of_stims: List[Union[BehaviorStimulusFile,</span>
+<span class="sd">                                  MappingStimulusFile,</span>
+<span class="sd">                                  ReplayStimulusFile]]</span>
+<span class="sd">            The list of StimulusFiles to be registered to the SyncFile</span>
+<span class="sd">            **in the order that they were presented to the mouse**</span>
+
+<span class="sd">        stims_of_interest: Optional[List[int]]</span>
+<span class="sd">            The indexes in list_of_stims of the timestamps to be</span>
+<span class="sd">            concatenated into this one StimulusTimestamps object.</span>
+<span class="sd">            If `None` (default), the timestamps from all stimulus files</span>
+<span class="sd">            are concatenated</span>
+
+<span class="sd">        monitor_delay: float</span>
+<span class="sd">            in seconds</span>
+
+<span class="sd">        frame_time_lines: Union[str, List[str]]</span>
+<span class="sd">            The line to be used to find raw frame times (usually 'vsync_stim').</span>
+<span class="sd">            If a list, the code will scan the list in order until a line</span>
+<span class="sd">            that is present in the sync file is found. That line will be used.</span>
+
+<span class="sd">        frame_time_line_direction: str</span>
+<span class="sd">            Either 'rising' or 'falling' indicating which edge</span>
+<span class="sd">            to use in finding the raw frame times</span>
+
+<span class="sd">        frame_count_tolerance: float</span>
+<span class="sd">            The tolerance to within two blocks of frame counts are considered</span>
+<span class="sd">            equal</span>
+<span class="sd">        """</span>
+        <span class="n">behavior_stimulus_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">list_of_stims</span>
+                                   <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">BehaviorStimulusFile</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">behavior_stimulus_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">'One of the values in `list_of_stims` must be a '</span>
+                <span class="s1">'`BehaviorStimulusFile`'</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">behavior_stimulus_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'You passed multiple `BehaviorStimulusFile` to '</span>
+                             <span class="s1">'`list_of_stims`. Please pass only 1.'</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">stims_of_interest</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stims_of_interest</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_stims</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">'stims_of_interest has length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">stims_of_interest</span><span class="p">)</span><span class="si">}</span><span class="s1"> '</span>
+                    <span class="sa">f</span><span class="s1">'but list_of_stims has length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_of_stims</span><span class="p">)</span><span class="si">}</span><span class="s1">. '</span>
+                    <span class="sa">f</span><span class="s1">'len(stims_of_interest) should be &lt;= len(list_of_stims)'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">stims_of_interest</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'stims_of_interest should not be negative'</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_of_stims</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">stims_of_interest</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'stims_of_interest contains an index '</span>
+                                 <span class="s1">'greater than the number of elements in '</span>
+                                 <span class="s1">'list_of_stims'</span><span class="p">)</span>
+        <span class="n">stimulus_times</span> <span class="o">=</span> <span class="n">get_stim_timestamps_from_stimulus_blocks</span><span class="p">(</span>
+                        <span class="n">stimulus_files</span><span class="o">=</span><span class="n">list_of_stims</span><span class="p">,</span>
+                        <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span>
+                        <span class="n">raw_frame_time_lines</span><span class="o">=</span><span class="n">frame_time_lines</span><span class="p">,</span>
+                        <span class="n">raw_frame_time_direction</span><span class="o">=</span><span class="n">frame_time_line_direction</span><span class="p">,</span>
+                        <span class="n">frame_count_tolerance</span><span class="o">=</span><span class="n">frame_count_tolerance</span><span class="p">)</span>
+
+        <span class="n">to_concatenate</span> <span class="o">=</span> \
+            <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">stimulus_times</span><span class="p">[</span><span class="s2">"timestamps"</span><span class="p">]]</span> \
+            <span class="k">if</span> <span class="n">stims_of_interest</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span>  \
+            <span class="p">[</span><span class="n">stimulus_times</span><span class="p">[</span><span class="s2">"timestamps"</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">stims_of_interest</span><span class="p">]</span>
+
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">to_concatenate</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">timestamps</span><span class="o">=</span><span class="n">timestamps</span><span class="p">,</span>
+                   <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+                   <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                   <span class="n">stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_files</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.from_lims">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_lims">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">ophys_experiment_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+        <span class="n">stimulus_file</span> <span class="o">=</span> <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                            <span class="n">db</span><span class="p">,</span>
+                            <span class="n">behavior_session_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ophys_experiment_id</span><span class="p">:</span>
+            <span class="n">sync_file</span> <span class="o">=</span> <span class="n">SyncFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">ophys_experiment_id</span><span class="o">=</span><span class="n">ophys_experiment_id</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_sync_file</span><span class="p">(</span><span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                                      <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span><span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file</span><span class="p">,</span>
+                                          <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.from_nwb">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                 <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"StimulusTimestamps"</span><span class="p">:</span>
+        <span class="n">stim_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">"stimulus"</span><span class="p">]</span>
+        <span class="n">stim_ts_interface</span> <span class="o">=</span> <span class="n">stim_module</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"timestamps"</span><span class="p">)</span>
+        <span class="n">stim_timestamps</span> <span class="o">=</span> <span class="n">stim_ts_interface</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[:]</span>
+
+        <span class="c1"># Because the monitor delay was already applied when</span>
+        <span class="c1"># saving the stimulus timestamps to the NWB file,</span>
+        <span class="c1"># we set it to zero here.</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">timestamps</span><span class="o">=</span><span class="n">stim_timestamps</span><span class="p">,</span>
+                   <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusTimestamps.to_nwb">
+<a class="viewcode-back" href="../../../../../../../allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.html#allensdk.brain_observatory.behavior.data_objects.timestamps.stimulus_timestamps.stimulus_timestamps.StimulusTimestamps.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+        <span class="n">stimulus_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"timestamps"</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_value</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s2">"s"</span>
+        <span class="p">)</span>
+
+        <span class="n">stim_mod</span> <span class="o">=</span> <span class="n">ProcessingModule</span><span class="p">(</span><span class="s2">"stimulus"</span><span class="p">,</span> <span class="s2">"Stimulus Times processing"</span><span class="p">)</span>
+        <span class="n">stim_mod</span><span class="o">.</span><span class="n">add_data_interface</span><span class="p">(</span><span class="n">stimulus_ts</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_processing_module</span><span class="p">(</span><span class="n">stim_mod</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

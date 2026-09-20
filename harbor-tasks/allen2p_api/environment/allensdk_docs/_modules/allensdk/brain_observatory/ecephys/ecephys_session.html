@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_session &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_session</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Collection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">literal_col_eval</span><span class="p">,</span> <span class="n">df_list_to_tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.ecephys_session_api</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EcephysNwb1Api</span><span class="p">,</span>
+    <span class="n">EcephysNwbSessionApi</span><span class="p">,</span>
+    <span class="n">EcephysSessionApi</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.stimulus_table</span><span class="w"> </span><span class="kn">import</span> <span class="n">naming_utilities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.stimulus_table._schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">default_column_renames</span><span class="p">,</span>
+    <span class="n">default_stimulus_renames</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.lazy_property</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyPropertyMixin</span>
+
+<span class="c1"># stimulus_presentation column names not describing a parameter of a stimulus</span>
+<span class="n">NON_STIMULUS_PARAMETERS</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span>
+    <span class="s1">'start_time'</span><span class="p">,</span>
+    <span class="s1">'stop_time'</span><span class="p">,</span>
+    <span class="s1">'duration'</span><span class="p">,</span>
+    <span class="s1">'stimulus_block'</span><span class="p">,</span>
+    <span class="s2">"stimulus_condition_id"</span>
+<span class="p">])</span>
+
+
+<div class="viewcode-block" id="EcephysSession">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcephysSession</span><span class="p">(</span><span class="n">LazyPropertyMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">''' Represents data from a single EcephysSession</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    units : pd.Dataframe</span>
+<span class="sd">        A table whose rows are sorted units (putative neurons) and whose</span>
+<span class="sd">        columns are characteristics of those units.</span>
+<span class="sd">        Index is:</span>
+<span class="sd">            unit_id : int</span>
+<span class="sd">                Unique integer identifier for this unit.</span>
+<span class="sd">        Columns are:</span>
+<span class="sd">            firing_rate : float</span>
+<span class="sd">                This unit's firing rate (spikes / s) calculated over the</span>
+<span class="sd">                window of that unit's activity (the time from its first</span>
+<span class="sd">                detected spike to its last).</span>
+<span class="sd">            isi_violations : float</span>
+<span class="sd">                Estamate of this unit's contamination rate (larger means</span>
+<span class="sd">                that more of the spikes assigned to this unit probably</span>
+<span class="sd">                originated from other neurons). Calculated as a ratio of the</span>
+<span class="sd">                firing rate of the unit over periods where spikes would be</span>
+<span class="sd">                isi-violating vs the total firing rate of the unit.</span>
+<span class="sd">            peak_channel_id : int</span>
+<span class="sd">                Unique integer identifier for this unit's peak channel.</span>
+<span class="sd">                A unit's peak channel is the channel on which its</span>
+<span class="sd">                peak-to-trough amplitude difference is maximized. This is</span>
+<span class="sd">                assessed using the kilosort 2 templates rather than the mean</span>
+<span class="sd">                waveforms for a unit.</span>
+<span class="sd">            snr : float</span>
+<span class="sd">                Signal to noise ratio for this unit.</span>
+<span class="sd">            probe_horizontal_position :  numeric</span>
+<span class="sd">                The horizontal (short-axis) position of this unit's peak</span>
+<span class="sd">                channel in microns.</span>
+<span class="sd">            probe_vertical_position : numeric</span>
+<span class="sd">                The vertical (long-axis, lower values are closer to the probe</span>
+<span class="sd">                base) position of this unit's peak channel in microns.</span>
+<span class="sd">            probe_id : int</span>
+<span class="sd">                Unique integer identifier for this unit's probe.</span>
+<span class="sd">            probe_description : str</span>
+<span class="sd">                Human-readable description carrying miscellaneous information</span>
+<span class="sd">                about this unit's probe.</span>
+<span class="sd">            location : str</span>
+<span class="sd">                Gross-scale location of this unit's probe.</span>
+<span class="sd">    spike_times : dict</span>
+<span class="sd">        Maps integer unit ids to arrays of spike times (float) for those units.</span>
+<span class="sd">    running_speed : RunningSpeed</span>
+<span class="sd">        NamedTuple with two fields</span>
+<span class="sd">            timestamps : numpy.ndarray</span>
+<span class="sd">                Timestamps of running speed data samples</span>
+<span class="sd">            values : np.ndarray</span>
+<span class="sd">                Running speed of the experimental subject (in cm / s).</span>
+<span class="sd">    mean_waveforms : dict</span>
+<span class="sd">        Maps integer unit ids to xarray.DataArrays containing mean spike</span>
+<span class="sd">        waveforms for that unit.</span>
+<span class="sd">    stimulus_presentations : pd.DataFrame</span>
+<span class="sd">        Table whose rows are stimulus presentations and whose columns are</span>
+<span class="sd">        presentation characteristics. A stimulus presentation is the smallest</span>
+<span class="sd">        unit of distinct stimulus presentation and lasts for (usually) 1 60 Hz</span>
+<span class="sd">        frame. Since not all parameters are relevant to all stimuli, this table</span>
+<span class="sd">        contains many 'null' values.</span>
+<span class="sd">        Index is</span>
+<span class="sd">            stimulus_presentation_id : int</span>
+<span class="sd">                Unique identifier for this stimulus presentation</span>
+<span class="sd">        Columns are</span>
+<span class="sd">            start_time :  float</span>
+<span class="sd">                Time (s) at which this presentation began</span>
+<span class="sd">            stop_time : float</span>
+<span class="sd">                Time (s) at which this presentation ended</span>
+<span class="sd">            duration : float</span>
+<span class="sd">                stop_time - start_time (s). Included for convenience.</span>
+<span class="sd">            stimulus_name : str</span>
+<span class="sd">                Identifies the stimulus family (e.g. "drifting_gratings" or</span>
+<span class="sd">                "natural_movie_3") used for this presentation. The stimulus</span>
+<span class="sd">                family, along with relevant parameter values, provides the</span>
+<span class="sd">                information required to reconstruct the stimulus presented</span>
+<span class="sd">                during this presentation. The empty string indicates a blank</span>
+<span class="sd">                period.</span>
+<span class="sd">            stimulus_block : numeric</span>
+<span class="sd">                A stimulus block is made by sequentially presenting</span>
+<span class="sd">                presentations from the same stimulus family. This value is the</span>
+<span class="sd">                index of the block which contains this presentation.</span>
+<span class="sd">                During a blank period, this is 'null'.</span>
+<span class="sd">            TF : float</span>
+<span class="sd">                Temporal frequency, or 'null' when not appropriate.</span>
+<span class="sd">            SF : float</span>
+<span class="sd">                Spatial frequency, or 'null' when not appropriate</span>
+<span class="sd">            Ori : float</span>
+<span class="sd">                Orientation (in degrees) or 'null' when not appropriate</span>
+<span class="sd">            Contrast : float</span>
+<span class="sd">            Pos_x : float</span>
+<span class="sd">            Pos_y : float</span>
+<span class="sd">            Color : numeric</span>
+<span class="sd">            Image : numeric</span>
+<span class="sd">            Phase : float</span>
+<span class="sd">            stimulus_condition_id : integer</span>
+<span class="sd">                identifies the session-unique stimulus condition (permutation</span>
+<span class="sd">                of parameters) to which this presentation belongs</span>
+<span class="sd">    stimulus_conditions : pd.DataFrame</span>
+<span class="sd">        Each row is a unique permutation (within this session) of stimulus</span>
+<span class="sd">        parameters presented during this experiment. Columns are as stimulus</span>
+<span class="sd">        presentations, sans start_time, end_time, stimulus_block, and duration.</span>
+<span class="sd">    inter_presentation_intervals : pd.DataFrame</span>
+<span class="sd">        The elapsed time between each immediately sequential pair of stimulus</span>
+<span class="sd">        presentations. This is a dataframe with a two-level multiindex (levels</span>
+<span class="sd">         are 'from_presentation_id' and 'to_presentation_id'). It has a single</span>
+<span class="sd">        column, 'interval', which reports the elapsed time between the</span>
+<span class="sd">        two presentations in seconds on the experiment's master</span>
+<span class="sd">        clock.</span>
+
+<span class="sd">    '''</span>
+
+    <span class="n">DETAILED_STIMULUS_PARAMETERS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"colorSpace"</span><span class="p">,</span>
+        <span class="s2">"flipHoriz"</span><span class="p">,</span>
+        <span class="s2">"flipVert"</span><span class="p">,</span>
+        <span class="s2">"depth"</span><span class="p">,</span>
+        <span class="s2">"interpolate"</span><span class="p">,</span>
+        <span class="s2">"mask"</span><span class="p">,</span>
+        <span class="s2">"opacity"</span><span class="p">,</span>
+        <span class="s2">"rgbPedestal"</span><span class="p">,</span>
+        <span class="s2">"tex"</span><span class="p">,</span>
+        <span class="s2">"texRes"</span><span class="p">,</span>
+        <span class="s2">"units"</span><span class="p">,</span>
+        <span class="s2">"rgb"</span><span class="p">,</span>
+        <span class="s2">"signalDots"</span><span class="p">,</span>
+        <span class="s2">"noiseDots"</span><span class="p">,</span>
+        <span class="s2">"fieldSize"</span><span class="p">,</span>
+        <span class="s2">"fieldShape"</span><span class="p">,</span>
+        <span class="s2">"fieldPos"</span><span class="p">,</span>
+        <span class="s2">"nDots"</span><span class="p">,</span>
+        <span class="s2">"dotSize"</span><span class="p">,</span>
+        <span class="s2">"dotLife"</span><span class="p">,</span>
+        <span class="s2">"color_triplet"</span>
+    <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_stimulus_presentations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'stimulus_name'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rig_geometry_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rig_metadata</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rig_metadata</span><span class="p">[</span><span class="s2">"geometry"</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rig_equipment_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rig_metadata</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rig_metadata</span><span class="p">[</span><span class="s2">"equipment"</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">specimen_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">[</span><span class="s2">"specimen_name"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">age_in_days</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">[</span><span class="s2">"age_in_days"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">[</span><span class="s2">"sex"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">full_genotype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">[</span><span class="s2">"full_genotype"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">[</span><span class="s2">"stimulus_name"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">units</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'width_rf'</span><span class="p">,</span>
+                                         <span class="s1">'height_rf'</span><span class="p">,</span>
+                                         <span class="s1">'on_screen_rf'</span><span class="p">,</span>
+                                         <span class="s1">'time_to_peak_fl'</span><span class="p">,</span>
+                                         <span class="s1">'time_to_peak_rf'</span><span class="p">,</span>
+                                         <span class="s1">'time_to_peak_sg'</span><span class="p">,</span>
+                                         <span class="s1">'sustained_idx_fl'</span><span class="p">,</span>
+                                         <span class="s1">'time_to_peak_dg'</span><span class="p">],</span>
+                                <span class="n">errors</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">structure_acronyms</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="s2">"ecephys_structure_acronym"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">structurewise_unit_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">"ecephys_structure_acronym"</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"specimen_name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">specimen_name</span><span class="p">,</span>
+            <span class="s2">"session_type"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_type</span><span class="p">,</span>
+            <span class="s2">"full_genotype"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_genotype</span><span class="p">,</span>
+            <span class="s2">"sex"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sex</span><span class="p">,</span>
+            <span class="s2">"age_in_days"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">age_in_days</span><span class="p">,</span>
+            <span class="s2">"rig_equipment_name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rig_equipment_name</span><span class="p">,</span>
+            <span class="s2">"num_units"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_units</span><span class="p">,</span>
+            <span class="s2">"num_channels"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_channels</span><span class="p">,</span>
+            <span class="s2">"num_probes"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_probes</span><span class="p">,</span>
+            <span class="s2">"num_stimulus_presentations"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_stimulus_presentations</span><span class="p">,</span>
+            <span class="s2">"session_start_time"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">session_start_time</span><span class="p">,</span>
+            <span class="s2">"ecephys_session_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+            <span class="s2">"structure_acronyms"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure_acronyms</span><span class="p">,</span>
+            <span class="s2">"stimulus_names"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_names</span>
+        <span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_presentations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_remove_detailed_stimulus_parameters</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_presentations</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">spike_times</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_accessed_spike_times"</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_accessed_spike_times</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_warn_invalid_spike_intervals</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spike_times</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">api</span><span class="p">:</span> <span class="n">EcephysSessionApi</span><span class="p">,</span>
+        <span class="n">test</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Construct an EcephysSession object, which provides access to</span>
+<span class="sd">        detailed data for a single extracellular electrophysiology</span>
+<span class="sd">        (neuropixels) session.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        api :</span>
+<span class="sd">            Used to access data, which is then cached on this object. Must</span>
+<span class="sd">            expose the EcephysSessionApi interface. Standard options include</span>
+<span class="sd">            instances of:</span>
+<span class="sd">                EcephysSessionNwbApi :: reads data from a neurodata without</span>
+<span class="sd">                    borders 2.0 file.</span>
+<span class="sd">        test :</span>
+<span class="sd">            If true, check during construction that this session's api is</span>
+<span class="sd">            valid.</span>
+
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="p">:</span> <span class="n">EcephysSessionApi</span> <span class="o">=</span> <span class="n">api</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ecephys_session_id</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_ecephys_session_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session_start_time</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_session_start_time</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running_speed</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_running_speed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean_waveforms</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_mean_waveforms</span><span class="p">,</span>
+                              <span class="n">wrappers</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_mean_waveforms</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spike_times</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_spike_times</span><span class="p">,</span>
+                              <span class="n">wrappers</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_spike_times</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optogenetic_stimulation_epochs</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_optogenetic_stimulation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spike_amplitudes</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_spike_amplitudes</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_probes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_channels</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_presentations</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_stimulus_presentations</span><span class="p">,</span>
+                <span class="n">wrappers</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_stimulus_presentations</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_mask_invalid_stimulus_presentations</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inter_presentation_intervals</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_inter_presentation_intervals</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">invalid_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_invalid_times</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_units</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_units</span><span class="p">,</span>
+                              <span class="n">wrappers</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_units_table</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rig_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_rig_metadata</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LazyProperty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">test</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EcephysSession.get_current_source_density">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_current_source_density">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_source_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Obtain current source density (CSD) of trial-averaged response</span>
+<span class="sd">        to a flash stimuli for this probe. See</span>
+<span class="sd">        allensdk.brain_observatory.ecephys.current_source_density</span>
+<span class="sd">        for details of CSD calculation.</span>
+
+<span class="sd">        CSD is computed with a 1D method (second spatial derivative) without</span>
+<span class="sd">        prior spatial smoothing. User should apply spatial smoothing of their</span>
+<span class="sd">        choice (e.g., Gaussian filter) to the computed CSD</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        probe_id : int</span>
+<span class="sd">            identify the probe whose CSD data ought to be loaded</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xr.DataArray :</span>
+<span class="sd">            dimensions are channel (id) and time (seconds, relative to</span>
+<span class="sd">            stimulus onset). Values are current source density assessed</span>
+<span class="sd">            on that channel at that time (V/m^2)</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_current_source_density</span><span class="p">(</span><span class="n">probe_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_lfp">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_lfp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lfp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">,</span> <span class="n">mask_invalid_intervals</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Load an xarray DataArray with LFP data from channels on a</span>
+<span class="sd">         single probe</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        probe_id : int</span>
+<span class="sd">            identify the probe whose LFP data ought to be loaded</span>
+<span class="sd">        mask_invalid_intervals : bool</span>
+<span class="sd">            if True (default) will mask data in the invalid intervals with</span>
+<span class="sd">            np.nan</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xr.DataArray :</span>
+<span class="sd">            dimensions are channel (id) and time (seconds). Values are sampled</span>
+<span class="sd">            LFP data.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Unlike many other data access methods on this class. This one does not</span>
+<span class="sd">        cache the loaded data in memory due to the large size of the LFP data.</span>
+
+<span class="sd">        '''</span>
+
+        <span class="k">if</span> <span class="n">mask_invalid_intervals</span><span class="p">:</span>
+            <span class="n">probe_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">probe_id</span><span class="p">][</span><span class="s2">"description"</span><span class="p">]</span>
+            <span class="n">fail_tags</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"all_probes"</span><span class="p">,</span> <span class="n">probe_name</span><span class="p">]</span>
+            <span class="n">invalid_time_intervals</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_filter_invalid_times_by_tags</span><span class="p">(</span><span class="n">fail_tags</span><span class="p">)</span>
+            <span class="n">lfp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_lfp</span><span class="p">(</span><span class="n">probe_id</span><span class="p">)</span>
+            <span class="n">time_points</span> <span class="o">=</span> <span class="n">lfp</span><span class="o">.</span><span class="n">time</span>
+            <span class="n">valid_time_points</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_valid_time_points</span><span class="p">(</span><span class="n">time_points</span><span class="p">,</span>
+                                            <span class="n">invalid_time_intervals</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">lfp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="o">=</span><span class="n">valid_time_points</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_lfp</span><span class="p">(</span><span class="n">probe_id</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_valid_time_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_points</span><span class="p">,</span> <span class="n">invalid_time_intevals</span><span class="p">):</span>
+
+        <span class="n">all_time_points</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"time_points"</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_points</span><span class="p">),</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'time'</span><span class="p">],</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">[</span><span class="n">time_points</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">valid_time_points</span> <span class="o">=</span> <span class="n">all_time_points</span>
+        <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">invalid_time_interval</span> <span class="ow">in</span> <span class="n">invalid_time_intevals</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">invalid_time_points</span> <span class="o">=</span> \
+                <span class="p">((</span><span class="n">time_points</span> <span class="o">&gt;=</span> <span class="n">invalid_time_interval</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">])</span>
+                 <span class="o">&amp;</span> <span class="p">(</span><span class="n">time_points</span> <span class="o">&lt;=</span> <span class="n">invalid_time_interval</span><span class="p">[</span><span class="s1">'stop_time'</span><span class="p">]))</span>
+            <span class="n">valid_time_points</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">valid_time_points</span><span class="p">,</span>
+                               <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">invalid_time_points</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">valid_time_points</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter_invalid_times_by_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        invalid_times: pd.DataFrame</span>
+<span class="sd">            of invalid times</span>
+<span class="sd">        tags: list</span>
+<span class="sd">            of tags</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame of invalid times having tags</span>
+<span class="sd">        """</span>
+        <span class="n">invalid_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invalid_times</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">invalid_times</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">invalid_times</span><span class="p">[</span><span class="s1">'tags'</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span>
+                                               <span class="nb">any</span><span class="p">([</span><span class="n">t</span> <span class="ow">in</span> <span class="n">x</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">]))</span>
+            <span class="n">invalid_times</span> <span class="o">=</span> <span class="n">invalid_times</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">invalid_times</span>
+
+<div class="viewcode-block" id="EcephysSession.get_inter_presentation_intervals_for_stimulus">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_inter_presentation_intervals_for_stimulus">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inter_presentation_intervals_for_stimulus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_names</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Get a subset of this session's inter-presentation intervals,</span>
+<span class="sd">        filtered by stimulus name.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_names : array-like of str</span>
+<span class="sd">            The names of stimuli to include in the output.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            inter-presentation intervals, filtered to the requested stimulus</span>
+<span class="sd">            names.</span>
+
+<span class="sd">        '''</span>
+
+        <span class="n">stimulus_names</span> <span class="o">=</span> \
+            <span class="n">coerce_scalar</span><span class="p">(</span>
+                <span class="n">stimulus_names</span><span class="p">,</span>
+                <span class="s1">'expected stimulus_names to be a collection (list-like), '</span>
+                <span class="sa">f</span><span class="s1">'but found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">stimulus_names</span><span class="p">)</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">stimulus_names</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        <span class="n">filtered_presentations</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="p">[</span>
+                    <span class="s1">'stimulus_name'</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">stimulus_names</span><span class="p">)]</span>
+        <span class="n">filtered_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">filtered_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inter_presentation_intervals</span><span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_presentation_intervals</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                <span class="n">filtered_ids</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="s1">'from_presentation_id'</span><span class="p">))</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_presentation_intervals</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                <span class="n">filtered_ids</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="s1">'to_presentation_id'</span><span class="p">))</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_stimulus_table">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_stimulus_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_table</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">include_detailed_parameters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">include_unused_parameters</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get a subset of stimulus presentations by name, with irrelevant</span>
+<span class="sd">        parameters filtered off</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_names : array-like of str</span>
+<span class="sd">            The names of stimuli to include in the output.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            Rows are filtered presentations, columns are the relevant subset</span>
+<span class="sd">            of stimulus parameters</span>
+
+<span class="sd">        '''</span>
+
+        <span class="k">if</span> <span class="n">stimulus_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stimulus_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_names</span>
+
+        <span class="n">stimulus_names</span> <span class="o">=</span> \
+            <span class="n">coerce_scalar</span><span class="p">(</span>
+                <span class="n">stimulus_names</span><span class="p">,</span>
+                <span class="s1">'expected stimulus_names to be a collection (list-like), '</span>
+                <span class="sa">f</span><span class="s1">'but found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">stimulus_names</span><span class="p">)</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">stimulus_names</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        <span class="n">presentations</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_presentations</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_presentations</span><span class="p">[</span>
+                    <span class="s1">'stimulus_name'</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">stimulus_names</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_detailed_parameters</span><span class="p">:</span>
+            <span class="n">presentations</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_remove_detailed_stimulus_parameters</span><span class="p">(</span>
+                        <span class="n">presentations</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_unused_parameters</span><span class="p">:</span>
+            <span class="n">presentations</span> <span class="o">=</span> <span class="n">removed_unused_stimulus_presentation_columns</span><span class="p">(</span>
+                    <span class="n">presentations</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">presentations</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_stimulus_epochs">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_stimulus_epochs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_epochs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration_thresholds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Reports continuous periods of time during which a single kind of</span>
+<span class="sd">        stimulus was presented</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------</span>
+<span class="sd">        duration_thresholds : dict, optional</span>
+<span class="sd">            keys are stimulus names, values are floating point durations in</span>
+<span class="sd">            seconds. All epochs with</span>
+<span class="sd">                - a given stimulus name</span>
+<span class="sd">                - a duration shorter than the associated threshold</span>
+<span class="sd">            will be removed from the results</span>
+
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">duration_thresholds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">duration_thresholds</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"spontaneous_activity"</span><span class="p">:</span> <span class="mf">90.0</span><span class="p">}</span>
+
+        <span class="n">presentations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">diff_indices</span> <span class="o">=</span> <span class="n">nan_intervals</span><span class="p">(</span><span class="n">presentations</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="n">epochs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">diff_indices</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">diff_indices</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">epochs</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">presentations</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">left</span><span class="p">][</span><span class="s2">"start_time"</span><span class="p">],</span>
+                <span class="s2">"stop_time"</span><span class="p">:</span> <span class="n">presentations</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">right</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="s2">"stop_time"</span><span class="p">],</span>
+                <span class="s2">"stimulus_name"</span><span class="p">:</span> <span class="n">presentations</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">left</span><span class="p">][</span><span class="s2">"stimulus_name"</span><span class="p">],</span>
+                <span class="s2">"stimulus_block"</span><span class="p">:</span> <span class="n">presentations</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">left</span><span class="p">][</span><span class="s2">"stimulus_block"</span><span class="p">]</span>
+            <span class="p">})</span>
+        <span class="n">epochs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span>
+        <span class="n">epochs</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span> <span class="o">=</span> <span class="n">epochs</span><span class="p">[</span><span class="s2">"stop_time"</span><span class="p">]</span> <span class="o">-</span> <span class="n">epochs</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="n">duration_thresholds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">epochs</span> <span class="o">=</span> <span class="n">epochs</span><span class="p">[</span>
+                <span class="p">(</span><span class="n">epochs</span><span class="p">[</span><span class="s2">"stimulus_name"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">key</span><span class="p">)</span>
+                <span class="o">|</span> <span class="p">(</span><span class="n">epochs</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">)</span>
+            <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">epochs</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="s2">"start_time"</span><span class="p">,</span>
+                              <span class="s2">"stop_time"</span><span class="p">,</span>
+                              <span class="s2">"duration"</span><span class="p">,</span>
+                              <span class="s2">"stimulus_name"</span><span class="p">,</span>
+                              <span class="s2">"stimulus_block"</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_invalid_times">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_invalid_times">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_invalid_times</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Report invalid time intervals with tags describing the scope</span>
+<span class="sd">        of invalid data</span>
+
+<span class="sd">        The tags format: [scope,scope_id,label]</span>
+
+<span class="sd">        scope:</span>
+<span class="sd">            'EcephysSession': data is invalid across session</span>
+<span class="sd">            'EcephysProbe': data is invalid for a single probe</span>
+<span class="sd">        label:</span>
+<span class="sd">            'all_probes': gain fluctuations on the Neuropixels probe result in</span>
+<span class="sd">                missed spikes and LFP saturation events</span>
+<span class="sd">            'stimulus' : very long frames (&gt;3x the normal frame length) make</span>
+<span class="sd">                any stimulus-locked analysis invalid</span>
+<span class="sd">            'probe#': probe # stopped sending data during this interval</span>
+<span class="sd">                (spikes and LFP samples will be missing)</span>
+<span class="sd">            'optotagging': missing optotagging data</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            Rows are invalid intervals, columns are 'start_time' (s),</span>
+<span class="sd">            'stop_time' (s), 'tags'</span>
+<span class="sd">        """</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">invalid_times</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_screen_gaze_data">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_screen_gaze_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_screen_gaze_data</span><span class="p">(</span>
+         <span class="bp">self</span><span class="p">,</span>
+         <span class="n">include_filtered_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return a dataframe with estimated gaze position on screen.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        include_filtered_data : bool, optional</span>
+<span class="sd">            Whether to include filtered version of data (where filtered</span>
+<span class="sd">            values are replaced by NaN), by default False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Contains columns for estimated gaze position:</span>
+<span class="sd">                *_eye_area</span>
+<span class="sd">                *_pupil_area</span>
+<span class="sd">                *_screen_coordinates_x_cm</span>
+<span class="sd">                *_screen_coordinates_y_cm</span>
+<span class="sd">                *_screen_coordinates_spherical_x_deg</span>
+<span class="sd">                *_screen_coorindates_spherical_y_deg</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_screen_gaze_data</span><span class="p">(</span>
+            <span class="n">include_filtered_data</span><span class="o">=</span><span class="n">include_filtered_data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_pupil_data">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_pupil_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pupil_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return a dataframe with eye tracking ellipse fit data</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Contains eye, pupil and corneal reflection (cr) ellipse fits:</span>
+<span class="sd">                *_center_x</span>
+<span class="sd">                *_center_y</span>
+<span class="sd">                *_height</span>
+<span class="sd">                *_width</span>
+<span class="sd">                *_phi</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">get_pupil_data</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mask_invalid_stimulus_presentations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_presentations</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Mask invalid stimulus presentations</span>
+
+<span class="sd">        Find stimulus presentations overlapping with invalid times</span>
+<span class="sd">        Mask stimulus names with "invalid_presentation", keep "start_time" and</span>
+<span class="sd">            "stop_time", mask remaining data with np.nan</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_presentations : pd.DataFrame</span>
+<span class="sd">            table including all stimulus presentations</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            table with masked invalid presentations</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">fail_tags</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"stimulus"</span><span class="p">]</span>
+        <span class="n">invalid_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_invalid_times_by_tags</span><span class="p">(</span><span class="n">fail_tags</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ix_sp</span><span class="p">,</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">stim_epoch</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">],</span> <span class="n">sp</span><span class="p">[</span><span class="s1">'stop_time'</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">ix_it</span><span class="p">,</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">invalid_times</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">invalid_interval</span> <span class="o">=</span> <span class="n">it</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">],</span> <span class="n">it</span><span class="p">[</span><span class="s1">'stop_time'</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">_overlap</span><span class="p">(</span><span class="n">stim_epoch</span><span class="p">,</span> <span class="n">invalid_interval</span><span class="p">):</span>
+                    <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">ix_sp</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                    <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ix_sp</span><span class="p">,</span> <span class="s2">"stimulus_name"</span><span class="p">]</span> <span class="o">=</span> \
+                        <span class="s2">"invalid_presentation"</span>
+                    <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ix_sp</span><span class="p">,</span> <span class="s2">"start_time"</span><span class="p">]</span> <span class="o">=</span> \
+                        <span class="n">stim_epoch</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">ix_sp</span><span class="p">,</span> <span class="s2">"stop_time"</span><span class="p">]</span> <span class="o">=</span> \
+                        <span class="n">stim_epoch</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">stimulus_presentations</span>
+
+<div class="viewcode-block" id="EcephysSession.presentationwise_spike_counts">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.presentationwise_spike_counts">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">presentationwise_spike_counts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">bin_edges</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_ids</span><span class="p">,</span>
+        <span class="n">unit_ids</span><span class="p">,</span>
+        <span class="n">binarize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">large_bin_size_threshold</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+        <span class="n">time_domain_callback</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Build an array of spike counts surrounding stimulus onset per</span>
+<span class="sd">        unit and stimulus frame.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------</span>
+<span class="sd">        bin_edges : numpy.ndarray</span>
+<span class="sd">            Spikes will be counted into the bins defined by these edges.</span>
+<span class="sd">            Values are in seconds, relative to stimulus onset.</span>
+<span class="sd">        stimulus_presentation_ids : array-like</span>
+<span class="sd">            Filter to these stimulus presentations</span>
+<span class="sd">        unit_ids : array-like</span>
+<span class="sd">            Filter to these units</span>
+<span class="sd">        binarize : bool, optional</span>
+<span class="sd">            If true, all counts greater than 0 will be treated as 1. This</span>
+<span class="sd">            results in lower storage overhead, but is only reasonable if bin</span>
+<span class="sd">            sizes are fine (&lt;= 1 millisecond).</span>
+<span class="sd">        large_bin_size_threshold : float, optional</span>
+<span class="sd">            If binarize is True and the largest bin width is greater than</span>
+<span class="sd">            this value, a warning will be emitted.</span>
+<span class="sd">        time_domain_callback : callable, optional</span>
+<span class="sd">            The time domain is a numpy array whose values are trial-aligned bin</span>
+<span class="sd">            edges (each row is aligned to a different trial). This optional</span>
+<span class="sd">            function will be applied to the time domain before counting spikes.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xarray.DataArray :</span>
+<span class="sd">            Data array whose dimensions are stimulus presentation, unit,</span>
+<span class="sd">            and time bin and whose values are spike counts.</span>
+
+<span class="sd">        '''</span>
+
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span>
+            <span class="s1">'stimulus_presentations'</span><span class="p">,</span>
+            <span class="n">ids</span><span class="o">=</span><span class="n">stimulus_presentation_ids</span><span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span><span class="s1">'units'</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">)</span>
+
+        <span class="n">largest_bin_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">binarize</span> <span class="ow">and</span> <span class="n">largest_bin_size</span> <span class="o">&gt;</span> <span class="n">large_bin_size_threshold</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s1">'You</span><span class="se">\'</span><span class="s1">ve elected to binarize spike counts, but your maximum '</span>
+                <span class="sa">f</span><span class="s1">'bin width is </span><span class="si">{</span><span class="n">largest_bin_size</span><span class="si">:</span><span class="s1">2.5f</span><span class="si">}</span><span class="s1"> seconds. '</span>
+                <span class="s1">'Binarizing spike counts with such a large bin width can '</span>
+                <span class="s1">'cause significant loss of accuracy! '</span>
+                <span class="s1">'Please consider only binarizing spike counts '</span>
+                <span class="sa">f</span><span class="s1">'when your bins are &lt;= </span><span class="si">{</span><span class="n">large_bin_size_threshold</span><span class="si">}</span><span class="s1"> '</span>
+                <span class="s1">'seconds wide.'</span>
+            <span class="p">)</span>
+
+        <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">)</span>
+        <span class="n">domain</span> <span class="o">=</span> <span class="n">build_time_window_domain</span><span class="p">(</span>
+            <span class="n">bin_edges</span><span class="p">,</span>
+            <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">callback</span><span class="o">=</span><span class="n">time_domain_callback</span><span class="p">)</span>
+
+        <span class="n">out_of_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_of_order</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">out_of_order_time_bins</span> <span class="o">=</span> \
+                <span class="p">[(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">out_of_order</span><span class="p">)]</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"The time domain specified contains out-of-order "</span>
+                             <span class="sa">f</span><span class="s2">"bin edges at indices: </span><span class="si">{</span><span class="n">out_of_order_time_bins</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">ends</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">time_diffs</span> <span class="o">=</span> <span class="n">starts</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">ends</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">overlapping</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">time_diffs</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">overlapping</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Ignoring intervals that overlaps multiple time bins because</span>
+            <span class="c1"># trying to figure that out would take O(n)</span>
+            <span class="n">overlapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">overlapping</span><span class="p">]</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"You've specified some overlapping time intervals "</span>
+                          <span class="sa">f</span><span class="s2">"between neighboring rows: </span><span class="si">{</span><span class="n">overlapping</span><span class="si">}</span><span class="s2">, "</span>
+                          <span class="s2">"with a maximum overlap of"</span>
+                          <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">time_diffs</span><span class="p">))</span><span class="si">}</span><span class="s2"> seconds."</span><span class="p">)</span>
+
+        <span class="n">tiled_data</span> <span class="o">=</span> <span class="n">build_spike_histogram</span><span class="p">(</span>
+            <span class="n">domain</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spike_times</span><span class="p">,</span>
+            <span class="n">units</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">binarize</span><span class="o">=</span><span class="n">binarize</span>
+        <span class="p">)</span>
+
+        <span class="n">stim_presentation_id</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="n">tiled_data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'spike_counts'</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">tiled_data</span><span class="p">,</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">'stimulus_presentation_id'</span><span class="p">:</span> <span class="n">stim_presentation_id</span><span class="p">,</span>
+                <span class="s1">'time_relative_to_stimulus_onset'</span><span class="p">:</span> <span class="p">(</span><span class="n">bin_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                                                    <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                <span class="s1">'unit_id'</span><span class="p">:</span> <span class="n">units</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">},</span>
+            <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'stimulus_presentation_id'</span><span class="p">,</span>
+                  <span class="s1">'time_relative_to_stimulus_onset'</span><span class="p">,</span>
+                  <span class="s1">'unit_id'</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tiled_data</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.presentationwise_spike_times">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.presentationwise_spike_times">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">presentationwise_spike_times</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_presentation_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' Produce a table associating spike times with units and</span>
+<span class="sd">        stimulus presentations</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_presentation_ids : array-like</span>
+<span class="sd">            Filter to these stimulus presentations</span>
+<span class="sd">        unit_ids : array-like</span>
+<span class="sd">            Filter to these units</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame :</span>
+<span class="sd">        Index is</span>
+<span class="sd">            spike_time : float</span>
+<span class="sd">                On the session's master clock.</span>
+<span class="sd">        Columns are</span>
+<span class="sd">            stimulus_presentation_id : int</span>
+<span class="sd">                The stimulus presentation on which this spike occurred.</span>
+<span class="sd">            unit_id : int</span>
+<span class="sd">                The unit that emitted this spike.</span>
+<span class="sd">        '''</span>
+
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span><span class="s1">'stimulus_presentations'</span><span class="p">,</span>
+                                  <span class="n">ids</span><span class="o">=</span><span class="n">stimulus_presentation_ids</span><span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span><span class="s1">'units'</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="n">unit_ids</span><span class="p">)</span>
+
+        <span class="n">presentation_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">])</span>
+        <span class="n">presentation_times</span><span class="p">[::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">])</span>
+        <span class="n">presentation_times</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'stop_time'</span><span class="p">])</span>
+        <span class="n">all_presentation_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="n">presentation_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">unit_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">spike_times</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">units</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spike_times</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">presentation_times</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+            <span class="n">index_valid</span> <span class="o">=</span> <span class="n">indices</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="n">presentations</span> <span class="o">=</span> \
+                <span class="n">all_presentation_ids</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">indices</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span>
+
+            <span class="n">sorder</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">presentations</span><span class="p">)</span>
+            <span class="n">presentations</span> <span class="o">=</span> <span class="n">presentations</span><span class="p">[</span><span class="n">sorder</span><span class="p">]</span>
+            <span class="n">index_valid</span> <span class="o">=</span> <span class="n">index_valid</span><span class="p">[</span><span class="n">sorder</span><span class="p">]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">sorder</span><span class="p">]</span>
+
+            <span class="n">changes</span> <span class="o">=</span> \
+                <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ediff1d</span><span class="p">(</span><span class="n">presentations</span><span class="p">,</span> <span class="n">to_begin</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">to_end</span><span class="o">=</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">changes</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">changes</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">jj</span><span class="p">][</span><span class="n">index_valid</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">jj</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">unit_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">values</span><span class="o">.</span><span class="n">size</span><span class="p">])</span> <span class="o">+</span> <span class="n">unit_id</span><span class="p">)</span>
+                <span class="n">presentation_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">values</span><span class="o">.</span><span class="n">size</span><span class="p">])</span> <span class="o">+</span>
+                                        <span class="n">presentations</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span>
+                <span class="n">spike_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">spike_times</span><span class="p">:</span>
+            <span class="c1"># If there are no units firing during the given stimulus return an</span>
+            <span class="c1"># empty dataframe</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                 <span class="s1">'spike_times'</span><span class="p">,</span>
+                 <span class="s1">'stimulus_presentation'</span><span class="p">,</span>
+                 <span class="s1">'unit_id'</span><span class="p">,</span>
+                 <span class="s1">'time_since_stimulus_presentation_onset'</span><span class="p">])</span>
+
+        <span class="n">pres_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">presentation_ids</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">spike_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s1">'stimulus_presentation_id'</span><span class="p">:</span> <span class="n">pres_ids</span><span class="p">,</span>
+            <span class="s1">'unit_id'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">unit_ids</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">spike_times</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">'spike_time'</span><span class="p">))</span>
+
+        <span class="c1"># Add time since stimulus presentation onset</span>
+        <span class="n">onset_times</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span>
+            <span class="s2">"stimulus_presentations"</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="n">all_presentation_ids</span><span class="p">)[</span><span class="s2">"start_time"</span><span class="p">]</span>
+        <span class="n">spikes_with_onset</span> <span class="o">=</span> <span class="n">spike_df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">onset_times</span><span class="p">,</span>
+                                          <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s2">"stimulus_presentation_id"</span><span class="p">])</span>
+        <span class="n">spikes_with_onset</span><span class="p">[</span><span class="s2">"time_since_stimulus_presentation_onset"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">spikes_with_onset</span><span class="o">.</span><span class="n">index</span> <span class="o">-</span> <span class="n">spikes_with_onset</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">spikes_with_onset</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">'spike_time'</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">spikes_with_onset</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">spikes_with_onset</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.conditionwise_spike_statistics">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.conditionwise_spike_statistics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">conditionwise_spike_statistics</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_presentation_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">use_rates</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Produce summary statistics for each distinct stimulus condition</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_presentation_ids : array-like</span>
+<span class="sd">            identifies stimulus presentations from which spikes will be</span>
+<span class="sd">            considered</span>
+<span class="sd">        unit_ids : array-like</span>
+<span class="sd">            identifies units whose spikes will be considered</span>
+<span class="sd">        use_rates : bool, optional</span>
+<span class="sd">            If True, use firing rates. If False, use spike counts.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame :</span>
+<span class="sd">            Rows are indexed by unit id and stimulus condition id. Values are</span>
+<span class="sd">            summary statistics describing spikes emitted by a specific unit</span>
+<span class="sd">            across presentations within a specific condition.</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># TODO: Need to return an empty df if no matching unit-ids or</span>
+        <span class="c1">#       presentation-ids are found</span>
+        <span class="c1"># TODO: To use filter_owned_df() make sure to convert the results</span>
+        <span class="c1">#       from a Series to a Dataframe</span>
+        <span class="n">stimulus_presentation_ids</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">stimulus_presentation_ids</span> <span class="k">if</span> <span class="n">stimulus_presentation_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>  <span class="c1"># In case</span>
+        <span class="n">presentations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="n">stimulus_presentation_ids</span><span class="p">,</span> <span class="p">[</span><span class="s2">"stimulus_condition_id"</span><span class="p">,</span> <span class="s2">"duration"</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="n">spikes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">(</span>
+            <span class="n">stimulus_presentation_ids</span><span class="o">=</span><span class="n">stimulus_presentation_ids</span><span class="p">,</span>
+            <span class="n">unit_ids</span><span class="o">=</span><span class="n">unit_ids</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">spikes</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="c1"># In the case there are no spikes</span>
+            <span class="n">spike_counts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                <span class="p">{</span><span class="s1">'spike_count'</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+                <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_product</span><span class="p">([</span>
+                    <span class="n">stimulus_presentation_ids</span><span class="p">,</span>
+                    <span class="n">unit_ids</span><span class="p">],</span>
+                    <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">'stimulus_presentation_id'</span><span class="p">,</span> <span class="s1">'unit_id'</span><span class="p">]))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">spike_counts</span> <span class="o">=</span> <span class="n">spikes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">spike_counts</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">spike_counts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">spike_counts</span> <span class="o">=</span> \
+                <span class="n">spike_counts</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"stimulus_presentation_id"</span><span class="p">,</span>
+                                      <span class="s2">"unit_id"</span><span class="p">])</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+
+            <span class="c1"># If not explicity stated get unit ids from spikes table.</span>
+            <span class="n">unit_ids</span> <span class="o">=</span> <span class="n">unit_ids</span> <span class="k">if</span> <span class="n">unit_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
+                <span class="k">else</span> <span class="n">spikes</span><span class="p">[</span><span class="s1">'unit_id'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+            <span class="n">spike_counts</span> <span class="o">=</span> \
+                <span class="n">spike_counts</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span>
+                    <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_product</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">stimulus_presentation_ids</span><span class="p">,</span>
+                         <span class="n">unit_ids</span><span class="p">],</span>
+                        <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s1">'stimulus_presentation_id'</span><span class="p">,</span>
+                               <span class="s1">'unit_id'</span><span class="p">]),</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">spike_counts</span><span class="p">,</span>
+                      <span class="n">presentations</span><span class="p">,</span>
+                      <span class="n">left_on</span><span class="o">=</span><span class="s2">"stimulus_presentation_id"</span><span class="p">,</span>
+                      <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                      <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">)</span>
+        <span class="n">sp</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">use_rates</span><span class="p">:</span>
+            <span class="n">sp</span><span class="p">[</span><span class="s2">"spike_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span> <span class="o">/</span> <span class="n">sp</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span>
+            <span class="n">sp</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">extractor</span> <span class="o">=</span> <span class="n">_extract_summary_rate_statistics</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sp</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">])</span>
+            <span class="n">extractor</span> <span class="o">=</span> <span class="n">_extract_summary_count_statistics</span>
+
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">gr</span> <span class="ow">in</span> <span class="n">sp</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"stimulus_condition_id"</span><span class="p">,</span> <span class="s2">"unit_id"</span><span class="p">]):</span>
+            <span class="n">summary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extractor</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">gr</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"unit_id"</span><span class="p">,</span>
+                <span class="s2">"stimulus_condition_id"</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_parameter_values_for_stimulus">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_parameter_values_for_stimulus">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parameter_values_for_stimulus</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_name</span><span class="p">,</span>
+            <span class="n">drop_nulls</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" For each stimulus parameter, report the unique values taken</span>
+<span class="sd">        on by that parameter while a named stimulus was presented.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_name : str</span>
+<span class="sd">            filter to presentations of this stimulus</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict :</span>
+<span class="sd">            maps parameters (column names) to their unique values.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">presentation_ids</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_stimulus_table</span><span class="p">([</span><span class="n">stimulus_name</span><span class="p">])</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stimulus_parameter_values</span><span class="p">(</span>
+                <span class="n">presentation_ids</span><span class="p">,</span>
+                <span class="n">drop_nulls</span><span class="o">=</span><span class="n">drop_nulls</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.get_stimulus_parameter_values">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.get_stimulus_parameter_values">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_parameter_values</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_presentation_ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">drop_nulls</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">''' For each stimulus parameter, report the unique values taken</span>
+<span class="sd">        on by that parameter throughout the course of the session.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_presentation_ids : array-like, optional</span>
+<span class="sd">            If provided, only parameter values from these stimulus</span>
+<span class="sd">            presentations will be considered.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict :</span>
+<span class="sd">            maps parameters (column names) to their unique values.</span>
+
+<span class="sd">        '''</span>
+
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_filter_owned_df</span><span class="p">(</span><span class="s1">'stimulus_presentations'</span><span class="p">,</span>
+                                  <span class="n">ids</span><span class="o">=</span><span class="n">stimulus_presentation_ids</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+                <span class="n">columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">NON_STIMULUS_PARAMETERS</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s1">'stimulus_name'</span><span class="p">])</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">removed_unused_stimulus_presentation_columns</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="p">)</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">colname</span> <span class="ow">in</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">uniques</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+            <span class="n">non_null</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">uniques</span><span class="p">[</span><span class="n">uniques</span> <span class="o">!=</span> <span class="s2">"null"</span><span class="p">])</span>
+            <span class="n">non_null</span> <span class="o">=</span> <span class="n">non_null</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">drop_nulls</span> <span class="ow">and</span> <span class="s2">"null"</span> <span class="ow">in</span> <span class="n">uniques</span><span class="p">:</span>
+                <span class="n">non_null</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">non_null</span><span class="p">,</span> <span class="p">[</span><span class="s2">"null"</span><span class="p">]])</span>
+
+            <span class="n">parameters</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span> <span class="o">=</span> <span class="n">non_null</span>
+
+        <span class="k">return</span> <span class="n">parameters</span></div>
+
+
+<div class="viewcode-block" id="EcephysSession.channel_structure_intervals">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.channel_structure_intervals">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">channel_structure_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_ids</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">""" find on a list of channels the intervals of channels inserted</span>
+<span class="sd">        into particular structures</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        channel_ids : list</span>
+<span class="sd">            A list of channel ids</span>
+<span class="sd">        structure_id_key : str</span>
+<span class="sd">            use this column for numerically identifying structures</span>
+<span class="sd">        structure_label_key : str</span>
+<span class="sd">            use this column for human-readable structure identification</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        labels : np.ndarray</span>
+<span class="sd">            for each detected interval, the label associated with that interval</span>
+<span class="sd">        intervals : np.ndarray</span>
+<span class="sd">            one element longer than labels. Start and end indices for</span>
+<span class="sd">            intervals.</span>
+
+<span class="sd">        """</span>
+        <span class="n">structure_id_key</span> <span class="o">=</span> <span class="s2">"ecephys_structure_id"</span>
+        <span class="n">structure_label_key</span> <span class="o">=</span> <span class="s2">"ecephys_structure_acronym"</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">channel_ids</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channel_ids</span><span class="p">]</span>
+
+        <span class="n">unique_probes</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">"probe_id"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_probes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Calculating structure boundaries across channels "</span>
+                          <span class="s2">"from multiple probes."</span><span class="p">)</span>
+
+        <span class="n">intervals</span> <span class="o">=</span> <span class="n">nan_intervals</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">structure_id_key</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">structure_label_key</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">intervals</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">return</span> <span class="n">labels</span><span class="p">,</span> <span class="n">intervals</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_spike_times</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spike_times</span><span class="p">):</span>
+        <span class="n">retained_units</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">output_spike_times</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">spike_times</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">spike_times</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">unit_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">unit_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">retained_units</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">output_spike_times</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="k">return</span> <span class="n">output_spike_times</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_stimulus_presentations</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">stimulus_presentations</span><span class="p">,</span>
+            <span class="n">nonapplicable</span><span class="o">=</span><span class="s2">"null"</span><span class="p">):</span>
+        <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'stimulus_presentation_id'</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'stimulus_index'</span><span class="p">])</span>
+
+        <span class="c1"># TODO: putting these here for now; after SWDB 2019, will rerun</span>
+        <span class="c1"># stimulus table module for all sessions and can remove these</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">naming_utilities</span><span class="o">.</span><span class="n">collapse_columns</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">naming_utilities</span><span class="o">.</span><span class="n">standardize_movie_numbers</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">naming_utilities</span><span class="o">.</span><span class="n">add_number_to_shuffled_movie</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">naming_utilities</span><span class="o">.</span><span class="n">map_stimulus_names</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="p">,</span> <span class="n">default_stimulus_renames</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> \
+            <span class="n">naming_utilities</span><span class="o">.</span><span class="n">map_column_names</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="p">,</span>
+                <span class="n">default_column_renames</span><span class="p">,</span>
+                <span class="n">ignore_case</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># pandas groupby ops ignore nans, so we need a new "nonapplicable"</span>
+        <span class="c1"># value that pandas does not recognize as null ...</span>
+        <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">nonapplicable</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># pandas does not automatically convert boolean cols for fillna</span>
+        <span class="n">boolean_colnames</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">dtypes</span><span class="p">[</span>
+            <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">dtypes</span> <span class="o">==</span> <span class="s2">"boolean"</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+        <span class="n">col_type_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">colname</span><span class="p">:</span> <span class="s2">"object"</span> <span class="k">for</span> <span class="n">colname</span> <span class="ow">in</span> <span class="n">boolean_colnames</span><span class="p">}</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="n">col_type_map</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">nonapplicable</span><span class="p">)</span>
+
+        <span class="c1"># eval str(numeric) and str(lists)</span>
+        <span class="c1"># convert lists to tuple for hashability</span>
+        <span class="c1"># Rationale: pd dataframe reads values as str from nwb files</span>
+        <span class="c1"># where they are expected to be float</span>
+        <span class="n">col_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"phase, size, spatial_frequency"</span><span class="p">]</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="n">literal_col_eval</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">col_list</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="n">df_list_to_tuple</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">col_list</span><span class="p">)</span>
+        <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"stop_time"</span><span class="p">]</span>
+            <span class="o">-</span> <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># TODO: database these</span>
+        <span class="n">stimulus_conditions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">presentation_conditions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cid_counter</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># TODO: Can we have parameters on what columns to omit?</span>
+        <span class="c1">#       If stimulus_block or duration is left in it can affect</span>
+        <span class="c1">#       how conditionwise_spike_statistics counts spikes</span>
+        <span class="n">params_only</span> <span class="o">=</span> \
+            <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">,</span>
+                                                 <span class="s2">"stop_time"</span><span class="p">,</span>
+                                                 <span class="s2">"duration"</span><span class="p">,</span>
+                                                 <span class="s2">"stimulus_block"</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">params_only</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">stimulus_conditions</span><span class="p">:</span>
+                <span class="n">cid</span> <span class="o">=</span> <span class="n">stimulus_conditions</span><span class="p">[</span><span class="n">row</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cid_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">stimulus_conditions</span><span class="p">[</span><span class="n">row</span><span class="p">]</span> <span class="o">=</span> <span class="n">cid_counter</span>
+                <span class="n">cid</span> <span class="o">=</span> <span class="n">cid_counter</span>
+
+            <span class="n">presentation_conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cid</span><span class="p">)</span>
+
+        <span class="n">cond_ids</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cond_vals</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">cv</span><span class="p">,</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">cond_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ci</span><span class="p">)</span>
+            <span class="n">cond_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_conditions</span> <span class="o">=</span> \
+            <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cond_vals</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">cond_ids</span><span class="p">,</span>
+                         <span class="n">name</span><span class="o">=</span><span class="s2">"stimulus_condition_id"</span><span class="p">))</span>
+        <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"stimulus_condition_id"</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="n">presentation_conditions</span>
+
+        <span class="k">return</span> <span class="n">stimulus_presentations</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_units_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units_table</span><span class="p">):</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unmerged_units</span> <span class="o">=</span> <span class="n">units_table</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">units_table</span><span class="p">,</span>
+                         <span class="n">channels</span><span class="p">,</span>
+                         <span class="n">left_on</span><span class="o">=</span><span class="s1">'peak_channel_id'</span><span class="p">,</span>
+                         <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_unit'</span><span class="p">,</span> <span class="s1">'_channel'</span><span class="p">])</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">table</span><span class="p">,</span>
+                         <span class="n">probes</span><span class="p">,</span>
+                         <span class="n">left_on</span><span class="o">=</span><span class="s1">'probe_id'</span><span class="p">,</span>
+                         <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_unit'</span><span class="p">,</span> <span class="s1">'_probe'</span><span class="p">])</span>
+
+        <span class="n">table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">'unit_id'</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'description'</span><span class="p">:</span> <span class="s1">'probe_description'</span><span class="p">,</span>
+            <span class="s1">'local_index_channel'</span><span class="p">:</span> <span class="s1">'channel_local_index'</span><span class="p">,</span>
+            <span class="s1">'PT_ratio'</span><span class="p">:</span> <span class="s1">'waveform_PT_ratio'</span><span class="p">,</span>
+            <span class="s1">'amplitude'</span><span class="p">:</span> <span class="s1">'waveform_amplitude'</span><span class="p">,</span>
+            <span class="s1">'duration'</span><span class="p">:</span> <span class="s1">'waveform_duration'</span><span class="p">,</span>
+            <span class="s1">'halfwidth'</span><span class="p">:</span> <span class="s1">'waveform_halfwidth'</span><span class="p">,</span>
+            <span class="s1">'recovery_slope'</span><span class="p">:</span> <span class="s1">'waveform_recovery_slope'</span><span class="p">,</span>
+            <span class="s1">'repolarization_slope'</span><span class="p">:</span> <span class="s1">'waveform_repolarization_slope'</span><span class="p">,</span>
+            <span class="s1">'spread'</span><span class="p">:</span> <span class="s1">'waveform_spread'</span><span class="p">,</span>
+            <span class="s1">'velocity_above'</span><span class="p">:</span> <span class="s1">'waveform_velocity_above'</span><span class="p">,</span>
+            <span class="s1">'velocity_below'</span><span class="p">:</span> <span class="s1">'waveform_velocity_below'</span><span class="p">,</span>
+            <span class="s1">'sampling_rate'</span><span class="p">:</span> <span class="s1">'probe_sampling_rate'</span><span class="p">,</span>
+            <span class="s1">'lfp_sampling_rate'</span><span class="p">:</span> <span class="s1">'probe_lfp_sampling_rate'</span><span class="p">,</span>
+            <span class="s1">'has_lfp_data'</span><span class="p">:</span> <span class="s1">'probe_has_lfp_data'</span><span class="p">,</span>
+            <span class="s1">'l_ratio'</span><span class="p">:</span> <span class="s1">'L_ratio'</span><span class="p">,</span>
+            <span class="s1">'pref_images_multi_ns'</span><span class="p">:</span> <span class="s1">'pref_image_multi_ns'</span><span class="p">,</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">table</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'probe_description'</span><span class="p">,</span>
+                                     <span class="s1">'probe_vertical_position'</span><span class="p">,</span>
+                                     <span class="s1">'probe_horizontal_position'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_nwb1_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean_waveforms</span><span class="p">):</span>
+        <span class="c1"># _build_mean_waveforms() assumes every unit has the same number of</span>
+        <span class="c1">#  waveforms and that a unit-waveform exists for all channels. This</span>
+        <span class="c1">#  is not true for NWB 1 files where each unit has ONE waveform on</span>
+        <span class="c1">#  ONE channel</span>
+        <span class="n">units_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span>
+        <span class="n">output_waveforms</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">sampling_rate_lu</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">uid</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">r</span><span class="p">[</span><span class="s1">'probe_id'</span><span class="p">]</span>
+                <span class="p">][</span><span class="s1">'sampling_rate'</span><span class="p">]</span> <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">units_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">mean_waveforms</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">mean_waveforms</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+            <span class="n">output_waveforms</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'channel_id'</span><span class="p">,</span> <span class="s1">'time'</span><span class="p">],</span>
+                <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s1">'channel_id'</span><span class="p">:</span> <span class="p">[</span><span class="n">units_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s1">'peak_channel_id'</span><span class="p">]],</span>
+                    <span class="s1">'time'</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">sampling_rate_lu</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output_waveforms</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_mean_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean_waveforms</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="p">,</span> <span class="n">EcephysNwb1Api</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_nwb1_waveforms</span><span class="p">(</span><span class="n">mean_waveforms</span><span class="p">)</span>
+
+        <span class="n">channel_id_lut</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cid</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">channel_id_lut</span><span class="p">[(</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">"probe_channel_number"</span><span class="p">],</span>
+                <span class="n">row</span><span class="p">[</span><span class="s2">"probe_id"</span><span class="p">],</span>
+                <span class="p">)]</span> <span class="o">=</span> <span class="n">cid</span>
+
+        <span class="n">probe_id_lut</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">uid</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s1">'probe_id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_units</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="n">output_waveforms</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">mean_waveforms</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">mean_waveforms</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span>
+
+            <span class="c1"># It's been filtered out during unit table generation!</span>
+            <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">probe_id_lut</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">probe_id</span> <span class="o">=</span> <span class="n">probe_id_lut</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span>
+
+            <span class="n">time_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">probe_id</span><span class="p">][</span><span class="s1">'sampling_rate'</span><span class="p">]</span>
+
+            <span class="n">output_waveforms</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'channel_id'</span><span class="p">,</span> <span class="s1">'time'</span><span class="p">],</span>
+                <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s1">'channel_id'</span><span class="p">:</span> <span class="p">[</span><span class="n">channel_id_lut</span><span class="p">[(</span><span class="n">ii</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">)]</span>
+                                   <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])],</span>
+                    <span class="s1">'time'</span><span class="p">:</span> <span class="n">time_vals</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="n">output_waveforms</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> \
+                <span class="n">output_waveforms</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span>
+                    <span class="n">output_waveforms</span><span class="p">[</span><span class="n">uid</span><span class="p">][</span><span class="s2">"channel_id"</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">output_waveforms</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_inter_presentation_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">from_presentation_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">to_presentation_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">interval1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">interval2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s1">'stop_time'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">intervals</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="s1">'from_presentation_id'</span><span class="p">:</span> <span class="n">from_presentation_id</span><span class="p">,</span>
+            <span class="s1">'to_presentation_id'</span><span class="p">:</span> <span class="n">to_presentation_id</span><span class="p">,</span>
+            <span class="s1">'interval'</span><span class="p">:</span> <span class="n">interval1</span> <span class="o">-</span> <span class="n">interval2</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">intervals</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s1">'from_presentation_id'</span><span class="p">,</span>
+                                    <span class="s1">'to_presentation_id'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter_owned_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">ids</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span>
+
+        <span class="n">ids</span> <span class="o">=</span> <span class="n">coerce_scalar</span><span class="p">(</span>
+            <span class="n">ids</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'a scalar (</span><span class="si">{</span><span class="n">ids</span><span class="si">}</span><span class="s1">) was '</span>
+                 <span class="sa">f</span><span class="s1">'provided as ids, filtering to a single row of </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">.'</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ids</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s1">'filtering to an empty set of </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">!'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_detailed_stimulus_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">presentations</span><span class="p">):</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DETAILED_STIMULUS_PARAMETERS</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">presentations</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EcephysSession.from_nwb_path">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.EcephysSession.from_nwb_path">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">nwb_version</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">api_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">api_kwargs</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">api_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">api_kwargs</span>
+        <span class="c1"># TODO: Is there a way for pynwb to check the file before actually</span>
+        <span class="c1">#       loading it with io read? If so we could automatically check</span>
+        <span class="c1">#       what NWB version is being inputed</span>
+
+        <span class="n">nwb_version</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nwb_version</span><span class="p">)</span>  <span class="c1"># only use major version</span>
+        <span class="k">if</span> <span class="n">nwb_version</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">NWBAdaptorCls</span> <span class="o">=</span> <span class="n">EcephysNwbSessionApi</span>
+
+        <span class="k">elif</span> <span class="n">nwb_version</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">NWBAdaptorCls</span> <span class="o">=</span> <span class="n">EcephysNwb1Api</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s1">'specified NWB version </span><span class="si">{</span><span class="n">nwb_version</span><span class="si">}</span><span class="s1"> not '</span>
+                            <span class="s1">'supported. Supported versions are: 2.X, 1.X'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">api</span><span class="o">=</span><span class="n">NWBAdaptorCls</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+                                               <span class="o">**</span><span class="n">api_kwargs</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_warn_invalid_spike_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">fail_tags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">probes</span><span class="p">[</span><span class="s2">"description"</span><span class="p">])</span>
+        <span class="n">fail_tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"all_probes"</span><span class="p">)</span>
+        <span class="n">invalid_time_intervals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_invalid_times_by_tags</span><span class="p">(</span><span class="n">fail_tags</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">invalid_time_intervals</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Session includes invalid time intervals that could "</span>
+                          <span class="s2">"be accessed with the attribute 'invalid_times',"</span>
+                          <span class="s2">"Spikes within these intervals are invalid and may "</span>
+                          <span class="s2">"need to be excluded from the analysis."</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_spike_histogram">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.build_spike_histogram">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_spike_histogram</span><span class="p">(</span><span class="n">time_domain</span><span class="p">,</span>
+                          <span class="n">spike_times</span><span class="p">,</span>
+                          <span class="n">unit_ids</span><span class="p">,</span>
+                          <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">binarize</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+    <span class="n">time_domain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">time_domain</span><span class="p">)</span>
+    <span class="n">unit_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unit_ids</span><span class="p">)</span>
+
+    <span class="n">tiled_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">time_domain</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">time_domain</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit_ids</span><span class="o">.</span><span class="n">size</span><span class="p">),</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span> <span class="k">if</span> <span class="n">binarize</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span> <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dtype</span>
+    <span class="p">)</span>
+
+    <span class="n">starts</span> <span class="o">=</span> <span class="n">time_domain</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">ends</span> <span class="o">=</span> <span class="n">time_domain</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span>
+
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unit_ids</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spike_times</span><span class="p">[</span><span class="n">unit_id</span><span class="p">])</span>
+
+        <span class="n">start_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">starts</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+        <span class="n">end_positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ends</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">"right"</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_positions</span> <span class="o">-</span> <span class="n">start_positions</span><span class="p">)</span>
+
+        <span class="n">tiled_data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">ii</span><span class="p">]</span><span class="o">.</span><span class="n">flat</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">binarize</span> <span class="k">else</span> <span class="n">counts</span>
+
+    <span class="k">return</span> <span class="n">tiled_data</span></div>
+
+
+
+<div class="viewcode-block" id="build_time_window_domain">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.build_time_window_domain">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_time_window_domain</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">,</span> <span class="n">offsets</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">callback</span> <span class="o">=</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">callback</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">callback</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">bin_edges</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:],</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">offsets</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">domain</span> <span class="o">+=</span> <span class="n">offsets</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">callback</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="removed_unused_stimulus_presentation_columns">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.removed_unused_stimulus_presentation_columns">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">removed_unused_stimulus_presentation_columns</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">):</span>
+    <span class="n">to_drop</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cn</span> <span class="ow">in</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="n">cn</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()):</span>
+            <span class="n">to_drop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cn</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="n">cn</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="s1">''</span><span class="p">):</span>
+            <span class="n">to_drop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cn</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="n">cn</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">values</span> <span class="o">==</span> <span class="s1">'null'</span><span class="p">):</span>
+            <span class="n">to_drop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cn</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">to_drop</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="nan_intervals">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.nan_intervals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nan_intervals</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">nan_like</span><span class="o">=</span><span class="p">[</span><span class="s2">"null"</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">""" find interval bounds (bounding consecutive identical values) in an</span>
+<span class="sd">    array, which may contain nans</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    array : np.ndarray</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray :</span>
+<span class="sd">        start and end indices of detected intervals (one longer than the</span>
+<span class="sd">        number of intervals)</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">intervals</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="k">if</span> <span class="n">is_distinct_from</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">current</span><span class="p">):</span>
+            <span class="n">intervals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ii</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">item</span>
+    <span class="n">intervals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">intervals</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="is_distinct_from">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.is_distinct_from">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_distinct_from</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">right</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">right</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">left</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">right</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">left</span> <span class="o">!=</span> <span class="n">right</span></div>
+
+
+
+<div class="viewcode-block" id="array_intervals">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.array_intervals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">array_intervals</span><span class="p">(</span><span class="n">array</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" find interval bounds (bounding consecutive identical values)</span>
+<span class="sd">    in an array</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    array : np.ndarray</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray :</span>
+<span class="sd">        start and end indices of detected intervals (one longer than the</span>
+<span class="sd">        number of intervals)</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">changes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">array</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">changes</span><span class="p">,</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)]])</span></div>
+
+
+
+<div class="viewcode-block" id="coerce_scalar">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_session.html#allensdk.brain_observatory.ecephys.ecephys_session.coerce_scalar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">coerce_scalar</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">warn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Collection</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">warn</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">value</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_summary_count_statistics</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"stimulus_condition_id"</span><span class="p">:</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">"unit_id"</span><span class="p">:</span> <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">"spike_count"</span><span class="p">:</span> <span class="n">group</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+        <span class="s2">"stimulus_presentation_count"</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">"spike_mean"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">),</span>
+        <span class="s2">"spike_std"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="s2">"spike_sem"</span><span class="p">:</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sem</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_count"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_summary_rate_statistics</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">group</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"stimulus_condition_id"</span><span class="p">:</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">"unit_id"</span><span class="p">:</span> <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">"stimulus_presentation_count"</span><span class="p">:</span> <span class="n">group</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="s2">"spike_mean"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_rate"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">),</span>
+        <span class="s2">"spike_std"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_rate"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ddof</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+        <span class="s2">"spike_sem"</span><span class="p">:</span> <span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sem</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"spike_rate"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_overlap</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Check if the two intervals overlap</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a : tuple</span>
+<span class="sd">        start, stop times</span>
+<span class="sd">    b : tuple</span>
+<span class="sd">        start, stop times</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool : True if overlap, otherwise False</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="nb">min</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

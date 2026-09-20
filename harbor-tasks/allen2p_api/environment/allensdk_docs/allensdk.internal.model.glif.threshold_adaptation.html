@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>allensdk.internal.model.glif.threshold_adaptation module &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="allensdk.internal.model.AIC module" href="allensdk.internal.model.AIC.html" />
+    <link rel="prev" title="allensdk.internal.model.glif.spike_cutting module" href="allensdk.internal.model.glif.spike_cutting.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="module-allensdk.internal.model.glif.threshold_adaptation">
+<span id="allensdk-internal-model-glif-threshold-adaptation-module"></span><h1>allensdk.internal.model.glif.threshold_adaptation module<a class="headerlink" href="#module-allensdk.internal.model.glif.threshold_adaptation" title="Link to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.calc_spike_component_of_threshold_from_multiblip">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">calc_spike_component_of_threshold_from_multiblip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multi_SS</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dv_cutoff</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thresh_frac</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MAKE_PLOT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SHOW_PLOT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">BLOCK</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PUBLICATION_PLOT</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#calc_spike_component_of_threshold_from_multiblip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.calc_spike_component_of_threshold_from_multiblip" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the spike components of the threshold by fitting a decaying exponential function to data to threshold versus time 
+since last spike in the multiblip data. The exponential is forced to decay to the local th_inf (calculated as the mean all of the 
+threshold values of the first spikes in each individual triblip stimulus).  For each multiblip stimulus in a stimulus set if there
+is more than one spike the difference in voltages from the first and second spike are plotted versus the separation in time.  Note that 
+this algorithm should only be implemented on multiblips sweeps where the neuron spike on the first and second blip.  Since there is 
+no easy way to do this, this erroneous data should not be provided to this algorithm (i.e is should be visually checked and eliminated 
+the preprocessor should hold back this data manually for now.)</p>
+<p>#TODO: check to see if this is still true. Notes: The standard SDK spike detection algorithm does not work with the multiblip stimulus 
+due to artifacts when the stimulus turns on and off. Please see the find_multiblip_spikes module for more information.</p>
+<p>Input:</p>
+<dl class="simple">
+<dt>multi_SS: dictionary</dt><dd><p>contains multiblip information such as current and stimulus</p>
+</dd>
+<dt>dt: float</dt><dd><p>time step in seconds</p>
+</dd>
+</dl>
+<p>Returns:</p>
+<dl class="simple">
+<dt>const_to_add_to_thresh_for_reset: float</dt><dd><p>amplitude of the exponential fit otherwise known as a_spike.  Note that this is without any spike cutting</p>
+</dd>
+<dt>decay_const: float</dt><dd><p>decay constant of exponential. Note the function fit is a negative exponential which will mean this value will 
+either have to be negated when it is used or the functions used will have to have to include the negative.</p>
+</dd>
+</dl>
+<p>thresh_inf: float</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.exp_fit_c">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">exp_fit_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">const</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#exp_fit_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.exp_fit_c" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.exp_force_c">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">exp_force_c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t_const</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#exp_force_c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.exp_force_c" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">fit_avoltage_bvoltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_trace_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">El_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_cut_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_spikeInd_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">th_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fake</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#fit_avoltage_bvoltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage" title="Link to this definition">¶</a></dt>
+<dd><p>This is a version of fit_avoltage_bvoltage_debug that does not require the th_trace, 
+v_component_of_thresh_trace, and spike_component_of_thresh_trace needed for debugging. A
+test should be run to make sure the same output comes out from this and the debug function</p>
+<p>This function returns the squared error for the difference between the ‘known’ voltage
+component of the threshold obtained from the biological neuron and the voltage component 
+of the threshold of the model obtained with the input parameters (so that the minimum can be 
+searched for via fmin). The overall threshold is the sum of threshold infinity the spike component
+of the threshold and the voltage component of the threshold.  Therefore threshold infinity and 
+the spike component of the threshold must be subtracted from the threshold of the neuron in order
+to isolate the voltage component of the threshold.  In the evaluation of the model the actual
+voltage of the neuron is used so that any errors in the other components of the model will not 
+influence the fits here (for example, if a afterspike current was estimated incorrectly)</p>
+<p>Notes:
+* The spike component of the threshold is subtracted from the</p>
+<blockquote>
+<div><p>voltage which means that the voltage component of the threshold should only be added to rules.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt>b_spike was fit using a negative value in the function therefore the negative is placed in the </dt><dd><p>equation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>values in this function are in ‘real’ voltage as opposed to voltage</dt><dd><p>relative to resting potential.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>current injection during the spike is not taken into account.  This seems reasonable as the </dt><dd><p>ion channels are open during this time and injected current may not greatly influence the neuron.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="simple">
+<dt>x: numpy array</dt><dd><p>x[0]=a_voltage input, x[1] is b_voltage_input, x[2] is th_inf</p>
+</dd>
+<dt>v_trace_list: list of numpy arrays</dt><dd><p>voltage traces (v_trace, El, and th_inf must be in the same frame of reference)</p>
+</dd>
+<dt>El_list: list of floats</dt><dd><p>reversal potential (v_trace, El, and th_inf must be in the same frame of reference)</p>
+</dd>
+<dt>spike_cut_length: int</dt><dd><p>number of indicies removed after initiation of a spike</p>
+</dd>
+<dt>all_spikeInd_list: list of numpy arrays</dt><dd><p>indicies of spike trains</p>
+</dd>
+<dt>th_inf: float</dt><dd><p>threshold infinity (v_trace, El, and th_inf must be in the same frame of reference)</p>
+</dd>
+<dt>dt: float </dt><dd><p>size of time step (SI units)</p>
+</dd>
+<dt>a_spike: float</dt><dd><p>amplitude of spike component of threshold.</p>
+</dd>
+<dt>b_spike: float</dt><dd><p>decay constant in spike component of the threshold</p>
+</dd>
+<dt>fake: Boolean</dt><dd><p>if True makes uses the voltage value of spike step-1 because there is not a voltage value at the spike
+step because it is set to nan in the simulator.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage_th">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">fit_avoltage_bvoltage_th</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_trace_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">El_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_cut_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_spikeInd_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_spike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fake</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#fit_avoltage_bvoltage_th"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage_th" title="Link to this definition">¶</a></dt>
+<dd><p>This is a version of fit_avoltage_bvoltage_th_debug that does not require the th_trace, 
+v_component_of_thresh_trace, and spike_component_of_thresh_trace needed for debugging. A
+test should be run to make sure the same output comes out from this and the debug function</p>
+<p>This function returns the squared error for the difference between the ‘known’ voltage
+component of the threshold obtained from the biological neuron and the voltage component 
+of the threshold of the model obtained with the input parameters (so that the minimum can be 
+searched for via fmin). The overall threshold is the sum of threshold infinity the spike component
+of the threshold and the voltage component of the threshold.  Therefore threshold infinity and 
+the spike component of the threshold must be subtracted from the threshold of the neuron in order
+to isolate the voltage component of the threshold.  In the evaluation of the model the actual
+voltage of the neuron is used so that any errors in the other components of the model will not 
+influence the fits here (for example, if a afterspike current was estimated incorrectly)</p>
+<p>Notes:
+* The spike component of the threshold is subtracted from the</p>
+<blockquote>
+<div><p>voltage which means that the voltage component of the threshold should only be added to rules.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt>b_spike was fit using a negative value in the function therefore the negative is placed in the </dt><dd><p>equation.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>values in this function are in ‘real’ voltage as opposed to voltage</dt><dd><p>relative to resting potential.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>current injection during the spike is not taken into account.  This seems reasonable as the </dt><dd><p>ion channels are open during this time and injected current may not greatly influence the neuron.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="simple">
+<dt>x: numpy array</dt><dd><p>x[0]=a_voltage input, x[1] is b_voltage_input, x[2] is th_inf</p>
+</dd>
+<dt>v_trace_list: list of numpy arrays</dt><dd><p>voltage traces (v_trace, El, and th_inf must be in the same frame of reference)</p>
+</dd>
+<dt>El_list: list of floats</dt><dd><p>reversal potential (v_trace, El, and th_inf must be in the same frame of reference)</p>
+</dd>
+<dt>spike_cut_length: int</dt><dd><p>number of indicies removed after initiation of a spike</p>
+</dd>
+<dt>all_spikeInd_list: list of numpy arrays</dt><dd><p>indicies of spike trains</p>
+</dd>
+<dt>dt: float </dt><dd><p>size of time step (SI units)</p>
+</dd>
+<dt>a_spike: float</dt><dd><p>amplitude of spike component of threshold.</p>
+</dd>
+<dt>b_spike: float</dt><dd><p>decay constant in spike component of the threshold</p>
+</dd>
+<dt>fake: Boolean</dt><dd><p>if True makes uses the voltage value of spike step-1 because there is not a voltage value at the spike
+step because it is set to nan in the simulator.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="allensdk.internal.model.glif.threshold_adaptation.get_peaks">
+<span class="sig-prename descclassname"><span class="pre">allensdk.internal.model.glif.threshold_adaptation.</span></span><span class="sig-name descname"><span class="pre">get_peaks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aboveValue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/allensdk/internal/model/glif/threshold_adaptation.html#get_peaks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#allensdk.internal.model.glif.threshold_adaptation.get_peaks" title="Link to this definition">¶</a></dt>
+<dd><p>This function was written by Corinne Teeter and calculates the action potential peaks of a voltage equation”
+inputs</p>
+<blockquote>
+<div><p>voltage: numpy array of voltages
+aboveValue: scalar voltage value over which voltage is considered a spike.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>outputs:    </dt><dd><p>peakInd: array of indicies of peaks</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

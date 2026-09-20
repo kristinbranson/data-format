@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap</h1><div class="highlight"><pre>
+<span></span><span class="c1">###</span>
+<span class="c1"># Purpose:</span>
+<span class="c1">#</span>
+<span class="c1">#   Generates the heatmap files for GBM analysis runs. The files are the following:</span>
+<span class="c1">#   transcripts_for_genes.csv, genes_for_transcripts.csv, gene_fpkm_table.csv, transcript_fpkm_table.csv</span>
+<span class="c1">#</span>
+<span class="c1"># Usage:</span>
+<span class="c1">#</span>
+<span class="c1">#   python generate_gbm_heatmap.py input.json</span>
+<span class="c1">#</span>
+<span class="c1"># Input:</span>
+<span class="c1">#</span>
+<span class="c1">#   input.json</span>
+<span class="c1">#</span>
+<span class="c1">#   {</span>
+<span class="c1">#       "transcripts_for_genes_output":"/tmp/transcripts_for_genes.csv",</span>
+<span class="c1">#       "genes_for_transcripts_output":"/tmp/genes_for_transcripts.csv",</span>
+<span class="c1">#       "gene_fpkm_table_output":"/tmp/gene_fpkm_table.csv",</span>
+<span class="c1">#       "transcript_fpkm_table_output":"/tmp/transcript_fpkm_table.csv",</span>
+<span class="c1">#       "columns_samples_output":"/tmp/columns_samples.csv",</span>
+<span class="c1">#       "analysis_run_records":"/tmp/analysis_run_records.json",</span>
+<span class="c1">#       "sample_metadata_records":"/tmp/sample_metadata_records.json"</span>
+<span class="c1">#   }</span>
+<span class="c1">#</span>
+<span class="c1"># Output:</span>
+<span class="c1">#</span>
+<span class="c1">#   Creates the specified csv files</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+
+<div class="viewcode-block" id="create_transcripts_for_genes">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.create_transcripts_for_genes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_transcripts_for_genes</span><span class="p">(</span><span class="n">analysis_run_gene_file</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">""" Creates a list that contains the associated transcript for each gene sorted by entrez_id """</span>
+
+    <span class="n">transcripts_for_genes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">analysis_run_gene_file</span><span class="p">[</span><span class="s2">"analysis_run_gene_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                          <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">transcripts_for_genes</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'gene_id'</span><span class="p">,</span> <span class="s1">'transcript_id(s)'</span><span class="p">]</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="create_genes_for_transcripts">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.create_genes_for_transcripts">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_genes_for_transcripts</span><span class="p">(</span><span class="n">analysis_run_transcript_file</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">""" Creates a list that contains the associated gene for each transcript sorted alphabetically """</span>
+
+    <span class="n">genes_for_transcripts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">analysis_run_transcript_file</span><span class="p">[</span><span class="s2">"analysis_run_transcript_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+                                          <span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">genes_for_transcripts</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'transcript_id'</span><span class="p">,</span> <span class="s1">'gene_id'</span><span class="p">]</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="create_gene_fpkm_table">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.create_gene_fpkm_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_gene_fpkm_table</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">""" Creates a a matrix ("rows x columns = genes x samples") of fpkm gene expression values for each particular</span>
+<span class="sd">        (gene, sample) pair. Rows are sorted by entrez_id and columns are by rna_well_id """</span>
+
+    <span class="n">gene_fpkm</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rna_well_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">analysis_run_records</span><span class="p">:</span>
+        <span class="n">gene_fpkm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"analysis_run_gene_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                       <span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">))</span>
+        <span class="n">rna_well_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"rna_well_id"</span><span class="p">])</span>
+
+    <span class="n">entrez_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"analysis_run_gene_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span>
+                               <span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">entrez_ids_int</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">entrez_ids</span><span class="p">))</span>
+    <span class="n">gene_fpkm_table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">gene_fpkm</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">gene_fpkm_table</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">rna_well_ids</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">entrez_ids_int</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+    <span class="n">rna_well_ids_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">rna_well_ids</span><span class="p">)))</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">rna_well_ids_sorted</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="create_transcript_fpkm_table">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.create_transcript_fpkm_table">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_transcript_fpkm_table</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">""" Creates a a matrix ("rows x columns = transcripts x samples") of fpkm gene expression values for each particular</span>
+<span class="sd">        (transcript, sample) pair. Rows are sorted by transcript id and columns are by rna_well_id """</span>
+
+    <span class="n">transcript_fpkm</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rna_well_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">analysis_run_records</span><span class="p">:</span>
+        <span class="n">transcript_fpkm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"analysis_run_transcript_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                             <span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">))</span>
+        <span class="n">rna_well_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"rna_well_id"</span><span class="p">])</span>
+
+    <span class="n">transcript_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"analysis_run_transcript_path"</span><span class="p">],</span> <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span>
+                                   <span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'str'</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">transcript_fpkm_table</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span><span class="n">transcript_fpkm</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">transcript_fpkm_table</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">rna_well_ids</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">transcript_ids</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+    <span class="n">rna_well_ids_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">rna_well_ids</span><span class="p">)))</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">rna_well_ids_sorted</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="create_sample_metadata">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.create_sample_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_sample_metadata</span><span class="p">(</span><span class="n">sample_metadata_records</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">""" Creates a table of sample metadata sorted by rna_well_id """</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">sample_metadata_records</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">'columns'</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'rna_well_id'</span><span class="p">])</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">rna_well_id</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">'rna_well_id'</span><span class="p">]</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">'rna_well_id'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">'rna_well_id'</span><span class="p">,</span> <span class="n">rna_well_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../../allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.html#allensdk.internal.pipeline_modules.gbm.generate_gbm_heatmap.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+
+    <span class="n">input_file</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">input_file</span><span class="p">))</span>
+    <span class="n">transcripts_for_genes_output</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"transcripts_for_genes_output"</span><span class="p">]</span>
+    <span class="n">genes_for_transcripts_output</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"genes_for_transcripts_output"</span><span class="p">]</span>
+    <span class="n">gene_fpkm_table_output</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"gene_fpkm_table_output"</span><span class="p">]</span>
+    <span class="n">transcript_fpkm_table_output</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"transcript_fpkm_table_output"</span><span class="p">]</span>
+    <span class="n">columns_samples_output</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"columns_samples_output"</span><span class="p">]</span>
+    <span class="n">analysis_run_records</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"analysis_run_records"</span><span class="p">]))</span>
+    <span class="n">sample_metadata_records</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"sample_metadata_records"</span><span class="p">]))</span>
+
+    <span class="n">create_transcripts_for_genes</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="s2">"analysis_run_records"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">transcripts_for_genes_output</span><span class="p">,</span>
+                                                                                         <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">create_genes_for_transcripts</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="s2">"analysis_run_records"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">genes_for_transcripts_output</span><span class="p">,</span>
+                                                                                         <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">create_gene_fpkm_table</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="s2">"analysis_run_records"</span><span class="p">])</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">gene_fpkm_table_output</span><span class="p">)</span>
+    <span class="n">create_transcript_fpkm_table</span><span class="p">(</span><span class="n">analysis_run_records</span><span class="p">[</span><span class="s2">"analysis_run_records"</span><span class="p">])</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">transcript_fpkm_table_output</span><span class="p">)</span>
+    <span class="n">create_sample_metadata</span><span class="p">(</span><span class="n">sample_metadata_records</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">columns_samples_output</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

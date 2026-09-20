@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.core.dataframe_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.core.dataframe_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Null value fill for integer Pandas.Series objects. NWB currently doesn't</span>
+<span class="c1"># support using the new Int64 type that has explicit N/A values so we fill</span>
+<span class="c1"># instead with -99.</span>
+<span class="n">INT_NULL</span> <span class="o">=</span> <span class="o">-</span><span class="mi">99</span>
+
+<span class="sd">"""A collection of utilities to manipulate pandas DataFrames."""</span>
+
+
+<div class="viewcode-block" id="patch_df_from_other">
+<a class="viewcode-back" href="../../../allensdk.core.dataframe_utils.html#allensdk.core.dataframe_utils.patch_df_from_other">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">patch_df_from_other</span><span class="p">(</span>
+    <span class="n">target_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">source_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">columns_to_patch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">index_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Overwrite column values in target_df from column</span>
+<span class="sd">    values in source_df in rows where the two dataframes</span>
+<span class="sd">    share a value of index_column.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    target_df: pd.DataFrame</span>
+<span class="sd">        The dataframe whose columns will get overwritten</span>
+
+<span class="sd">    source_df: pd.DataFrame</span>
+<span class="sd">        The dataframe from which correct values are to be read</span>
+
+<span class="sd">    columns_to_patch: List[str]</span>
+<span class="sd">        The columns to be overwritten</span>
+
+<span class="sd">    index_column: str</span>
+<span class="sd">        The column to join the dataframes on</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    patched_df: pd.DataFrame</span>
+<span class="sd">        target_df except with the specified columns and rows</span>
+<span class="sd">        overwritten.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    If any of the columns_to_patch are not in target_df, they</span>
+<span class="sd">    will be added.</span>
+
+<span class="sd">    This function starts by creating a copy of target_df, so</span>
+<span class="sd">    it will not alter the argument in-place.</span>
+<span class="sd">    """</span>
+    <span class="n">target_df</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">original_index</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">original_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">target_df</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">if</span> <span class="n">index_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">index_column</span><span class="si">}</span><span class="s2"> not in target_df</span><span class="se">\n</span><span class="s2">"</span>
+
+    <span class="k">if</span> <span class="n">index_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">source_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">index_column</span><span class="si">}</span><span class="s2"> not in source_df</span><span class="se">\n</span><span class="s2">"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">index_values</span> <span class="o">=</span> <span class="n">source_df</span><span class="p">[</span><span class="n">index_column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">index_values</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">index_values</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">index_column</span><span class="si">}</span><span class="s2"> values in source_df are not unique</span><span class="se">\n</span><span class="s2">"</span>
+
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns_to_patch</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">source_df</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2"> not in source_df</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_df</span><span class="p">:</span>
+            <span class="n">target_df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">index_column</span> <span class="ow">in</span> <span class="n">columns_to_patch</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">index_column</span><span class="si">}</span><span class="s2"> is in the list of "</span>
+            <span class="sa">f</span><span class="s2">"columns to patch </span><span class="si">{</span><span class="n">columns_to_patch</span><span class="si">}</span><span class="s2">; "</span>
+            <span class="s2">"unsure how to handle that case</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"failures in patch_df_from_other:</span><span class="se">\n</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="n">target_df</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_column</span><span class="p">)</span>
+
+    <span class="n">patch_df</span> <span class="o">=</span> <span class="n">source_df</span><span class="p">[</span><span class="n">columns_to_patch</span> <span class="o">+</span> <span class="p">[</span><span class="n">index_column</span><span class="p">]]</span>
+    <span class="n">patch_df</span> <span class="o">=</span> <span class="n">patch_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_column</span><span class="p">)</span>
+
+    <span class="n">target_df</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">patch_df</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">target_df</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">original_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">target_df</span> <span class="o">=</span> <span class="n">target_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">original_index</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">target_df</span></div>
+
+
+
+<div class="viewcode-block" id="enforce_df_column_order">
+<a class="viewcode-back" href="../../../allensdk.core.dataframe_utils.html#allensdk.core.dataframe_utils.enforce_df_column_order">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">enforce_df_column_order</span><span class="p">(</span>
+        <span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">column_order</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Return the data frame but with columns ordered.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_df : pandas.DataFrame</span>
+<span class="sd">        Data frame with columns to be ordered.</span>
+<span class="sd">    column_order : list of str</span>
+<span class="sd">        Ordering of column names to enforce. Columns not specified are shifted</span>
+<span class="sd">        to the end of the order but retain their order amongst others not</span>
+<span class="sd">        specified. If a specified column is not in the DataFrame it is ignored.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    output_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame the same as the input but with columns reordered.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Use only columns that are in the input dataframe's columns.</span>
+    <span class="n">pruned_order</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">column_order</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">input_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">pruned_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+    <span class="c1"># Get the full list of columns in the data frame with our ordered columns</span>
+    <span class="c1"># first.</span>
+    <span class="n">pruned_order</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">input_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">pruned_order</span><span class="p">)))</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">input_df</span><span class="p">[</span><span class="n">pruned_order</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="enforce_df_int_typing">
+<a class="viewcode-back" href="../../../allensdk.core.dataframe_utils.html#allensdk.core.dataframe_utils.enforce_df_int_typing">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">enforce_df_int_typing</span><span class="p">(</span>
+        <span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">int_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">use_pandas_type</span><span class="p">:</span> <span class="nb">object</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Enforce integer typing for columns that may have lost int typing when</span>
+<span class="sd">    combined into the final DataFrame.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame with typing to enforce.</span>
+<span class="sd">    int_columns : list of str</span>
+<span class="sd">        Columns to enforce int typing and fill any NaN/None values with the</span>
+<span class="sd">        value set in INT_NULL in this file. Requested columns not in the</span>
+<span class="sd">        dataframe are ignored.</span>
+<span class="sd">    use_pandas_type : bool</span>
+<span class="sd">        Instead of filling with the value INT_NULL to enforce integer typing,</span>
+<span class="sd">        use the pandas type Int64. This type can have issues converting to</span>
+<span class="sd">        numpy/array type values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    output_df : pandas.DataFrame</span>
+<span class="sd">        DataFrame specific columns hard typed to Int64 to allow NA values</span>
+<span class="sd">        without resorting to float type.</span>
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">int_columns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">input_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">use_pandas_type</span><span class="p">:</span>
+                <span class="n">input_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"Int64"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">INT_NULL</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">input_df</span></div>
+
+
+
+<div class="viewcode-block" id="return_one_dataframe_row_only">
+<a class="viewcode-back" href="../../../allensdk.core.dataframe_utils.html#allensdk.core.dataframe_utils.return_one_dataframe_row_only">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">return_one_dataframe_row_only</span><span class="p">(</span>
+    <span class="n">input_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">index_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lookup and return one and only one row from the DataFrame returning</span>
+<span class="sd">    an informative error if no or multiple rows are returned for a given</span>
+<span class="sd">    index.</span>
+
+<span class="sd">    This method is used mainly to return a more informative error when</span>
+<span class="sd">    attempting to retrieve metadata from the values behavior cache metadata</span>
+<span class="sd">    tables.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_table : pandas.DataFrame</span>
+<span class="sd">        Input dataframe to retrieve row from.</span>
+<span class="sd">    index_value : int</span>
+<span class="sd">        Index of the row to return. Must match an index in the input</span>
+<span class="sd">         dataframe/table. i.e. in the case of ecephys_session_table or</span>
+<span class="sd">        behavior_session_table.</span>
+<span class="sd">    table_name : str</span>
+<span class="sd">        Name of the table being returned. Used to output the table name</span>
+<span class="sd">        in case of error.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    row : pandas.Series</span>
+<span class="sd">        Row corresponding to the input index.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">input_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index_value</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> should have "</span>
+            <span class="s2">"1 and only 1 entry for a given "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">input_table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. No indexed rows found for "</span>
+            <span class="sa">f</span><span class="s2">"id=</span><span class="si">{</span><span class="n">index_value</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> should have "</span>
+            <span class="s2">"1 and only 1 entry for a given "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">input_table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. For "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">index_value</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">" there are </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="si">}</span><span class="s2"> entries."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">row</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_project_api.utilities &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_project_api.utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">DictLoader</span>
+
+
+<div class="viewcode-block" id="macros">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.macros">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">macros</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"macros"</span><span class="p">:</span> <span class="s2">"""</span>
+<span class="s2">            {%- macro comma_sep(data, quote=False) -%}</span>
+<span class="s2">                {</span><span class="si">%- f</span><span class="s2">or datum in data -%}</span>
+<span class="s2">                    {</span><span class="si">% i</span><span class="s2">f quote%}</span><span class="se">\'</span><span class="s2">{</span><span class="si">%e</span><span class="s2">ndif -%}</span>
+<span class="s2">                    {{datum}}</span>
+<span class="s2">                    {</span><span class="si">%- i</span><span class="s2">f quote %}</span><span class="se">\'</span><span class="s2">{</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">                    {</span><span class="si">% i</span><span class="s2">f not loop.last %},{</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">                {</span><span class="si">%- e</span><span class="s2">ndfor -%}</span>
+<span class="s2">            {</span><span class="si">%- e</span><span class="s2">ndmacro -%}</span>
+<span class="s2">            {%- macro str(x) -%}</span>
+<span class="s2">                {{- x ~ "" -}}</span>
+<span class="s2">            {</span><span class="si">%- e</span><span class="s2">ndmacro -%}</span>
+<span class="s2">        """</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="postgres_macros">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.postgres_macros">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">postgres_macros</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"postgres_macros"</span><span class="p">:</span> <span class="s2">"""</span>
+<span class="s2">            {</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}</span>
+<span class="s2">            {% macro optional_contains(key, data, quote=False) %}</span>
+<span class="s2">                {</span><span class="si">% i</span><span class="s2">f data is not none -%}</span>
+<span class="s2">                    and {{key}} in ({{m.comma_sep(data, quote)}})</span>
+<span class="s2">                {</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">            {</span><span class="si">% e</span><span class="s2">ndmacro %}</span>
+<span class="s2">            {% macro optional_equals(key, value) %}</span>
+<span class="s2">                {</span><span class="si">% i</span><span class="s2">f value is not none -%}</span>
+<span class="s2">                    and {{key}} = {{value}}</span>
+<span class="s2">                {</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">            {</span><span class="si">% e</span><span class="s2">ndmacro %}</span>
+<span class="s2">            {% macro optional_not_null(key, value=True) %}</span>
+<span class="s2">                {</span><span class="si">% i</span><span class="s2">f value is not none -%}</span>
+<span class="s2">                    and {{key}} is {{- ' not ' if value -}} null</span>
+<span class="s2">                {</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">            {</span><span class="si">% e</span><span class="s2">ndmacro %}</span>
+<span class="s2">            {% macro optional_le(key, value) %}</span>
+<span class="s2">                {</span><span class="si">% i</span><span class="s2">f value is not none -%}</span>
+<span class="s2">                    and {{key}} &lt;= {{value}}</span>
+<span class="s2">                {</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">            {</span><span class="si">% e</span><span class="s2">ndmacro %}</span>
+<span class="s2">            {% macro optional_ge(key, value) %}</span>
+<span class="s2">                {</span><span class="si">% i</span><span class="s2">f value is not none -%}</span>
+<span class="s2">                    and {{key}} &gt;= {{value}}</span>
+<span class="s2">                {</span><span class="si">% e</span><span class="s2">ndif %}</span>
+<span class="s2">            {</span><span class="si">% e</span><span class="s2">ndmacro %}</span>
+<span class="s2">        """</span><span class="p">,</span>
+        <span class="s2">"macros"</span><span class="p">:</span> <span class="n">macros</span><span class="p">()[</span><span class="s2">"macros"</span><span class="p">]</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="rma_macros">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.rma_macros">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rma_macros</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"rma_macros"</span><span class="p">:</span> <span class="s2">"""</span>
+<span class="s2">            {</span><span class="si">% i</span><span class="s2">mport 'macros' as m %}</span>
+<span class="s2">            {% macro optional_contains(key, data, quote=False) -%}</span>
+<span class="s2">                {</span><span class="si">%- i</span><span class="s2">f data is not none %}[{{key}}$in{{m.comma_sep(data,quote)}}]{</span><span class="si">% e</span><span class="s2">ndif -%}</span>
+<span class="s2">            {</span><span class="si">%- e</span><span class="s2">ndmacro -%}</span>
+<span class="s2">        """</span><span class="p">,</span>
+        <span class="s2">"macros"</span><span class="p">:</span> <span class="n">macros</span><span class="p">()[</span><span class="s2">"macros"</span><span class="p">]</span>
+    <span class="p">}</span></div>
+
+
+
+
+<div class="viewcode-block" id="build_and_execute">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.build_and_execute">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_and_execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">build_environment</span><span class="p">({</span><span class="s2">"__tmp__"</span><span class="p">:</span> <span class="n">query</span><span class="p">},</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">execute_templated</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="s2">"__tmp__"</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="n">engine</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_environment">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.build_environment">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_environment</span><span class="p">(</span><span class="n">template_strings</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+
+    <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">template_strings</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Environment</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">DictLoader</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">lstrip_blocks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">trim_blocks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="execute_templated">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.html#allensdk.brain_observatory.ecephys.ecephys_project_api.utilities.execute_templated">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">execute_templated</span><span class="p">(</span><span class="n">environment</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">engine</span><span class="p">,</span> <span class="n">engine_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">engine_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">engine_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">template</span> <span class="o">=</span> <span class="n">environment</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">rendered</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">engine</span><span class="p">(</span><span class="n">rendered</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

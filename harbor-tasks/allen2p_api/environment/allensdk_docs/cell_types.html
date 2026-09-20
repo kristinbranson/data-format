@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Cell Types &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Mouse Connectivity" href="connectivity.html" />
+    <link rel="prev" title="Brain Observatory" href="brain_observatory.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="cell-types">
+<h1>Cell Types<a class="headerlink" href="#cell-types" title="Link to this heading">¶</a></h1>
+<p>The Allen Cell Types data set is a database of mouse and human neuronal cell types based on multimodal characterization
+of single cells to enable data-driven approaches to classification and is fully integrated with other
+Allen Brain Atlas resources.  The database currently includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>electrophysiology</strong>: whole cell current clamp recordings made from Cre-positive neurons</p></li>
+<li><p><strong>morphology</strong>: 3D bright-field images of the complete structure of neurons from the visual cortex</p></li>
+</ul>
+</div></blockquote>
+<p>This page describes how the SDK can be used to access data in the Cell Types Database.  For more information,
+please visit the Cell Types Database <a class="reference external" href="http://celltypes.brain-map.org/">home page</a> and the
+<a class="reference external" href="http://help.brain-map.org/display/celltypes/Allen+Cell+Types+Database">API documentation</a>.</p>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">¶</a></h2>
+<p>The Cell Types <a class="reference external" href="_static/examples/nb/cell_types.html">Jupyter notebook</a> has many code samples to help get
+started with analysis:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="_static/examples/nb/cell_types.html#Cell-Types-Database">Download and plot stimuli and responses from an NWB file for a cell</a></p></li>
+<li><p><a class="reference external" href="_static/examples/nb/cell_types.html#Cell-Morphology-Reconstructions">Download and plot a cell’s morphological reconstruction</a></p></li>
+<li><p><a class="reference external" href="_static/examples/nb/cell_types.html#Electrophysiology-Features">Download and plot precomputed electrophysiology features</a></p></li>
+<li><p><a class="reference external" href="_static/examples/nb/cell_types.html#Morphology-Features">Download precomputed morphology features to a table</a></p></li>
+<li><p><a class="reference external" href="_static/examples/nb/cell_types.html#Computing-Electrophysiology-Features">Compute electrophysiology features for a single sweep</a></p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="cell-types-cache">
+<h2>Cell Types Cache<a class="headerlink" href="#cell-types-cache" title="Link to this heading">¶</a></h2>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">CellTypesCache</span></code> class provides a Python interface for downloading data
+in the Allen Cell Types Database into well known locations so that you don’t have to think
+about file names and directories.  The following example demonstrates how to download meta data for
+all cells with 3D reconstructions, then download the reconstruction and electrophysiology recordings
+for one of those cells:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.cell_types_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">CellTypesCache</span>
+
+<span class="n">ctc</span> <span class="o">=</span> <span class="n">CellTypesCache</span><span class="p">(</span><span class="n">manifest_file</span><span class="o">=</span><span class="s1">'cell_types/manifest.json'</span><span class="p">)</span>
+
+<span class="c1"># a list of cell metadata for cells with reconstructions, download if necessary</span>
+<span class="n">cells</span> <span class="o">=</span> <span class="n">ctc</span><span class="o">.</span><span class="n">get_cells</span><span class="p">(</span><span class="n">require_reconstruction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># open the electrophysiology data of one cell, download if necessary</span>
+<span class="n">data_set</span> <span class="o">=</span> <span class="n">ctc</span><span class="o">.</span><span class="n">get_ephys_data</span><span class="p">(</span><span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'id'</span><span class="p">])</span>
+
+<span class="c1"># read the reconstruction, download if necessary</span>
+<span class="n">reconstruction</span> <span class="o">=</span> <span class="n">ctc</span><span class="o">.</span><span class="n">get_reconstruction</span><span class="p">(</span><span class="n">cells</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'id'</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">CellTypesCache</span></code> takes takes care of knowing if you’ve already downloaded some files and reads
+them from disk instead of downloading them again.  All data is stored in the same directory as the <cite>manifest_file</cite> argument to the constructor.</p>
+</section>
+<section id="feature-extraction">
+<h2>Feature Extraction<a class="headerlink" href="#feature-extraction" title="Link to this heading">¶</a></h2>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">EphysFeatureExtractor</span></code> class calculates electrophysiology
+features from cell recordings.  <a class="reference internal" href="allensdk.ephys.extract_cell_features.html#allensdk.ephys.extract_cell_features.extract_cell_features" title="allensdk.ephys.extract_cell_features.extract_cell_features"><code class="xref py py-func docutils literal notranslate"><span class="pre">extract_cell_features()</span></code></a> can
+be used to extract the precise feature values available in the Cell Types Database:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.cell_types_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">CellTypesCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.ephys.extract_cell_features</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_cell_features</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="c1"># initialize the cache</span>
+<span class="n">ctc</span> <span class="o">=</span> <span class="n">CellTypesCache</span><span class="p">(</span><span class="n">manifest_file</span><span class="o">=</span><span class="s1">'cell_types/manifest.json'</span><span class="p">)</span>
+
+<span class="c1"># pick a cell to analyze</span>
+<span class="n">specimen_id</span> <span class="o">=</span> <span class="mi">324257146</span>
+
+<span class="c1"># download the ephys data and sweep metadata</span>
+<span class="n">data_set</span> <span class="o">=</span> <span class="n">ctc</span><span class="o">.</span><span class="n">get_ephys_data</span><span class="p">(</span><span class="n">specimen_id</span><span class="p">)</span>
+<span class="n">sweeps</span> <span class="o">=</span> <span class="n">ctc</span><span class="o">.</span><span class="n">get_ephys_sweeps</span><span class="p">(</span><span class="n">specimen_id</span><span class="p">)</span>
+
+<span class="c1"># group the sweeps by stimulus </span>
+<span class="n">sweep_numbers</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sweep</span> <span class="ow">in</span> <span class="n">sweeps</span><span class="p">:</span>
+    <span class="n">sweep_numbers</span><span class="p">[</span><span class="n">sweep</span><span class="p">[</span><span class="s1">'stimulus_name'</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sweep</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">])</span>
+
+<span class="c1"># calculate features</span>
+<span class="n">cell_features</span> <span class="o">=</span> <span class="n">extract_cell_features</span><span class="p">(</span><span class="n">data_set</span><span class="p">,</span>
+                                      <span class="n">sweep_numbers</span><span class="p">[</span><span class="s1">'Ramp'</span><span class="p">],</span>
+                                      <span class="n">sweep_numbers</span><span class="p">[</span><span class="s1">'Short Square'</span><span class="p">],</span>
+                                      <span class="n">sweep_numbers</span><span class="p">[</span><span class="s1">'Long Square'</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="file-formats">
+<h2>File Formats<a class="headerlink" href="#file-formats" title="Link to this heading">¶</a></h2>
+<p>This section provides a short description of the file formats used for Allen Cell Types data.</p>
+<section id="morphology-swc-files">
+<h3>Morphology SWC Files<a class="headerlink" href="#morphology-swc-files" title="Link to this heading">¶</a></h3>
+<p>Morphological neuron reconstructions are available for download as SWC files.  The SWC file format is a white-space delimited text file with a standard set of headers.  The file lists a set of 3D neuronal compartments, each of which has:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Data Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>id</p></td>
+<td><p>string</p></td>
+<td><p>compartment ID</p></td>
+</tr>
+<tr class="row-odd"><td><p>type</p></td>
+<td><p>integer</p></td>
+<td><p>compartment type</p></td>
+</tr>
+<tr class="row-even"><td><p>x</p></td>
+<td><p>float</p></td>
+<td><p>3D compartment position (x)</p></td>
+</tr>
+<tr class="row-odd"><td><p>y</p></td>
+<td><p>float</p></td>
+<td><p>3D compartment position (y)</p></td>
+</tr>
+<tr class="row-even"><td><p>z</p></td>
+<td><p>float</p></td>
+<td><p>3D compartment position (z)</p></td>
+</tr>
+<tr class="row-odd"><td><p>radius</p></td>
+<td><p>float</p></td>
+<td><p>compartment radius</p></td>
+</tr>
+<tr class="row-even"><td><p>parent</p></td>
+<td><p>string</p></td>
+<td><p>parent compartment ID</p></td>
+</tr>
+</tbody>
+</table>
+<p>Comment lines begin with a ‘#’.  Reconstructions in the Allen Cell Types Database can contain the following compartment types:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>unknown</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>soma</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>axon</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>basal dendrite</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>apical dendrite</p></td>
+</tr>
+</tbody>
+</table>
+<p>The Allen SDK comes with a <a class="reference internal" href="allensdk.core.swc.html#module-allensdk.core.swc" title="allensdk.core.swc"><code class="xref py py-mod docutils literal notranslate"><span class="pre">swc</span></code></a> Python module that provides helper functions and classes for manipulating SWC files.  Consider the following example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.swc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">swc</span>
+
+<span class="c1"># if you ran the examples above, you will have a reconstruction here</span>
+<span class="n">file_name</span> <span class="o">=</span> <span class="s1">'cell_types/specimen_485909730/reconstruction.swc'</span>
+<span class="n">morphology</span> <span class="o">=</span> <span class="n">swc</span><span class="o">.</span><span class="n">read_swc</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+<span class="c1"># subsample the morphology 3x. root, soma, junctions, and the first child of the root are preserved.</span>
+<span class="n">sparse_morphology</span> <span class="o">=</span> <span class="n">morphology</span><span class="o">.</span><span class="n">sparsify</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># compartments in the order that they were specified in the file</span>
+<span class="n">compartment_list</span> <span class="o">=</span> <span class="n">sparse_morphology</span><span class="o">.</span><span class="n">compartment_list</span>
+
+<span class="c1"># a dictionary of compartments indexed by compartment id</span>
+<span class="n">compartments_by_id</span> <span class="o">=</span> <span class="n">sparse_morphology</span><span class="o">.</span><span class="n">compartment_index</span>
+
+<span class="c1"># the root soma compartment </span>
+<span class="n">soma</span> <span class="o">=</span> <span class="n">morphology</span><span class="o">.</span><span class="n">soma</span>
+
+<span class="c1"># all compartments are dictionaries of compartment properties</span>
+<span class="c1"># compartments also keep track of ids of their children</span>
+<span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">morphology</span><span class="o">.</span><span class="n">children_of</span><span class="p">(</span><span class="n">soma</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">child</span><span class="p">[</span><span class="s1">'x'</span><span class="p">],</span> <span class="n">child</span><span class="p">[</span><span class="s1">'y'</span><span class="p">],</span> <span class="n">child</span><span class="p">[</span><span class="s1">'z'</span><span class="p">],</span> <span class="n">child</span><span class="p">[</span><span class="s1">'radius'</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="neurodata-without-borders">
+<h3>Neurodata Without Borders<a class="headerlink" href="#neurodata-without-borders" title="Link to this heading">¶</a></h3>
+<p>The electrophysiology data collected in the Allen Cell Types Database
+is stored in the <a class="reference external" href="http://neurodatawithoutborders.github.io/">Neurodata Without Borders</a> (NWB) file format.
+This format, created as part of the <a class="reference external" href="http://crcns.org/NWB/Overview">NWB initiative</a>, is designed to store
+a variety of neurophysiology data, including data from intra- and
+extracellular electrophysiology experiments, optophysiology experiments,
+as well as tracking and stimulus data.  It has a defined schema and metadata
+labeling system designed so software tools can easily access contained data.</p>
+<p>The Allen SDK provides a basic Python class for extracting data from
+Allen Cell Types Database NWB files. These files store data from intracellular
+patch-clamp recordings. A stimulus current is presented to the cell and the cell’s
+voltage response is recorded.  The file stores both stimulus and response for
+several experimental trials, here called “sweeps.”  The following code snippet
+demonstrates how to extract a sweep’s stimulus, response, sampling rate,
+and estimated spike times:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.nwb_data_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbDataSet</span>
+
+<span class="c1"># if you ran the examples above, you will have a NWB file here</span>
+<span class="n">file_name</span> <span class="o">=</span> <span class="s1">'cell_types/specimen_485909730/ephys.nwb'</span>
+<span class="n">data_set</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+
+<span class="n">sweep_numbers</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">get_sweep_numbers</span><span class="p">()</span>
+<span class="n">sweep_number</span> <span class="o">=</span> <span class="n">sweep_numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> 
+<span class="n">sweep_data</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">get_sweep</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+
+<span class="c1"># spike times are in seconds relative to the start of the sweep</span>
+<span class="n">spike_times</span> <span class="o">=</span> <span class="n">data_set</span><span class="o">.</span><span class="n">get_spike_times</span><span class="p">(</span><span class="n">sweep_number</span><span class="p">)</span>
+
+<span class="c1"># stimulus is a numpy array in amps</span>
+<span class="n">stimulus</span> <span class="o">=</span> <span class="n">sweep_data</span><span class="p">[</span><span class="s1">'stimulus'</span><span class="p">]</span>
+
+<span class="c1"># response is a numpy array in volts</span>
+<span class="n">reponse</span> <span class="o">=</span> <span class="n">sweep_data</span><span class="p">[</span><span class="s1">'response'</span><span class="p">]</span>
+
+<span class="c1"># sampling rate is in Hz</span>
+<span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">sweep_data</span><span class="p">[</span><span class="s1">'sampling_rate'</span><span class="p">]</span>
+
+<span class="c1"># start/stop indices that exclude the experimental test pulse (if applicable)</span>
+<span class="n">index_range</span> <span class="o">=</span> <span class="n">sweep_data</span><span class="p">[</span><span class="s1">'index_range'</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="hdf5-overview">
+<h3>HDF5 Overview<a class="headerlink" href="#hdf5-overview" title="Link to this heading">¶</a></h3>
+<p>NWB is implemented in <a class="reference external" href="https://hdfgroup.org/HDF5">HDF5</a>.  HDF5 files provide a hierarchical data storage that mirrors the organization of a file system.  Just as a file system has directories and files, and HDF5 file has groups and datasets.  The best way to understand an HDF5 (and NWB) file is to open a data file in an HDF5 browser. <a class="reference external" href="https://hdfgroup.org/products/java/hdfview">HDFView</a> is the recommended browser from the makers of HDF5.</p>
+<p>There are HDF5 manipulation libraries for many languages and platorms.  MATLAB and Python in particular have strong HDF5 support.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="data_resources.html">Data Resources</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

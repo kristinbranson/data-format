@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">operator</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">op</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+
+
+<div class="viewcode-block" id="Stitcher">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.Stitcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Stitcher</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_dimensions</span><span class="p">,</span> <span class="n">tiles</span><span class="p">,</span> <span class="n">average_tiles</span><span class="p">,</span> <span class="n">channels</span><span class="p">):</span>
+        
+          <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'image_dimensions: </span><span class="si">{0}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">image_dimensions</span><span class="p">))</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">image_dimensions</span> <span class="o">=</span> <span class="n">image_dimensions</span>
+
+          <span class="bp">self</span><span class="o">.</span><span class="n">average_tiles</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="o">**</span><span class="n">k</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="n">average_tiles</span><span class="p">)</span>
+
+          <span class="bp">self</span><span class="o">.</span><span class="n">tiles</span> <span class="o">=</span> <span class="n">tiles</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="n">channels</span>
+
+
+<div class="viewcode-block" id="Stitcher.run">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.Stitcher.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cb</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">):</span>
+
+        <span class="n">slice_image</span><span class="p">,</span> <span class="n">stitched_indicator</span> <span class="o">=</span> <span class="n">initialize_images</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image_dimensions</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">))</span>
+        <span class="n">missing_tiles</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">tile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tiles</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="n">tile</span><span class="o">.</span><span class="n">is_missing</span><span class="p">:</span>
+
+                <span class="n">missing_tiles</span><span class="p">[</span><span class="n">tile</span><span class="o">.</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">tile</span><span class="o">.</span><span class="n">get_missing_path</span><span class="p">()</span>
+                <span class="n">tile</span><span class="o">.</span><span class="n">initialize_image</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+              <span class="n">tile</span><span class="o">.</span><span class="n">apply_average_tile_to_self</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">average_tiles</span><span class="p">[</span><span class="n">tile</span><span class="o">.</span><span class="n">channel</span><span class="p">])</span>
+              <span class="n">tile</span><span class="o">.</span><span class="n">trim_self</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">stitch</span><span class="p">(</span><span class="n">slice_image</span><span class="p">,</span> <span class="n">stitched_indicator</span><span class="p">,</span> <span class="n">tile</span><span class="p">,</span> <span class="n">cb</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">slice_image</span><span class="p">,</span> <span class="n">missing_tiles</span></div>
+
+
+
+<div class="viewcode-block" id="Stitcher.stitch">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.Stitcher.stitch">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stitch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slice_image</span><span class="p">,</span> <span class="n">stitched_indicator</span><span class="p">,</span> <span class="n">tile</span><span class="p">,</span> <span class="n">cb</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">):</span>
+
+        <span class="n">region</span> <span class="o">=</span> <span class="n">tile</span><span class="o">.</span><span class="n">get_image_region</span><span class="p">()</span>
+        
+        <span class="n">current_region</span> <span class="o">=</span> <span class="n">slice_image</span><span class="p">[</span><span class="n">region</span><span class="p">]</span>
+        <span class="n">indicator_region</span> <span class="o">=</span> <span class="n">stitched_indicator</span><span class="p">[</span><span class="n">region</span><span class="p">]</span>
+
+        <span class="n">stup</span> <span class="o">=</span> <span class="p">(</span><span class="n">tile</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="s1">'row'</span><span class="p">],</span> <span class="n">tile</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="s1">'column'</span><span class="p">])</span>
+        <span class="n">blend</span> <span class="o">=</span> <span class="n">get_blend</span><span class="p">(</span><span class="n">indicator_region</span><span class="p">,</span> <span class="n">stup</span><span class="p">,</span> <span class="n">cb</span><span class="p">)</span>
+        <span class="n">blend</span> <span class="o">=</span> <span class="n">make_blended_tile</span><span class="p">(</span><span class="n">blend</span><span class="p">,</span> <span class="n">tile</span><span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="n">current_region</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'obtained blend'</span><span class="p">)</span>
+
+        <span class="n">slice_image</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="n">blend</span>
+        <span class="n">stitched_indicator</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'updated image region with tile data'</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="initialize_image">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.initialize_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">initialize_image</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">nchannels</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">'C'</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dimensions</span><span class="p">[</span><span class="s1">'row'</span><span class="p">],</span> <span class="n">dimensions</span><span class="p">[</span><span class="s1">'column'</span><span class="p">],</span> <span class="n">nchannels</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="initialize_images">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.initialize_images">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">initialize_images</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">nchannels</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">initialize_image</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">nchannels</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">),</span> <span class="n">initialize_image</span><span class="p">(</span><span class="n">dimensions</span><span class="p">,</span> <span class="n">nchannels</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="make_blended_tile">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.make_blended_tile">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_blended_tile</span><span class="p">(</span><span class="n">blend</span><span class="p">,</span> <span class="n">tile</span><span class="p">,</span> <span class="n">current_region</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">blend</span><span class="p">),</span> <span class="n">tile</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">blend</span><span class="p">,</span> <span class="n">current_region</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_indicator_bound_point">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.get_indicator_bound_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_indicator_bound_point</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">lg</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Finds the index of first change in a binary mask </span>
+<span class="sd">    along a specified axis in a specified direction</span>
+<span class="sd">    '''</span>
+
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">lg</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">del</span> <span class="n">delta</span>
+
+    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">indicator</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">lg</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">size</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)]</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="blend_component_from_point">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.blend_component_from_point">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">blend_component_from_point</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">mesh</span><span class="p">,</span> <span class="n">lg</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Obtains a normalized component of the blend, which describes depth of </span>
+<span class="sd">    overlap along a specified axis in a specified direction</span>
+<span class="sd">    '''</span>
+
+    <span class="c1"># this has the effect that the shallowest part of the blend </span>
+    <span class="c1"># is always 0 - symmetric with the deepest after normalization.</span>
+    <span class="n">blend</span> <span class="o">=</span> <span class="n">point</span> <span class="o">-</span> <span class="n">mesh</span> <span class="o">+</span> <span class="mi">1</span> 
+    <span class="n">blend</span><span class="p">[</span><span class="n">lg</span><span class="p">(</span><span class="n">blend</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">blend</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="n">blend</span><span class="p">)</span>
+    <span class="n">mx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">blend</span><span class="p">)</span>
+    <span class="n">mx</span> <span class="o">=</span> <span class="n">mx</span> <span class="k">if</span> <span class="n">mx</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="mf">1.0</span>
+
+    <span class="k">return</span> <span class="n">blend</span> <span class="o">/</span> <span class="n">mx</span></div>
+
+
+
+<div class="viewcode-block" id="get_blend_component">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.get_blend_component">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_blend_component</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">lg</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">meshes</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">point</span> <span class="o">=</span> <span class="n">get_indicator_bound_point</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">lg</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">blend_component_from_point</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">meshes</span><span class="p">[</span><span class="n">axis</span><span class="p">],</span> <span class="n">lg</span><span class="p">)]</span></div>
+
+
+
+<div class="viewcode-block" id="get_overall_blend">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.get_overall_blend">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_overall_blend</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">meshes</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">blends</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">lg</span> <span class="ow">in</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">lt</span><span class="p">,</span> <span class="n">op</span><span class="o">.</span><span class="n">gt</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">blends</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">get_blend_component</span><span class="p">(</span><span class="n">indicator</span><span class="p">,</span> <span class="n">lg</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">meshes</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">blends</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">indicator</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">,</span> <span class="n">blends</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_blend">
+<a class="viewcode-back" href="../../../../../allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.html#allensdk.internal.mouse_connectivity.tissuecyte_stitching.stitcher.get_blend">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_blend</span><span class="p">(</span><span class="n">indicator_region</span><span class="p">,</span> <span class="n">stup</span><span class="p">,</span> <span class="n">cb</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">meshes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">,</span> <span class="n">stup</span><span class="p">),</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">'ij'</span><span class="p">)</span>
+    <span class="n">blend</span> <span class="o">=</span> <span class="n">get_overall_blend</span><span class="p">(</span><span class="n">indicator_region</span><span class="p">,</span> <span class="n">meshes</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">cb</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">blend</span><span class="p">,</span> <span class="n">indicator_region</span><span class="p">))</span></div>
+
+
+        
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

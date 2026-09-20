@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.image_presentation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">get_image_set</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">add_experience_level_simple</span><span class="p">,</span>
+    <span class="n">get_prior_exposures_to_image_set</span><span class="p">,</span>
+    <span class="n">get_prior_exposures_to_session_type</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.vbn_2022.metadata_writer.dataframe_manipulations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">_add_age_in_days</span><span class="p">,</span>
+    <span class="n">_add_images_from_behavior</span><span class="p">,</span>
+    <span class="n">_add_prior_omissions</span><span class="p">,</span>
+    <span class="n">_add_session_number</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">db_connection_creator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.compound_lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">behavior_sessions_from_ecephys_session_ids</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.ecephys_lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">donor_id_lookup_from_ecephys_session_ids</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_in_list_selector_query</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.brain_observatory.util.multi_session_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_session_metadata_multiprocessing</span><span class="p">,</span>
+    <span class="n">remove_invalid_sessions</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_list_of_bad_probe_ids">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.html#allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.get_list_of_bad_probe_ids">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_list_of_bad_probe_ids</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">probes_to_skip</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given a list of probes to skip,each of the form</span>
+
+<span class="sd">    {'session': ecephys_session_id,</span>
+<span class="sd">     'probe': probe_name}</span>
+
+<span class="sd">    return a list of the ecephys_probe_ids associated with</span>
+<span class="sd">    the bad probes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgressQueryMixin</span>
+
+<span class="sd">    probes_to_skip: List[Dict[str, Any]]</span>
+<span class="sd">        List of dicts specifying the probes to skip (see above</span>
+<span class="sd">        for the form each dict needs to take)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bad_probe_id_list: List[int]</span>
+<span class="sd">        List of the globally unique ecephys_probe_id values</span>
+<span class="sd">        that need to be skipped</span>
+<span class="sd">    """</span>
+
+    <span class="n">where_clause</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="k">for</span> <span class="n">probe</span> <span class="ow">in</span> <span class="n">probes_to_skip</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">where_clause</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">where_clause</span> <span class="o">+=</span> <span class="s2">" OR "</span>
+        <span class="n">where_clause</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"(ecephys_session_id=</span><span class="si">{</span><span class="n">probe</span><span class="p">[</span><span class="s1">'session'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">where_clause</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" AND name='</span><span class="si">{</span><span class="n">probe</span><span class="p">[</span><span class="s1">'probe'</span><span class="p">]</span><span class="si">}</span><span class="s2">')"</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      id as probe_id</span>
+<span class="s2">    FROM ecephys_probes</span>
+<span class="s2">      WHERE</span>
+<span class="s2">      </span><span class="si">{</span><span class="n">where_clause</span><span class="si">}</span>
+<span class="s2">    """</span>
+
+    <span class="n">bad_probe_id_list</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">fetchall</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bad_probe_id_list</span></div>
+
+
+
+<div class="viewcode-block" id="units_table_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.html#allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.units_table_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">units_table_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will return the units table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    units_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the units metadata table</span>
+
+<span class="sd">        The columns of the dataframe are</span>
+<span class="sd">        ================================</span>
+<span class="sd">        unit_id -- int64 uniquely identifying this unit</span>
+<span class="sd">        ecephys_channel_id -- int64 uniquely identifying the channel</span>
+<span class="sd">        ecephys_probe_id -- int64 uniquely identifying the probe</span>
+<span class="sd">        ecephys_session_id -- int64 uniquely identifying teh session</span>
+<span class="sd">        cluster_id -- int64</span>
+<span class="sd">        quality -- str</span>
+<span class="sd">        snr -- float64</span>
+<span class="sd">        firing_rate -- float64</span>
+<span class="sd">        isi_violations -- float64</span>
+<span class="sd">        presence_ratio -- float64</span>
+<span class="sd">        amplitude_cutoff -- float64</span>
+<span class="sd">        isolation_distance -- float64</span>
+<span class="sd">        l_ratio -- float64</span>
+<span class="sd">        d_prime -- float64</span>
+<span class="sd">        nn_hit_rate -- float64</span>
+<span class="sd">        nn_miss_rate -- float64</span>
+<span class="sd">        silhouette_score -- float64</span>
+<span class="sd">        max_drift -- float64</span>
+<span class="sd">        cumulative_drift -- float64</span>
+<span class="sd">        waveform_duration -- float64</span>
+<span class="sd">        waveform_halfwidth -- float64</span>
+<span class="sd">        PT_ratio -- float64</span>
+<span class="sd">        repolarization_slope -- float64</span>
+<span class="sd">        recovery_slope -- float64</span>
+<span class="sd">        amplitude -- float64</span>
+<span class="sd">        spread -- float64</span>
+<span class="sd">        velocity_above -- float64</span>
+<span class="sd">        velocity_below -- float64</span>
+<span class="sd">        local_index -- int64</span>
+<span class="sd">        probe_vertical_position -- float64</span>
+<span class="sd">        probe_horizontal_position -- float64</span>
+<span class="sd">        anterior_posterior_ccf_coordinate -- float64</span>
+<span class="sd">        dorsal_ventral_ccf_coordinate -- float64</span>
+<span class="sd">        left_right_ccf_coordinate -- float64</span>
+<span class="sd">        structure_id -- int64 uniquely identifying the structure</span>
+<span class="sd">        structure_acronym -- a string naming the structure</span>
+<span class="sd">        valid_data -- a boolean indicating the validity of the channel</span>
+<span class="sd">    """</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      ecephys_units.id as unit_id</span>
+<span class="s2">      ,ecephys_units.ecephys_channel_id</span>
+<span class="s2">      ,ecephys_probes.id as ecephys_probe_id</span>
+<span class="s2">      ,ecephys_sessions.id as ecephys_session_id</span>
+<span class="s2">      ,ecephys_units.cluster_ids as cluster_id</span>
+<span class="s2">      ,ecephys_units.quality as quality</span>
+<span class="s2">      ,ecephys_units.snr</span>
+<span class="s2">      ,ecephys_units.firing_rate</span>
+<span class="s2">      ,ecephys_units.isi_violations</span>
+<span class="s2">      ,ecephys_units.presence_ratio</span>
+<span class="s2">      ,ecephys_units.amplitude_cutoff</span>
+<span class="s2">      ,ecephys_units.isolation_distance</span>
+<span class="s2">      ,ecephys_units.l_ratio</span>
+<span class="s2">      ,ecephys_units.d_prime</span>
+<span class="s2">      ,ecephys_units.nn_hit_rate</span>
+<span class="s2">      ,ecephys_units.nn_miss_rate</span>
+<span class="s2">      ,ecephys_units.silhouette_score</span>
+<span class="s2">      ,ecephys_units.max_drift</span>
+<span class="s2">      ,ecephys_units.cumulative_drift</span>
+<span class="s2">      ,ecephys_units.duration as waveform_duration</span>
+<span class="s2">      ,ecephys_units.halfwidth as waveform_halfwidth</span>
+<span class="s2">      ,ecephys_units.</span><span class="se">\"</span><span class="s2">PT_ratio</span><span class="se">\"</span><span class="s2"> as "PT_ratio"</span>
+<span class="s2">      ,ecephys_units.repolarization_slope as repolarization_slope</span>
+<span class="s2">      ,ecephys_units.recovery_slope as recovery_slope</span>
+<span class="s2">      ,ecephys_units.amplitude as amplitude</span>
+<span class="s2">      ,ecephys_units.spread as spread</span>
+<span class="s2">      ,ecephys_units.velocity_above as velocity_above</span>
+<span class="s2">      ,ecephys_units.velocity_below as velocity_below</span>
+<span class="s2">      ,ecephys_units.local_index</span>
+<span class="s2">      ,ecephys_channels.probe_vertical_position</span>
+<span class="s2">      ,ecephys_channels.probe_horizontal_position</span>
+<span class="s2">      ,ecephys_channels.anterior_posterior_ccf_coordinate</span>
+<span class="s2">      ,ecephys_channels.dorsal_ventral_ccf_coordinate</span>
+<span class="s2">      ,ecephys_channels.left_right_ccf_coordinate</span>
+<span class="s2">      ,ecephys_channels.manual_structure_id as structure_id</span>
+<span class="s2">      ,structures.acronym as structure_acronym</span>
+<span class="s2">      ,ecephys_channels.valid_data as valid_data</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    FROM ecephys_units</span>
+<span class="s2">    JOIN ecephys_channels</span>
+<span class="s2">      ON ecephys_channels.id = ecephys_units.ecephys_channel_id</span>
+<span class="s2">    JOIN ecephys_probes</span>
+<span class="s2">      ON ecephys_probes.id = ecephys_channels.ecephys_probe_id</span>
+<span class="s2">    JOIN ecephys_sessions</span>
+<span class="s2">      ON ecephys_probes.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">    LEFT JOIN structures</span>
+<span class="s2">      ON structures.id = ecephys_channels.manual_structure_id</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">probe_ids_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_clause</span> <span class="o">=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+            <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_probes.id"</span><span class="p">,</span>
+            <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+            <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"""</span><span class="si">{</span><span class="n">skip_clause</span><span class="si">}</span><span class="s2">"""</span>
+
+    <span class="n">units_table</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">units_table</span></div>
+
+
+
+<div class="viewcode-block" id="probes_table_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.html#allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.probes_table_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">probes_table_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will return the probes table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    probes_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the probes metadata table</span>
+
+<span class="sd">        Columns in this dataframe are</span>
+<span class="sd">        ==============================</span>
+<span class="sd">        ecephys_probe_id -- int64</span>
+<span class="sd">        ecephys_session_id -- int64</span>
+<span class="sd">        name -- string like 'probeA', 'probeB', etc.</span>
+<span class="sd">        sampling_rate -- float64</span>
+<span class="sd">        temporal_subsampling_factor -- float64</span>
+<span class="sd">        lfp_sampling_rate -- float64</span>
+<span class="sd">        phase -- float64</span>
+<span class="sd">        has_lfp_data -- bool</span>
+<span class="sd">        unit_count -- int64 number of units on this probe</span>
+<span class="sd">        channel_count -- int64 number of channels on this probe</span>
+<span class="sd">        structure_acronyms -- a list of strings identifing all</span>
+<span class="sd">                              structures incident to this probe</span>
+<span class="sd">    """</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      ecephys_probes.id as ecephys_probe_id</span>
+<span class="s2">      ,ecephys_probes.ecephys_session_id</span>
+<span class="s2">      ,ecephys_probes.name</span>
+<span class="s2">      ,ecephys_probes.global_probe_sampling_rate as sampling_rate</span>
+<span class="s2">      ,ecephys_probes.temporal_subsampling_factor</span>
+<span class="s2">      ,ecephys_probes.global_probe_lfp_sampling_rate as lfp_sampling_rate</span>
+<span class="s2">      ,ecephys_probes.phase</span>
+<span class="s2">      ,ecephys_probes.use_lfp_data as has_lfp_data</span>
+<span class="s2">      ,COUNT(DISTINCT(ecephys_units.id)) AS unit_count</span>
+<span class="s2">      ,COUNT(DISTINCT(ecephys_channels.id)) AS channel_count</span>
+<span class="s2">      ,ARRAY_AGG(DISTINCT(structures.acronym)) AS structure_acronyms"""</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    FROM  ecephys_probes</span>
+<span class="s2">    JOIN ecephys_sessions</span>
+<span class="s2">      ON ecephys_probes.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_channels</span>
+<span class="s2">      ON ecephys_channels.ecephys_probe_id = ecephys_probes.id</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_units</span>
+<span class="s2">      ON ecephys_units.ecephys_channel_id=ecephys_channels.id</span>
+<span class="s2">    LEFT JOIN structures</span>
+<span class="s2">      ON structures.id = ecephys_channels.manual_structure_id</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">probe_ids_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_clause</span> <span class="o">=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+            <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_probes.id"</span><span class="p">,</span>
+            <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+            <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"""</span><span class="si">{</span><span class="n">skip_clause</span><span class="si">}</span><span class="s2">"""</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""group by ecephys_probes.id"""</span>
+
+    <span class="n">probes_table</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">probes_table</span></div>
+
+
+
+<div class="viewcode-block" id="channels_table_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.html#allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.channels_table_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">channels_table_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will return the channels table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    channels_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the channels metadata table</span>
+
+<span class="sd">        Columns in this dataframe are</span>
+<span class="sd">        =============================</span>
+<span class="sd">        ecephys_channel_id -- int64</span>
+<span class="sd">        ecephys_probe_id -- int64</span>
+<span class="sd">        ecephys_session_id -- int64</span>
+<span class="sd">        probe_channel_number -- int64</span>
+<span class="sd">        probe_vertical_position -- float64</span>
+<span class="sd">        probe_horizontal_position -- float64</span>
+<span class="sd">        anterior_posterior_ccf_coordinate -- float64</span>
+<span class="sd">        dorsal_ventral_ccf_coordinate -- float64</span>
+<span class="sd">        left_right_ccf_coordinate -- float64</span>
+<span class="sd">        structure_acronym -- string</span>
+<span class="sd">        structure_id -- int64</span>
+<span class="sd">        unit_count -- int64 number of units on this channel</span>
+<span class="sd">        valid_data -- a boolean indicating the validity of the channel</span>
+<span class="sd">    """</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">       ecephys_channels.id as ecephys_channel_id</span>
+<span class="s2">      ,ecephys_channels.ecephys_probe_id</span>
+<span class="s2">      ,ecephys_sessions.id AS ecephys_session_id</span>
+<span class="s2">      ,ecephys_channels.local_index as probe_channel_number</span>
+<span class="s2">      ,ecephys_channels.probe_vertical_position</span>
+<span class="s2">      ,ecephys_channels.probe_horizontal_position</span>
+<span class="s2">      ,ecephys_channels.anterior_posterior_ccf_coordinate</span>
+<span class="s2">      ,ecephys_channels.dorsal_ventral_ccf_coordinate</span>
+<span class="s2">      ,ecephys_channels.left_right_ccf_coordinate</span>
+<span class="s2">      ,structures.acronym AS structure_acronym</span>
+<span class="s2">      ,structures.id AS structure_id</span>
+<span class="s2">      ,COUNT(DISTINCT(ecephys_units.id)) AS unit_count</span>
+<span class="s2">      ,ecephys_channels.valid_data as valid_data</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    FROM  ecephys_channels</span>
+<span class="s2">    JOIN ecephys_probes</span>
+<span class="s2">      ON ecephys_channels.ecephys_probe_id = ecephys_probes.id</span>
+<span class="s2">    JOIN ecephys_sessions</span>
+<span class="s2">      ON ecephys_probes.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_units</span>
+<span class="s2">      ON ecephys_units.ecephys_channel_id=ecephys_channels.id</span>
+<span class="s2">    LEFT JOIN structures</span>
+<span class="s2">      ON structures.id = ecephys_channels.manual_structure_id</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">probe_ids_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_clause</span> <span class="o">=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+            <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_probes.id"</span><span class="p">,</span>
+            <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+            <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"""</span><span class="si">{</span><span class="n">skip_clause</span><span class="si">}</span><span class="s2">"""</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    GROUP BY</span>
+<span class="s2">      ecephys_channels.id,</span>
+<span class="s2">      ecephys_sessions.id,</span>
+<span class="s2">      structures.acronym,</span>
+<span class="s2">      structures.id"""</span>
+
+    <span class="n">channels_table</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">channels_table</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_merge_ecephys_id_and_failed</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">failed_ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Take a list of passed ecephys_session_ids and a list of</span>
+<span class="sd">    failed ecephys_session_ids and return return the union of</span>
+<span class="sd">    the two lists, ignoring any failed sessions which correspond</span>
+<span class="sd">    to a donor_id that is not represented in the passed list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The passed sessions</span>
+
+<span class="sd">    failed_ecephys_session_id_list: List[int]</span>
+<span class="sd">        The failed sessions</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    merged_ecephys_session_id_list: List[int]</span>
+<span class="sd">    """</span>
+
+    <span class="n">passed_donor_lookup</span> <span class="o">=</span> <span class="n">donor_id_lookup_from_ecephys_session_ids</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">passed_donor_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">passed_donor_lookup</span><span class="o">.</span><span class="n">donor_id</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="n">failed_donor_lookup</span> <span class="o">=</span> <span class="n">donor_id_lookup_from_ecephys_session_ids</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">session_id_list</span><span class="o">=</span><span class="n">failed_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">to_keep</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">donor_id</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">failed_donor_lookup</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="p">,</span> <span class="n">failed_donor_lookup</span><span class="o">.</span><span class="n">donor_id</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">donor_id</span> <span class="ow">in</span> <span class="n">passed_donor_ids</span><span class="p">:</span>
+            <span class="n">to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">session_id</span><span class="p">))</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ecephys_session_id_list</span> <span class="o">+</span> <span class="n">to_keep</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ecephys_summary_table_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">failed_ecephys_session_id_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will return the session summary table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    failed_ecephys_session_id_list: Optional[List[int]]</span>
+<span class="sd">        A list of ecephys_sessions that are ultimately failed</span>
+<span class="sd">        and should not be included in the release. The purpose</span>
+<span class="sd">        of this list is so that these sessions can be accounted</span>
+<span class="sd">        for in the various dataframe manipulations that calculate</span>
+<span class="sd">        a mouse's history passing through the apparatus (i.e. if</span>
+<span class="sd">        the day 1 session is failed but the day 2 session is not)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sumary_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the session summary table</span>
+
+<span class="sd">        Columns in this dataframe will be</span>
+<span class="sd">        =================================</span>
+<span class="sd">        ecephys_session_id -- int</span>
+<span class="sd">        behavior_session_id -- int</span>
+<span class="sd">        date_of_acquisition -- pd.Timestamp</span>
+<span class="sd">        equipment_name -- string</span>
+<span class="sd">        mouse_id -- string</span>
+<span class="sd">        genotype -- tring</span>
+<span class="sd">        sex -- string</span>
+<span class="sd">        project_code -- string</span>
+<span class="sd">        date_of_birth -- pd.Timestamp</span>
+<span class="sd">        equipment_id -- int</span>
+
+
+<span class="sd">    Note</span>
+<span class="sd">    -----</span>
+<span class="sd">    The returned dataframe will contain data for all sessions (passed and</span>
+<span class="sd">    failed) involving the mice from the passed sessions. This is so that</span>
+<span class="sd">    we can reconstruct each mouse's history passing through the apparatus,</span>
+<span class="sd">    even if an early session in that mouse's history is marked as "failed."</span>
+
+<span class="sd">    Subsequent processing steps will need to trim out sessions marked as</span>
+<span class="sd">    "failed" from the dataframe.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">failed_ecephys_session_id_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">query_id_list</span> <span class="o">=</span> <span class="n">_merge_ecephys_id_and_failed</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+            <span class="n">failed_ecephys_session_id_list</span><span class="o">=</span><span class="n">failed_ecephys_session_id_list</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">query_id_list</span> <span class="o">=</span> <span class="n">ecephys_session_id_list</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">        SELECT</span>
+<span class="s2">          ecephys_sessions.id AS ecephys_session_id</span>
+<span class="s2">          ,behavior_sessions.id AS behavior_session_id</span>
+<span class="s2">          ,ecephys_sessions.date_of_acquisition</span>
+<span class="s2">          ,equipment.name AS equipment_name</span>
+<span class="s2">          ,ecephys_sessions.stimulus_name AS session_type</span>
+<span class="s2">          ,donors.external_donor_name AS mouse_id</span>
+<span class="s2">          ,donors.full_genotype AS genotype</span>
+<span class="s2">          ,genders.name AS sex</span>
+<span class="s2">          ,projects.code AS project_code</span>
+<span class="s2">          ,donors.date_of_birth as date_of_birth</span>
+<span class="s2">          ,ecephys_sessions.equipment_id</span>
+<span class="s2">        """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">        FROM ecephys_sessions</span>
+<span class="s2">        JOIN specimens</span>
+<span class="s2">          ON specimens.id = ecephys_sessions.specimen_id</span>
+<span class="s2">        JOIN donors</span>
+<span class="s2">          ON specimens.donor_id = donors.id</span>
+<span class="s2">        JOIN genders</span>
+<span class="s2">          ON genders.id = donors.gender_id</span>
+<span class="s2">        JOIN projects</span>
+<span class="s2">          ON projects.id = ecephys_sessions.project_id</span>
+<span class="s2">        LEFT OUTER JOIN equipment</span>
+<span class="s2">          ON equipment.id = ecephys_sessions.equipment_id</span>
+<span class="s2">        LEFT OUTER JOIN behavior_sessions</span>
+<span class="s2">          ON behavior_sessions.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">        """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">query_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_table</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="c1"># Add UTC tz</span>
+    <span class="n">summary_table</span><span class="p">[</span><span class="s2">"date_of_acquisition"</span><span class="p">]</span> <span class="o">=</span> <span class="n">summary_table</span><span class="p">[</span>
+        <span class="s2">"date_of_acquisition"</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="s2">"UTC"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">summary_table</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ecephys_counts_per_session_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will produce a table enumerating</span>
+<span class="sd">    how many units, channels, and probes there are in each</span>
+<span class="sd">    session</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    counts_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the counts_per_session</span>
+<span class="sd">        table</span>
+
+<span class="sd">        Columns in this dataframe will be</span>
+<span class="sd">        =================================</span>
+<span class="sd">        ecephys_session_id -- int</span>
+<span class="sd">        unit_count -- int (the number of units in this session)</span>
+<span class="sd">        probe_count -- int (the number of probes in this session)</span>
+<span class="sd">        channel_count -- int(the number of channels in this session)</span>
+<span class="sd">    """</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT ecephys_sessions.id as ecephys_session_id,</span>
+<span class="s2">      COUNT(DISTINCT(ecephys_units.id)) AS unit_count,</span>
+<span class="s2">      COUNT(DISTINCT(ecephys_probes.id)) AS probe_count,</span>
+<span class="s2">      COUNT(DISTINCT(ecephys_channels.id)) AS channel_count</span>
+<span class="s2">    FROM ecephys_sessions</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_probes ON</span>
+<span class="s2">      ecephys_probes.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_channels ON</span>
+<span class="s2">      ecephys_channels.ecephys_probe_id = ecephys_probes.id</span>
+<span class="s2">    LEFT OUTER JOIN ecephys_units ON</span>
+<span class="s2">      ecephys_units.ecephys_channel_id = ecephys_channels.id</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">probe_ids_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_clause</span> <span class="o">=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+            <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_probes.id"</span><span class="p">,</span>
+            <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+            <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"""</span><span class="si">{</span><span class="n">skip_clause</span><span class="si">}</span><span class="s2">"""</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    GROUP BY ecephys_sessions.id"""</span>
+
+    <span class="n">counts_table</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">counts_table</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ecephys_structure_acronyms_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query that will produce a table listing the</span>
+<span class="sd">    acronyms of all of the structures encompassed by a given</span>
+<span class="sd">    session.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    structure_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the table of</span>
+<span class="sd">        structure acronyms per session</span>
+
+<span class="sd">        Columns in this dataframe will be</span>
+<span class="sd">        =================================</span>
+<span class="sd">        ecephys_session_id -- int</span>
+<span class="sd">        structure_acronyms -- a list of strings</span>
+<span class="sd">    """</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">    SELECT</span>
+<span class="s2">      ecephys_sessions.id AS ecephys_session_id</span>
+<span class="s2">      ,ARRAY_AGG(DISTINCT(structures.acronym)) AS structure_acronyms</span>
+<span class="s2">    FROM ecephys_sessions</span>
+<span class="s2">    JOIN ecephys_probes</span>
+<span class="s2">      ON ecephys_probes.ecephys_session_id = ecephys_sessions.id</span>
+<span class="s2">    JOIN ecephys_channels</span>
+<span class="s2">      ON ecephys_channels.ecephys_probe_id = ecephys_probes.id</span>
+<span class="s2">    LEFT JOIN structures</span>
+<span class="s2">      ON structures.id = ecephys_channels.manual_structure_id</span>
+<span class="s2">    """</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+        <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_sessions.id"</span><span class="p">,</span>
+        <span class="n">valid_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">operator</span><span class="o">=</span><span class="s2">"WHERE"</span><span class="p">,</span>
+        <span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">probe_ids_to_skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skip_clause</span> <span class="o">=</span> <span class="n">build_in_list_selector_query</span><span class="p">(</span>
+            <span class="n">col</span><span class="o">=</span><span class="s2">"ecephys_probes.id"</span><span class="p">,</span>
+            <span class="n">valid_list</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+            <span class="n">operator</span><span class="o">=</span><span class="s2">"AND"</span><span class="p">,</span>
+            <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">query</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"""</span><span class="si">{</span><span class="n">skip_clause</span><span class="si">}</span><span class="s2">"""</span>
+
+    <span class="n">query</span> <span class="o">+=</span> <span class="s2">"""</span>
+<span class="s2">    GROUP BY ecephys_sessions.id"""</span>
+
+    <span class="n">struct_tbl</span> <span class="o">=</span> <span class="n">lims_connection</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">struct_tbl</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_behavior_session_table_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">exclude_invalid_sessions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_workers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given a list of ecephys_session_ids, find all of the behavior_sessions</span>
+<span class="sd">    experienced by the same mice and return a table summarizing those</span>
+<span class="sd">    sessions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_session_ids used to lookup the mice</span>
+<span class="sd">        we are interested in following</span>
+
+<span class="sd">    exclude_invalid_sessions</span>
+<span class="sd">        Excludes sessions that:</span>
+<span class="sd">        - are pretest</span>
+<span class="sd">        - fall after mouse death date</span>
+<span class="sd">        - were aborted</span>
+
+<span class="sd">    n_workers</span>
+<span class="sd">        Number of workers for reading from pkl file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    behavior_session_df: pd.DataFrame</span>
+<span class="sd">        A dataframe summarizing the behavior sessions involving the</span>
+<span class="sd">        mice in question.</span>
+
+<span class="sd">        The columns in this dataframe are</span>
+<span class="sd">        =================================</span>
+<span class="sd">        mouse_id  --  str</span>
+<span class="sd">        behavior_session_id  --  int64</span>
+<span class="sd">        date_of_acquisition  --  datetime64[ns]</span>
+<span class="sd">        ecephys_session_id  --  float64</span>
+<span class="sd">        date_of_birth  --  datetime64[ns]</span>
+<span class="sd">        genotype  --  str</span>
+<span class="sd">        sex  --  str</span>
+<span class="sd">        equipment_name  --  str</span>
+<span class="sd">        foraging_id  --  str</span>
+<span class="sd">        session_type  --  str</span>
+<span class="sd">        image_set  --  str</span>
+<span class="sd">        prior_exposures_to_session_type  --  int64</span>
+<span class="sd">        prior_exposures_to_image_set  --  float64</span>
+<span class="sd">        age_in_days  --  int64</span>
+<span class="sd">        session_number  --  int64</span>
+<span class="sd">    """</span>
+    <span class="n">behavior_session_df</span> <span class="o">=</span> <span class="n">behavior_sessions_from_ecephys_session_ids</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">behavior_sessions</span> <span class="o">=</span> <span class="n">get_session_metadata_multiprocessing</span><span class="p">(</span>
+        <span class="n">behavior_session_ids</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">[</span><span class="s2">"behavior_session_id"</span><span class="p">],</span>
+        <span class="n">lims_engine</span><span class="o">=</span><span class="n">db_connection_creator</span><span class="p">(</span>
+            <span class="n">fallback_credentials</span><span class="o">=</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+        <span class="p">),</span>
+        <span class="n">n_workers</span><span class="o">=</span><span class="n">n_workers</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">exclude_invalid_sessions</span><span class="p">:</span>
+        <span class="n">behavior_sessions</span> <span class="o">=</span> <span class="n">remove_invalid_sessions</span><span class="p">(</span>
+            <span class="n">behavior_sessions</span><span class="o">=</span><span class="n">behavior_sessions</span>
+        <span class="p">)</span>
+
+    <span class="n">behavior_session_df</span> <span class="o">=</span> <span class="n">behavior_session_df</span><span class="p">[</span>
+        <span class="n">behavior_session_df</span><span class="p">[</span><span class="s2">"behavior_session_id"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">behavior_session_id</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">behavior_sessions</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+    <span class="c1"># Add timezone information to behavior daq. Matches ecephys table.</span>
+    <span class="n">behavior_session_df</span><span class="p">[</span><span class="s2">"date_of_acquisition"</span><span class="p">]</span> <span class="o">=</span> <span class="n">behavior_session_df</span><span class="p">[</span>
+        <span class="s2">"date_of_acquisition"</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="s2">"UTC"</span><span class="p">)</span>
+
+    <span class="n">behavior_session_df</span><span class="p">[</span><span class="s2">"image_set"</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_image_set</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">)</span>
+
+    <span class="n">behavior_session_df</span><span class="p">[</span>
+        <span class="s2">"prior_exposures_to_session_type"</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">get_prior_exposures_to_session_type</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">)</span>
+
+    <span class="n">behavior_session_df</span><span class="p">[</span>
+        <span class="s2">"prior_exposures_to_image_set"</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">get_prior_exposures_to_image_set</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">)</span>
+
+    <span class="n">behavior_session_df</span> <span class="o">=</span> <span class="n">_add_age_in_days</span><span class="p">(</span>
+        <span class="n">df</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">,</span> <span class="n">index_column</span><span class="o">=</span><span class="s2">"behavior_session_id"</span>
+    <span class="p">)</span>
+
+    <span class="n">behavior_session_df</span> <span class="o">=</span> <span class="n">_add_session_number</span><span class="p">(</span>
+        <span class="n">sessions_df</span><span class="o">=</span><span class="n">behavior_session_df</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s2">"behavior_session_id"</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">behavior_session_df</span>
+
+
+<div class="viewcode-block" id="session_tables_from_ecephys_session_id_list">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.html#allensdk.brain_observatory.vbn_2022.metadata_writer.lims_queries.session_tables_from_ecephys_session_id_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">session_tables_from_ecephys_session_id_list</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">ecephys_session_id_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">failed_ecephys_session_id_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+    <span class="n">probe_ids_to_skip</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+    <span class="n">n_workers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Perform the database query to generate the ecephys_session_table</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    ecephys_session_id_list: List[int]</span>
+<span class="sd">        The list of ecephys_sessions.id values of the</span>
+<span class="sd">        ecephys sessions for which to construct the units table</span>
+
+<span class="sd">    failed_ecephys_session_id_list: Optional[List[int]]</span>
+<span class="sd">        A list of ecephys_sessions that are ultimately failed</span>
+<span class="sd">        and should not be included in the release. The purpose</span>
+<span class="sd">        of this list is so that these sessions can be accounted</span>
+<span class="sd">        for in the various dataframe manipulations that calculate</span>
+<span class="sd">        a mouse's history passing through the apparatus (i.e. if</span>
+<span class="sd">        the day 1 session is failed but the day 2 session is not)</span>
+
+<span class="sd">    probe_ids_to_skip: Optional[List[int]]</span>
+<span class="sd">        The IDs of probes not being released</span>
+
+<span class="sd">    n_workers</span>
+<span class="sd">        Number of workers for reading from pkl file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    session_table: pd.DataFrame</span>
+<span class="sd">        A pandas DataFrame corresponding to the session table</span>
+
+<span class="sd">        This dataframe has columns</span>
+<span class="sd">        ==========================</span>
+<span class="sd">        ecephys_session_id -- int64</span>
+<span class="sd">        behavior_session_id -- int64</span>
+<span class="sd">        date_of_acquisition -- pd.Timestamp</span>
+<span class="sd">        equipment_name -- str</span>
+<span class="sd">        session_type -- str</span>
+<span class="sd">        mouse_id -- int64</span>
+<span class="sd">        genotype -- str</span>
+<span class="sd">        sex -- str</span>
+<span class="sd">        project_code -- str</span>
+<span class="sd">        age_in_days -- float64</span>
+<span class="sd">        unit_count -- int64</span>
+<span class="sd">        probe_count -- int64</span>
+<span class="sd">        channel_count -- int64</span>
+<span class="sd">        structure_acronyms -- list of strings</span>
+<span class="sd">        image_set -- str</span>
+<span class="sd">        prior_exposures_to_image_set -- float64</span>
+<span class="sd">        session_number -- int64</span>
+<span class="sd">        prior_exposures_to_omissions -- int64</span>
+<span class="sd">        experience_level -- str</span>
+
+<span class="sd">    behavior_session-table: pd.DataFrame</span>
+
+<span class="sd">        This dataframe has columns</span>
+<span class="sd">        ==========================</span>
+<span class="sd">        behavior_session_id -- int64</span>
+<span class="sd">        equipment_name -- str</span>
+<span class="sd">        genotype -- str</span>
+<span class="sd">        mouse_id -- int64</span>
+<span class="sd">        sex -- str</span>
+<span class="sd">        age_in_days -- int64</span>
+<span class="sd">        session_number -- int64</span>
+<span class="sd">        prior_exposures_to_session_type -- int64</span>
+<span class="sd">        prior_exposures_to_image_set -- float64</span>
+<span class="sd">        prior_exposures_to_omissions -- int64</span>
+<span class="sd">        ecephys_session_id -- float64</span>
+<span class="sd">        date_of_acquisition -- str</span>
+<span class="sd">        session_type -- str</span>
+<span class="sd">        image_set -- str</span>
+<span class="sd">    """</span>
+
+    <span class="n">beh_table</span> <span class="o">=</span> <span class="n">_behavior_session_table_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">n_workers</span><span class="o">=</span><span class="n">n_workers</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_tbl</span> <span class="o">=</span> <span class="n">_ecephys_summary_table_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">failed_ecephys_session_id_list</span><span class="o">=</span><span class="n">failed_ecephys_session_id_list</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># since we had to read date_of_acquisition from the pickle file,</span>
+    <span class="c1"># we now need to calculate age_in_days</span>
+    <span class="n">summary_tbl</span> <span class="o">=</span> <span class="n">_add_age_in_days</span><span class="p">(</span>
+        <span class="n">df</span><span class="o">=</span><span class="n">summary_tbl</span><span class="p">,</span> <span class="n">index_column</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_tbl</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">"date_of_birth"</span><span class="p">,</span> <span class="s2">"equipment_id"</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="s2">"columns"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+    <span class="n">ct_tbl</span> <span class="o">=</span> <span class="n">_ecephys_counts_per_session_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_tbl</span> <span class="o">=</span> <span class="n">summary_tbl</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">ct_tbl</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">),</span>
+        <span class="n">on</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">struct_tbl</span> <span class="o">=</span> <span class="n">_ecephys_structure_acronyms_from_ecephys_session_id_list</span><span class="p">(</span>
+        <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+        <span class="n">ecephys_session_id_list</span><span class="o">=</span><span class="n">ecephys_session_id_list</span><span class="p">,</span>
+        <span class="n">probe_ids_to_skip</span><span class="o">=</span><span class="n">probe_ids_to_skip</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_tbl</span> <span class="o">=</span> <span class="n">summary_tbl</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">struct_tbl</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">),</span>
+        <span class="n">on</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">summary_tbl</span> <span class="o">=</span> <span class="n">_add_images_from_behavior</span><span class="p">(</span>
+        <span class="n">ecephys_table</span><span class="o">=</span><span class="n">summary_tbl</span><span class="p">,</span> <span class="n">behavior_table</span><span class="o">=</span><span class="n">beh_table</span>
+    <span class="p">)</span>
+
+    <span class="n">sessions_table</span> <span class="o">=</span> <span class="n">_add_session_number</span><span class="p">(</span>
+        <span class="n">sessions_df</span><span class="o">=</span><span class="n">summary_tbl</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span>
+    <span class="p">)</span>
+    <span class="n">sessions_table</span> <span class="o">=</span> <span class="n">add_experience_level_simple</span><span class="p">(</span><span class="n">input_df</span><span class="o">=</span><span class="n">sessions_table</span><span class="p">)</span>
+
+    <span class="n">omission_results</span> <span class="o">=</span> <span class="n">_add_prior_omissions</span><span class="p">(</span>
+        <span class="n">behavior_sessions_df</span><span class="o">=</span><span class="n">beh_table</span><span class="p">,</span> <span class="n">ecephys_sessions_df</span><span class="o">=</span><span class="n">sessions_table</span>
+    <span class="p">)</span>
+
+    <span class="n">beh_table</span> <span class="o">=</span> <span class="n">omission_results</span><span class="p">[</span><span class="s2">"behavior"</span><span class="p">]</span>
+    <span class="n">sessions_table</span> <span class="o">=</span> <span class="n">omission_results</span><span class="p">[</span><span class="s2">"ecephys"</span><span class="p">]</span>
+
+    <span class="n">beh_table</span> <span class="o">=</span> <span class="n">beh_table</span><span class="p">[</span>
+        <span class="p">[</span>
+            <span class="s2">"behavior_session_id"</span><span class="p">,</span>
+            <span class="s2">"equipment_name"</span><span class="p">,</span>
+            <span class="s2">"genotype"</span><span class="p">,</span>
+            <span class="s2">"mouse_id"</span><span class="p">,</span>
+            <span class="s2">"sex"</span><span class="p">,</span>
+            <span class="s2">"age_in_days"</span><span class="p">,</span>
+            <span class="s2">"session_number"</span><span class="p">,</span>
+            <span class="s2">"prior_exposures_to_session_type"</span><span class="p">,</span>
+            <span class="s2">"prior_exposures_to_image_set"</span><span class="p">,</span>
+            <span class="s2">"prior_exposures_to_omissions"</span><span class="p">,</span>
+            <span class="s2">"ecephys_session_id"</span><span class="p">,</span>
+            <span class="s2">"date_of_acquisition"</span><span class="p">,</span>
+            <span class="s2">"session_type"</span><span class="p">,</span>
+            <span class="s2">"image_set"</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+
+    <span class="c1"># pare back down to only passed sessions</span>
+    <span class="k">if</span> <span class="n">failed_ecephys_session_id_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sessions_table</span> <span class="o">=</span> <span class="n">sessions_table</span><span class="p">[</span>
+            <span class="p">[</span>
+                <span class="n">eid</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">ecephys_session_id_list</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">eid</span> <span class="ow">in</span> <span class="n">sessions_table</span><span class="o">.</span><span class="n">ecephys_session_id</span>
+            <span class="p">]</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">sessions_table</span><span class="p">,</span> <span class="n">beh_table</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

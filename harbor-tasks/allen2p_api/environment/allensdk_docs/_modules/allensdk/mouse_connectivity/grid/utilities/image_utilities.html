@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.mouse_connectivity.grid.utilities.image_utilities &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.mouse_connectivity.grid.utilities.image_utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">division</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">SimpleITK</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sitk</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">skimage.draw</span><span class="w"> </span><span class="kn">import</span> <span class="n">polygon</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.config.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">Manifest</span>
+
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="n">failed_import</span> <span class="o">=</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">ModuleNotFoundError</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">failed_import</span> <span class="o">=</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,)</span>
+
+
+<span class="c1"># use np_sitk_convert or sitk_np_convert to access</span>
+<span class="c1"># TODO: check if this already exists. If not: add more dtypes</span>
+<span class="c1"># it does not</span>
+<span class="n">NUMPY_SITK_TYPE_LOOKUP</span> <span class="o">=</span> <span class="p">{</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkFloat32</span><span class="p">}</span>
+<span class="n">SITK_NUMPY_TYPE_LOOKUP</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="p">:</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">NUMPY_SITK_TYPE_LOOKUP</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<span class="c1"># ITK/Numpy</span>
+
+
+<div class="viewcode-block" id="set_image_spacing">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.set_image_spacing">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_image_spacing</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">spacing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">spacing</span><span class="p">)</span>
+
+    <span class="n">image</span><span class="o">.</span><span class="n">SetSpacing</span><span class="p">(</span><span class="n">spacing</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="n">origin</span><span class="p">:</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">((</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">spacing</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="new_image">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.new_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">new_image</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="n">set_image_spacing</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">origin</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">image</span></div>
+
+
+
+<div class="viewcode-block" id="image_from_array">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.image_from_array">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">image_from_array</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">image</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">GetImageFromArray</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+    <span class="n">set_image_spacing</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">origin</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">image</span></div>
+
+
+
+<div class="viewcode-block" id="np_sitk_convert">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.np_sitk_convert">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">np_sitk_convert</span><span class="p">(</span><span class="n">np_type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">return</span> <span class="n">NUMPY_SITK_TYPE_LOOKUP</span><span class="p">[</span><span class="n">np_type</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="sitk_np_convert">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.sitk_np_convert">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sitk_np_convert</span><span class="p">(</span><span class="n">sitk_type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">return</span> <span class="n">SITK_NUMPY_TYPE_LOOKUP</span><span class="p">[</span><span class="n">sitk_type</span><span class="p">]</span></div>
+
+
+
+<span class="c1"># Math</span>
+
+
+<div class="viewcode-block" id="compute_coarse_parameters">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.compute_coarse_parameters">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_coarse_parameters</span><span class="p">(</span><span class="n">in_dims</span><span class="p">,</span> <span class="n">in_spacing</span><span class="p">,</span> <span class="n">out_spacing</span><span class="p">,</span> <span class="n">reduce_level</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">reduce_factor</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">reduce_level</span><span class="p">)</span>
+    <span class="n">fradius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">out_spacing</span><span class="p">,</span> <span class="n">in_spacing</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">reduce_factor</span>
+
+    <span class="n">coarse_grid_radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">fradius</span><span class="p">)</span>
+    <span class="n">coarse_grid_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">coarse_grid_radius</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">reduce_factor</span>
+
+    <span class="n">coarse_grid_spacing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">in_spacing</span><span class="p">,</span> <span class="n">coarse_grid_size</span><span class="p">)</span>
+    <span class="n">coarse_grid_dims</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">in_dims</span><span class="p">,</span> <span class="n">coarse_grid_size</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">coarse_grid_dims</span><span class="p">,</span> <span class="n">coarse_grid_spacing</span><span class="p">,</span> <span class="n">coarse_grid_radius</span></div>
+
+
+
+<div class="viewcode-block" id="block_apply">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.block_apply">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">block_apply</span><span class="p">(</span><span class="n">in_image</span><span class="p">,</span> <span class="n">out_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">out_image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">out_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">row_block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">jj</span><span class="p">,</span> <span class="n">col_block</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+
+            <span class="n">out_image</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">in_image</span><span class="p">[</span><span class="n">row_block</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">row_block</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                            <span class="n">col_block</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">col_block</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+
+    <span class="k">return</span> <span class="n">out_image</span></div>
+
+
+
+<div class="viewcode-block" id="grid_image_blocks">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.grid_image_blocks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">grid_image_blocks</span><span class="p">(</span><span class="n">in_shape</span><span class="p">,</span> <span class="n">in_spacing</span><span class="p">,</span> <span class="n">out_spacing</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">out_shape</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">in_shape</span><span class="p">)):</span>
+        <span class="n">in_px_centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">in_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="p">,</span>
+                                  <span class="n">in_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">*</span><span class="n">in_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">],</span>
+                                  <span class="n">in_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">])</span>
+
+        <span class="n">out_px_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">out_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">],</span>
+                                 <span class="p">(</span><span class="n">in_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">*</span><span class="n">in_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">],</span>
+                                 <span class="n">out_spacing</span><span class="p">[</span><span class="n">dim</span><span class="p">])</span>
+
+        <span class="n">dig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">in_px_centers</span><span class="p">,</span> <span class="n">out_px_edges</span><span class="p">)</span>
+
+        <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">dig</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">inds</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">inds</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">in_shape</span><span class="p">[</span><span class="n">dim</span><span class="p">]]</span>
+
+        <span class="n">dim_blocks</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">inds</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">inds</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inds</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="n">out_shape</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dim_blocks</span><span class="p">))</span>
+        <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dim_blocks</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">out_shape</span></div>
+
+
+
+<span class="c1"># Polygons</span>
+
+
+<div class="viewcode-block" id="rasterize_polygons">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.rasterize_polygons">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rasterize_polygons</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">polys</span><span class="p">):</span>
+
+    <span class="n">canvas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">points</span> <span class="ow">in</span> <span class="n">polys</span><span class="p">:</span>
+
+        <span class="n">rpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">points</span>
+        <span class="p">])</span>
+        <span class="n">cpts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">points</span>
+        <span class="p">])</span>
+
+        <span class="n">poly</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">(</span><span class="n">rpts</span><span class="p">,</span> <span class="n">cpts</span><span class="p">)</span>
+        <span class="n">canvas</span><span class="p">[</span><span class="n">poly</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">canvas</span></div>
+
+
+
+<span class="c1"># Transforms</span>
+
+
+<div class="viewcode-block" id="resample_into_volume">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.resample_into_volume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resample_into_volume</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">vol</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sitk</span><span class="o">.</span><span class="n">sitkFloat32</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Transform</span><span class="p">()</span>
+
+    <span class="n">timage</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Resample</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkLinear</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+    <span class="n">tvol</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">JoinSeries</span><span class="p">(</span><span class="n">timage</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Paste</span><span class="p">(</span><span class="n">vol</span><span class="p">,</span> <span class="n">tvol</span><span class="p">,</span> <span class="n">tvol</span><span class="o">.</span><span class="n">GetSize</span><span class="p">(),</span> <span class="n">destinationIndex</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="build_affine_transform">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.build_affine_transform">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_affine_transform</span><span class="p">(</span><span class="n">aff_params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="n">xfm</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">AffineTransform</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">xfm</span><span class="o">.</span><span class="n">SetParameters</span><span class="p">(</span><span class="n">aff_params</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xfm</span></div>
+
+
+
+<div class="viewcode-block" id="build_composite_transform">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.build_composite_transform">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_composite_transform</span><span class="p">(</span><span class="n">dfmfield</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aff_params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">if</span> <span class="n">dfmfield</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
+       <span class="n">dfmfield</span><span class="o">.</span><span class="n">GetPixelIDValue</span><span class="p">()</span> <span class="o">!=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkVectorFloat64</span><span class="p">:</span>
+        <span class="n">dfmfield</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Cast</span><span class="p">(</span><span class="n">dfmfield</span><span class="p">,</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkVectorFloat64</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dfmfield</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">aff_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Transform</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">dfmfield</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">aff_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">DisplacementFieldTransform</span><span class="p">(</span><span class="n">dfmfield</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">dfmfield</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">aff_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">build_affine_transform</span><span class="p">(</span><span class="n">aff_params</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">dfmfield</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">aff_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dfmxfm</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">DisplacementFieldTransform</span><span class="p">(</span><span class="n">dfmfield</span><span class="p">)</span>
+        <span class="n">affxfm</span> <span class="o">=</span> <span class="n">build_affine_transform</span><span class="p">(</span><span class="n">aff_params</span><span class="p">)</span>
+
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">CompositeTransform</span><span class="p">([</span><span class="n">affxfm</span><span class="p">,</span> <span class="n">dfmxfm</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">transform</span></div>
+
+
+
+<div class="viewcode-block" id="resample_volume">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.resample_volume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resample_volume</span><span class="p">(</span><span class="n">volume</span><span class="p">,</span> <span class="n">dims</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">interpolator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    '''</span>
+
+    <span class="k">if</span> <span class="n">transform</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Transform</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">interpolator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">interpolator</span> <span class="o">=</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkLinear</span>
+
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">new_image</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="n">spacing</span><span class="p">,</span> <span class="n">sitk</span><span class="o">.</span><span class="n">sitkFloat32</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sitk</span><span class="o">.</span><span class="n">Resample</span><span class="p">(</span><span class="n">volume</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">interpolator</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_volume">
+<a class="viewcode-back" href="../../../../../allensdk.mouse_connectivity.grid.utilities.image_utilities.html#allensdk.mouse_connectivity.grid.utilities.image_utilities.write_volume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_volume</span><span class="p">(</span><span class="n">volume</span><span class="p">,</span>
+                 <span class="n">name</span><span class="p">,</span>
+                 <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">specify_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">extension</span><span class="o">=</span><span class="s1">'.nrrd'</span><span class="p">,</span>
+                 <span class="n">paths</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">prefix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">specify_resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">specify_resolution</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">))</span> <span class="ow">and</span> \
+           <span class="n">specify_resolution</span> <span class="o">%</span> <span class="mf">1.0</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">specify_resolution</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">specify_resolution</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s1">'_</span><span class="si">{0}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">specify_resolution</span><span class="p">)</span>
+
+    <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="n">extension</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'writing </span><span class="si">{0}</span><span class="s1"> volume to </span><span class="si">{1}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+    <span class="n">Manifest</span><span class="o">.</span><span class="n">safe_make_parent_dirs</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="n">volume</span><span class="o">.</span><span class="n">SetOrigin</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">sitk</span><span class="o">.</span><span class="n">WriteImage</span><span class="p">(</span><span class="n">volume</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">paths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__read_segmentation_image_with_kakadu</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">'file not found at </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">jpeg_twok</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__read_intensity_image_with_kakadu</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">reduce_level</span><span class="p">,</span> <span class="n">channel</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s1">'file not found at </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">jpeg_twok</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">reduce_level</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__read_segmentation_image_with_glymur</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">glymur</span><span class="o">.</span><span class="n">Jp2k</span><span class="p">(</span><span class="n">path</span><span class="p">)[:]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">__read_intensity_image_with_glymur</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">glymur</span><span class="o">.</span><span class="n">Jp2k</span><span class="p">(</span><span class="n">path</span><span class="p">)[:]</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># we use a proprietary library called kakadu internally</span>
+    <span class="c1"># (jpeg_twok is a python interface around that library)</span>
+    <span class="c1"># kakadu offers really good performance as well as support for</span>
+    <span class="c1"># advanced jp2 features</span>
+    <span class="c1"># however, since it is proprietary, we can't share it</span>
+    <span class="c1"># alongside the allensdk,</span>
+    <span class="c1"># so we default to glymur (a python openjpeg) for external users.</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">'/shared/bioapps/itk/itk_shared/jp2/build'</span><span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">jpeg_twok</span>
+    <span class="n">read_segmentation_image</span> <span class="o">=</span> <span class="n">__read_segmentation_image_with_kakadu</span>
+    <span class="n">read_intensity_image</span> <span class="o">=</span> <span class="n">__read_intensity_image_with_kakadu</span>
+<span class="k">except</span> <span class="n">failed_import</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">glymur</span>
+    <span class="n">read_segmentation_image</span> <span class="o">=</span> <span class="n">__read_segmentation_image_with_glymur</span>
+    <span class="n">read_intensity_image</span> <span class="o">=</span> <span class="n">__read_intensity_image_with_glymur</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

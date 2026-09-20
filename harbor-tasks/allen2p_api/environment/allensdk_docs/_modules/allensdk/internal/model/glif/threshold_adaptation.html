@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.threshold_adaptation &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.threshold_adaptation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">THRESH_PCT_MULTIBLIP</span> <span class="o">=</span> <span class="mf">0.05</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.glif.glif_neuron_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">spike_component_of_threshold_exact</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_spikes</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_spikes_ssq_list</span>
+
+<div class="viewcode-block" id="calc_spike_component_of_threshold_from_multiblip">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.calc_spike_component_of_threshold_from_multiblip">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_spike_component_of_threshold_from_multiblip</span><span class="p">(</span><span class="n">multi_SS</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">dv_cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="p">,</span>
+                                                     <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">PUBLICATION_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Calculate the spike components of the threshold by fitting a decaying exponential function to data to threshold versus time </span>
+<span class="sd">    since last spike in the multiblip data. The exponential is forced to decay to the local th_inf (calculated as the mean all of the </span>
+<span class="sd">    threshold values of the first spikes in each individual triblip stimulus).  For each multiblip stimulus in a stimulus set if there</span>
+<span class="sd">    is more than one spike the difference in voltages from the first and second spike are plotted versus the separation in time.  Note that </span>
+<span class="sd">    this algorithm should only be implemented on multiblips sweeps where the neuron spike on the first and second blip.  Since there is </span>
+<span class="sd">    no easy way to do this, this erroneous data should not be provided to this algorithm (i.e is should be visually checked and eliminated </span>
+<span class="sd">    the preprocessor should hold back this data manually for now.)  </span>
+<span class="sd">    </span>
+<span class="sd">    #TODO: check to see if this is still true. Notes: The standard SDK spike detection algorithm does not work with the multiblip stimulus </span>
+<span class="sd">    due to artifacts when the stimulus turns on and off. Please see the find_multiblip_spikes module for more information.</span>
+<span class="sd">    </span>
+<span class="sd">    Input:</span>
+<span class="sd">    </span>
+<span class="sd">    multi_SS: dictionary</span>
+<span class="sd">        contains multiblip information such as current and stimulus</span>
+<span class="sd">    dt: float</span>
+<span class="sd">        time step in seconds</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    </span>
+<span class="sd">    const_to_add_to_thresh_for_reset: float</span>
+<span class="sd">        amplitude of the exponential fit otherwise known as a_spike.  Note that this is without any spike cutting</span>
+<span class="sd">    decay_const: float</span>
+<span class="sd">        decay constant of exponential. Note the function fit is a negative exponential which will mean this value will </span>
+<span class="sd">        either have to be negated when it is used or the functions used will have to have to include the negative.</span>
+<span class="sd">    thresh_inf: float</span>
+<span class="sd">    </span>
+<span class="sd">    '''</span>    
+    <span class="n">multi_SS_v</span><span class="o">=</span><span class="n">multi_SS</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">]</span>
+    <span class="n">multi_SS_i</span><span class="o">=</span><span class="n">multi_SS</span><span class="p">[</span><span class="s1">'current'</span><span class="p">]</span>
+
+    <span class="c1"># --get indicies of spikes</span>
+    <span class="n">spike_ind</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">find_spikes_ssq_list</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">dv_cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="p">)</span>
+<span class="c1">#    spike_ind=find_multiblip_spikes(multi_SS_i, multi_SS_v, dt) can depricate find_multiblip_spikes</span>
+
+
+    <span class="c1"># eliminate spurious spikes that may exist</span>
+    <span class="n">spike_lt</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">SI</span><span class="o">&lt;</span><span class="nb">int</span><span class="p">(</span><span class="mf">2.0</span><span class="o">/</span><span class="n">dt</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">SI</span> <span class="ow">in</span> <span class="n">spike_ind</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">spike_lt</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">'there is a spike before the stimulus in the multiblip'</span><span class="p">)</span>
+    <span class="n">spike_ind</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">SI</span><span class="p">,</span><span class="n">ind</span><span class="p">)</span><span class="k">for</span> <span class="n">SI</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">,</span> <span class="n">spike_lt</span><span class="p">)]</span>
+    <span class="n">spike_gt</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">SI</span><span class="o">&gt;</span><span class="nb">int</span><span class="p">(</span><span class="mf">3.0</span><span class="o">/</span><span class="n">dt</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">SI</span> <span class="ow">in</span> <span class="n">spike_ind</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">spike_gt</span><span class="p">))</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">'there is a spike after the stimulus in the multiblip'</span><span class="p">)</span>    
+    <span class="n">spike_ind</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">SI</span><span class="p">,</span><span class="n">ind</span><span class="p">)</span><span class="k">for</span> <span class="n">SI</span><span class="p">,</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">,</span> <span class="n">spike_gt</span><span class="p">)]</span>
+    
+    <span class="c1"># intialize output lists</span>
+    <span class="n">time_previous_spike</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">thresh_first_spike</span><span class="o">=</span><span class="p">[]</span>  <span class="c1">#will set constant to this</span>
+
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">24</span><span class="p">))</span>
+        
+    <span class="c1"># Loop though each tri blip stimulus in muliblip stimulus</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">)):</span>
+        <span class="n">thresh</span><span class="o">=</span><span class="p">[</span><span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="c1"># voltage at all spikes in a single tri blip</span>
+        <span class="k">if</span> <span class="n">thresh</span><span class="o">!=</span><span class="p">[]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">thresh</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span><span class="c1"># there needs to be more than one spike so that we can find the time difference</span>
+            <span class="n">thresh_first_spike</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thresh</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1">#Note that this finds the first spike (it might not be at the first stimulus blip)</span>
+            <span class="n">threshold</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thresh</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">time_previous_spike</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+<span class="c1">#            Old way when looked at all the spikes instead of just the first two (can be depricated; just here for record keeping)</span>
+<span class="c1">#            threshold.append(thresh[1:])              </span>
+<span class="c1">#            time_before_temp=[]</span>
+<span class="c1">#            for j in range(1,len(thresh)):</span>
+<span class="c1">#                time_before_temp.append((spike_ind[k][j]-spike_ind[k][j-1])*dt)</span>
+<span class="c1">#            #for each spike calculate the time from the previous spike   </span>
+<span class="c1">#            time_previous_spike.append(time_before_temp)    </span>
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_i</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">multi_SS_i</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'current (pA)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mf">2.</span><span class="p">,</span> <span class="mf">2.12</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Triple Short Square'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">thresh</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="mf">2.</span><span class="p">,</span> <span class="mf">2.12</span><span class="p">])</span>
+            
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'voltage (V)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time (s)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>        
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># put numbers into one vector for fitting of exponential function</span>
+    <span class="n">thresh_inf</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">thresh_first_spike</span><span class="p">)</span>  <span class="c1">#note this threshold infinity isnt the one coming from single blip</span>
+    <span class="k">try</span><span class="p">:</span> <span class="c1">#this try here because sometimes even though have the traces there isnt more than one trace with two spikes</span>
+<span class="c1">#--these two lines no longer needed because all single values now (depricate with lines up above) instead converst them to arrays</span>
+<span class="c1">#        threshold=np.concatenate(threshold)</span>
+<span class="c1">#        time_previous_spike=np.concatenate(time_previous_spike)  #note that this will have nans in it</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">time_previous_spike</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">)</span>  <span class="c1">#note that this will have nans in it</span>
+   
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'threshold (mV)'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'time since last spike (s)'</span><span class="p">)</span>
+    
+        <span class="c1"># calculate values of exponential function both if force function to local threshold infinity and not forcing to a value</span>
+        <span class="c1"># (not forcing to a value seems less valid unless a bunch of points are added corresponding to the threshold of the</span>
+        <span class="c1"># first spike at time equal infinity (because the first spike is a spike that happens where the spike before it was an</span>
+        <span class="c1"># infinite time away)).  Therefore, the values that are obtained from forcing are the ones that are used.</span>
+        <span class="n">p0_force</span><span class="o">=</span><span class="p">[</span><span class="mf">.002</span><span class="p">,</span> <span class="o">-</span><span class="mf">100.</span><span class="p">]</span>
+        <span class="n">p0_fit</span><span class="o">=</span><span class="p">[</span><span class="mf">.002</span><span class="p">,</span> <span class="o">-</span><span class="mf">100.</span><span class="p">,</span> <span class="n">thresh_inf</span><span class="p">]</span>
+        
+        <span class="c1">#TODO: THIS WOULD BE BETTER IF IT CALLED THE ACTUAL FUNCTION IN THE NEURON METHODS THAT WAY THEY WOULD HAVE TO BE THE SAME</span>
+        <span class="p">(</span><span class="n">popt_force</span><span class="p">,</span> <span class="n">pcov_force</span><span class="p">)</span><span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">exp_force_c</span><span class="p">,</span> <span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">thresh_inf</span><span class="p">),</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="n">p0_force</span><span class="p">,</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">popt_fit</span><span class="p">,</span> <span class="n">pcov_fit</span><span class="p">)</span><span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">exp_fit_c</span><span class="p">,</span> <span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="n">p0_fit</span><span class="p">,</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">100000</span><span class="p">)</span>
+
+        <span class="c1"># viewing fit functions</span>
+        <span class="n">time_previous_spike</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span> <span class="c1">#since time is not in order, making new time vector so that obtained fit curve can be plotted</span>
+        <span class="n">fit_force</span><span class="o">=</span><span class="n">exp_force_c</span><span class="p">((</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">thresh_inf</span><span class="p">),</span> <span class="n">popt_force</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">popt_force</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">fit_fit</span><span class="o">=</span><span class="n">exp_fit_c</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">popt_fit</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">popt_fit</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">popt_fit</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">fit_force</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"exp fit (force const to thesh first spike)</span><span class="se">\n</span><span class="s2">  k=</span><span class="si">%.3g</span><span class="s2">, amp=</span><span class="si">%.3g</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">popt_force</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">popt_force</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">fit_fit</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"exp fit (fit constant)</span><span class="se">\n</span><span class="s2">  k=</span><span class="si">%.3g</span><span class="s2">, amp=</span><span class="si">%.3g</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">popt_fit</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">popt_fit</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>        
+                <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    
+            <span class="k">if</span> <span class="n">PUBLICATION_PLOT</span><span class="p">:</span>       
+                <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">14</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+                <span class="n">ax1</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+                <span class="n">ax2</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+                <span class="n">ax3</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">rowspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">)):</span>
+                    <span class="n">thresh</span><span class="o">=</span><span class="p">[</span><span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span>
+    
+                    <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_i</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">multi_SS_i</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="mf">1.e12</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Current (pA)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                    <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mf">2.</span><span class="p">,</span> <span class="mf">2.12</span><span class="p">])</span>
+                    <span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+                    <span class="c1">#ax1.set_title('Triple Short Square', fontsize=20)</span>
+    
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">multi_SS_v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="mf">1.e3</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spike_ind</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thresh</span><span class="p">)</span><span class="o">*</span><span class="mf">1.e3</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Voltage (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Time (ms)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mf">2.</span><span class="p">,</span> <span class="mf">2.12</span><span class="p">])</span>
+                    
+    
+                <span class="n">ax3</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span><span class="o">*</span><span class="mf">1.e3</span><span class="p">,</span> <span class="s1">'.k'</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                <span class="n">ax3</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Threshold (mV)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+                <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Time since last spike (s)'</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="c1">#                ax3.set_title('Spiking component of threshold', fontsize=20)</span>
+                <span class="n">ax3</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_previous_spike</span><span class="p">,</span> <span class="n">fit_force</span><span class="o">*</span><span class="mf">1.e3</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="c1">#, label="exp fit: k=%.3g, amp=%.3g" % (popt_force[1], popt_force[0]))</span>
+                <span class="n">ax3</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span> 
+                <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+        <span class="n">const_to_add_to_thresh_for_reset</span><span class="o">=</span><span class="n">popt_force</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">decay_const</span><span class="o">=</span><span class="n">popt_force</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">decay_const</span> <span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">'This neuron has an increasing decay value for the spike component of the threshold'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">const_to_add_to_thresh_for_reset</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s1">'This neuron has a negative amplitude for the spike component of the threshold'</span><span class="p">)</span> 
+
+        <span class="c1">#if the decay constant is positive, or the amplitute is negative set the amplitude to 0 so that there </span>
+        <span class="c1">#will be no spike component of the threshold</span>
+        <span class="k">if</span> <span class="n">decay_const</span> <span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">const_to_add_to_thresh_for_reset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">const_to_add_to_thresh_for_reset</span><span class="o">=</span><span class="mi">0</span>
+            
+        <span class="c1"># This decay constant was originally forced to be positive (i.e. decay_const=abs(popt_force[1]))</span>
+        <span class="c1"># and then it is negated everywhere it is utilized elsewhere in the code.  Now things are forced in </span>
+        <span class="c1"># a different way above.  However the decay constant still needs to be negated here for use in the </span>
+        <span class="c1"># rest of the code. </span>
+        <span class="n">decay_const</span><span class="o">=-</span><span class="n">decay_const</span>
+    
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">const_to_add_to_thresh_for_reset</span><span class="o">=</span><span class="kc">None</span> 
+        <span class="n">decay_const</span><span class="o">=</span><span class="kc">None</span>
+        
+    <span class="k">return</span> <span class="n">const_to_add_to_thresh_for_reset</span><span class="p">,</span> <span class="n">decay_const</span><span class="p">,</span> <span class="n">thresh_inf</span></div>
+
+
+<div class="viewcode-block" id="fit_avoltage_bvoltage">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_avoltage_bvoltage</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">v_trace_list</span><span class="p">,</span> <span class="n">El_list</span><span class="p">,</span> <span class="n">spike_cut_length</span><span class="p">,</span> <span class="n">all_spikeInd_list</span><span class="p">,</span> <span class="n">th_inf</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">a_spike</span><span class="p">,</span> 
+                     <span class="n">b_spike</span><span class="p">,</span> <span class="n">fake</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''This is a version of fit_avoltage_bvoltage_debug that does not require the th_trace, </span>
+<span class="sd">    v_component_of_thresh_trace, and spike_component_of_thresh_trace needed for debugging. A</span>
+<span class="sd">    test should be run to make sure the same output comes out from this and the debug function</span>
+<span class="sd">    </span>
+<span class="sd">    This function returns the squared error for the difference between the 'known' voltage</span>
+<span class="sd">    component of the threshold obtained from the biological neuron and the voltage component </span>
+<span class="sd">    of the threshold of the model obtained with the input parameters (so that the minimum can be </span>
+<span class="sd">    searched for via fmin). The overall threshold is the sum of threshold infinity the spike component</span>
+<span class="sd">    of the threshold and the voltage component of the threshold.  Therefore threshold infinity and </span>
+<span class="sd">    the spike component of the threshold must be subtracted from the threshold of the neuron in order</span>
+<span class="sd">    to isolate the voltage component of the threshold.  In the evaluation of the model the actual</span>
+<span class="sd">    voltage of the neuron is used so that any errors in the other components of the model will not </span>
+<span class="sd">    influence the fits here (for example, if a afterspike current was estimated incorrectly)</span>
+<span class="sd">  </span>
+<span class="sd">    Notes:</span>
+<span class="sd">    * The spike component of the threshold is subtracted from the </span>
+<span class="sd">        voltage which means that the voltage component of the threshold should only be added to rules.</span>
+<span class="sd">    * b_spike was fit using a negative value in the function therefore the negative is placed in the </span>
+<span class="sd">        equation. </span>
+<span class="sd">    * values in this function are in 'real' voltage as opposed to voltage</span>
+<span class="sd">        relative to resting potential. </span>
+<span class="sd">    * current injection during the spike is not taken into account.  This seems reasonable as the </span>
+<span class="sd">        ion channels are open during this time and injected current may not greatly influence the neuron.</span>
+<span class="sd">    </span>
+<span class="sd">    x: numpy array</span>
+<span class="sd">        x[0]=a_voltage input, x[1] is b_voltage_input, x[2] is th_inf</span>
+<span class="sd">    v_trace_list: list of numpy arrays</span>
+<span class="sd">        voltage traces (v_trace, El, and th_inf must be in the same frame of reference)</span>
+<span class="sd">    El_list: list of floats</span>
+<span class="sd">        reversal potential (v_trace, El, and th_inf must be in the same frame of reference)</span>
+<span class="sd">    spike_cut_length: int</span>
+<span class="sd">        number of indicies removed after initiation of a spike</span>
+<span class="sd">    all_spikeInd_list: list of numpy arrays</span>
+<span class="sd">        indicies of spike trains </span>
+<span class="sd">    th_inf: float</span>
+<span class="sd">        threshold infinity (v_trace, El, and th_inf must be in the same frame of reference)</span>
+<span class="sd">    dt: float </span>
+<span class="sd">        size of time step (SI units)</span>
+<span class="sd">    a_spike: float</span>
+<span class="sd">        amplitude of spike component of threshold.</span>
+<span class="sd">    b_spike: float</span>
+<span class="sd">        decay constant in spike component of the threshold</span>
+<span class="sd">    fake: Boolean</span>
+<span class="sd">        if True makes uses the voltage value of spike step-1 because there is not a voltage value at the spike</span>
+<span class="sd">        step because it is set to nan in the simulator.</span>
+<span class="sd">    '''</span>
+    <span class="n">a_voltage</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">b_voltage</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">total_err</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">v_trace</span><span class="p">,</span> <span class="n">El</span><span class="p">,</span> <span class="n">all_spikeInd</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">v_trace_list</span><span class="p">,</span> <span class="n">El_list</span><span class="p">,</span> <span class="n">all_spikeInd_list</span><span class="p">):</span>
+        <span class="c1"># Calculate values along the whole trace and then take the values at the spike ind</span>
+        <span class="n">internal_sp_comp_array</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">spike_cut_length</span><span class="p">)</span> 
+        <span class="n">left_over</span><span class="o">=</span><span class="mi">0</span>
+        <span class="c1">#vector of spike component of of the threshold from each spike and previous spikes; note at first spike there is no spike component of threshold so initialized at zero   </span>
+        <span class="c1">#Note that care has to be taken here to get make sure the right amount of decay is left over</span>
+        <span class="k">for</span> <span class="n">spike_number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">)):</span>      <span class="c1">#skipping first spike since no residual spike component of threshold</span>
+            <span class="n">integration_length</span><span class="o">=</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span><span class="o">-</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span> <span class="c1">#this is the amount of time that needs to be integrated over note that it is one longer than the interval because of the last value is added to the aspike for the next ISI</span>
+            <span class="n">local_spike_comp_of_threshold</span><span class="o">=</span><span class="n">spike_component_of_threshold_exact</span><span class="p">(</span><span class="n">a_spike</span><span class="o">+</span><span class="n">left_over</span><span class="p">,</span> <span class="n">b_spike</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">integration_length</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+            <span class="n">internal_sp_comp_array</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">internal_sp_comp_array</span><span class="p">,</span> <span class="n">local_spike_comp_of_threshold</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">left_over</span><span class="o">=</span><span class="n">local_spike_comp_of_threshold</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="c1"># Compute voltage component of threshold at biological spike (subtract th_inf and spike component of threshold</span>
+        <span class="c1"># from biological voltage values at spike initiation)</span>
+        <span class="c1">#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+        <span class="c1">#     NOTE THAT THERE IS AN ISSUE HERE USING FAKE DATA.  THE -1 IS HERE BECAUSE THE NEURON CROSSES THRESHOLD SOMETIME BETWEEN TWO INDICIES.</span>
+        <span class="c1">#     FOR THE FAKE DATA THE TIME OF THE SPIKE (THE POINT FOLLOWING WHEN THE VOLTAGE CROSSES THRESHOLD) IS SET TO NAN.</span>
+        <span class="c1">#     THE INTERPOLATED VOLTAGE CAN BE USED BUT THEN THE INTERPOLATED VOLTAGE MUST BE CALCULATED FOR THE TRUE VOLTAGE </span>
+        <span class="c1">#     TRACE AND POSSIBLY IN THE INTEGRATION.</span>
+        <span class="k">if</span> <span class="n">fake</span><span class="p">:</span>
+            <span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">internal_sp_comp_array</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">th_inf</span>  <span class="c1">#USE THIS FOR FAKE DATA</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="p">]</span><span class="o">-</span><span class="n">internal_sp_comp_array</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="p">]</span><span class="o">-</span><span class="n">th_inf</span>  <span class="c1">#USE THIS FOR REAL DATA (although probably not necessary)</span>
+        <span class="c1">#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+        
+        <span class="c1"># For each ISI, calculate the difference between the voltage dependent component of the threshold</span>
+        <span class="c1"># and the value that would be determined via a model that uses the actual voltage of neuron.  </span>
+        <span class="n">sq_err</span> <span class="o">=</span> <span class="p">[]</span>    <span class="c1">#list to store squared error between the model and biological threshold</span>
+        <span class="k">for</span> <span class="n">spike_number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">)):</span>      <span class="c1">#loop over all ISI's in data</span>
+            <span class="n">v_start_ind</span> <span class="o">=</span> <span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="n">spike_cut_length</span><span class="p">)</span> <span class="c1">#dont want to use voltage during a spike</span>
+            <span class="n">end_ind</span> <span class="o">=</span> <span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span>
+            <span class="n">v_in_ISI</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">v_start_ind</span><span class="p">:</span><span class="n">end_ind</span><span class="p">]</span>
+            <span class="c1">#voltage component of threshold at the beginning and end of the ISI</span>
+            <span class="c1">#With fake data if go from one before fake data to fake data this should be exact</span>
+            <span class="n">theta0</span><span class="o">=</span><span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1">#this assumes that the voltage component of the threshold does not change over the time period of the spike</span>
+            <span class="c1"># not sure this makes sense any moretheta0=v_comp_of_th_at_each_spike_via_data[spike_number-1]+sp_comp_of_offset_at_spike_list[spike_number-1] #use this is you want to add the biological component back on</span>
+            <span class="n">theta1</span><span class="o">=</span><span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span>
+            <span class="n">tvec</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v_in_ISI</span><span class="p">))</span><span class="o">*</span><span class="n">dt</span>
+    
+            <span class="c1">#analytical solution should be exact with fake data--small differences could be because of the differences in the voltage at </span>
+            <span class="c1">#spike indicies are off by one</span>
+            <span class="n">model</span><span class="o">=+</span><span class="n">theta0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">end_ind</span><span class="o">-</span><span class="n">v_start_ind</span><span class="p">))</span><span class="o">+</span><span class="n">a_voltage</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">tvec</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">v_in_ISI</span><span class="o">-</span><span class="n">El</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">tvec</span><span class="p">))</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta1</span><span class="o">-</span><span class="n">model</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
+                <span class="n">sq_err</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        
+        <span class="n">total_err</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sq_err</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">total_err</span></div>
+
+
+<div class="viewcode-block" id="fit_avoltage_bvoltage_th">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.fit_avoltage_bvoltage_th">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_avoltage_bvoltage_th</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">v_trace_list</span><span class="p">,</span> <span class="n">El_list</span><span class="p">,</span> <span class="n">spike_cut_length</span><span class="p">,</span> <span class="n">all_spikeInd_list</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">a_spike</span><span class="p">,</span> 
+                     <span class="n">b_spike</span><span class="p">,</span> <span class="n">fake</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''This is a version of fit_avoltage_bvoltage_th_debug that does not require the th_trace, </span>
+<span class="sd">    v_component_of_thresh_trace, and spike_component_of_thresh_trace needed for debugging. A</span>
+<span class="sd">    test should be run to make sure the same output comes out from this and the debug function</span>
+<span class="sd">    </span>
+<span class="sd">    This function returns the squared error for the difference between the 'known' voltage</span>
+<span class="sd">    component of the threshold obtained from the biological neuron and the voltage component </span>
+<span class="sd">    of the threshold of the model obtained with the input parameters (so that the minimum can be </span>
+<span class="sd">    searched for via fmin). The overall threshold is the sum of threshold infinity the spike component</span>
+<span class="sd">    of the threshold and the voltage component of the threshold.  Therefore threshold infinity and </span>
+<span class="sd">    the spike component of the threshold must be subtracted from the threshold of the neuron in order</span>
+<span class="sd">    to isolate the voltage component of the threshold.  In the evaluation of the model the actual</span>
+<span class="sd">    voltage of the neuron is used so that any errors in the other components of the model will not </span>
+<span class="sd">    influence the fits here (for example, if a afterspike current was estimated incorrectly)</span>
+<span class="sd">  </span>
+<span class="sd">    Notes:</span>
+<span class="sd">    * The spike component of the threshold is subtracted from the </span>
+<span class="sd">        voltage which means that the voltage component of the threshold should only be added to rules.</span>
+<span class="sd">    * b_spike was fit using a negative value in the function therefore the negative is placed in the </span>
+<span class="sd">        equation. </span>
+<span class="sd">    * values in this function are in 'real' voltage as opposed to voltage</span>
+<span class="sd">        relative to resting potential. </span>
+<span class="sd">    * current injection during the spike is not taken into account.  This seems reasonable as the </span>
+<span class="sd">        ion channels are open during this time and injected current may not greatly influence the neuron.</span>
+<span class="sd">    </span>
+<span class="sd">    x: numpy array</span>
+<span class="sd">        x[0]=a_voltage input, x[1] is b_voltage_input, x[2] is th_inf</span>
+<span class="sd">    v_trace_list: list of numpy arrays</span>
+<span class="sd">        voltage traces (v_trace, El, and th_inf must be in the same frame of reference)</span>
+<span class="sd">    El_list: list of floats</span>
+<span class="sd">        reversal potential (v_trace, El, and th_inf must be in the same frame of reference)</span>
+<span class="sd">    spike_cut_length: int</span>
+<span class="sd">        number of indicies removed after initiation of a spike</span>
+<span class="sd">    all_spikeInd_list: list of numpy arrays</span>
+<span class="sd">        indicies of spike trains </span>
+<span class="sd">    dt: float </span>
+<span class="sd">        size of time step (SI units)</span>
+<span class="sd">    a_spike: float</span>
+<span class="sd">        amplitude of spike component of threshold.</span>
+<span class="sd">    b_spike: float</span>
+<span class="sd">        decay constant in spike component of the threshold</span>
+<span class="sd">    fake: Boolean</span>
+<span class="sd">        if True makes uses the voltage value of spike step-1 because there is not a voltage value at the spike</span>
+<span class="sd">        step because it is set to nan in the simulator.</span>
+<span class="sd">    '''</span>
+    <span class="n">a_voltage</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">b_voltage</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">th_inf</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">total_err</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">for</span> <span class="n">v_trace</span><span class="p">,</span> <span class="n">El</span><span class="p">,</span> <span class="n">all_spikeInd</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">v_trace_list</span><span class="p">,</span> <span class="n">El_list</span><span class="p">,</span> <span class="n">all_spikeInd_list</span><span class="p">):</span>
+        <span class="c1"># Calculate values along the whole trace and then take the values at the spike ind</span>
+        <span class="n">internal_sp_comp_array</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">spike_cut_length</span><span class="p">)</span> 
+        <span class="n">left_over</span><span class="o">=</span><span class="mi">0</span>
+        <span class="c1">#vector of spike component of of the threshold from each spike and previous spikes; note at first spike there is no spike component of threshold so initialized at zero   </span>
+        <span class="c1">#Note that care has to be taken here to get make sure the right amount of decay is left over</span>
+        <span class="k">for</span> <span class="n">spike_number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">)):</span>      <span class="c1">#skipping first spike since no residual spike component of threshold</span>
+            <span class="n">integration_length</span><span class="o">=</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span><span class="o">-</span><span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span> <span class="c1">#this is the amount of time that needs to be integrated over note that it is one longer than the interval because of the last value is added to the aspike for the next ISI</span>
+            <span class="n">local_spike_comp_of_threshold</span><span class="o">=</span><span class="n">spike_component_of_threshold_exact</span><span class="p">(</span><span class="n">a_spike</span><span class="o">+</span><span class="n">left_over</span><span class="p">,</span> <span class="n">b_spike</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">integration_length</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+            <span class="n">internal_sp_comp_array</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">internal_sp_comp_array</span><span class="p">,</span> <span class="n">local_spike_comp_of_threshold</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">left_over</span><span class="o">=</span><span class="n">local_spike_comp_of_threshold</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="c1"># Compute voltage component of threshold at biological spike (subtract th_inf and spike component of threshold</span>
+        <span class="c1"># from biological voltage values at spike initiation)</span>
+        <span class="c1">#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+        <span class="c1">#     NOTE THAT THERE IS AN ISSUE HERE USING FAKE DATA.  THE -1 IS HERE BECAUSE THE NEURON CROSSES THRESHOLD SOMETIME BETWEEN TWO INDICIES.</span>
+        <span class="c1">#     FOR THE FAKE DATA THE TIME OF THE SPIKE (THE POINT FOLLOWING WHEN THE VOLTAGE CROSSES THRESHOLD) IS SET TO NAN.</span>
+        <span class="c1">#     THE INTERPOLATED VOLTAGE CAN BE USED BUT THEN THE INTERPOLATED VOLTAGE MUST BE CALCULATED FOR THE TRUE VOLTAGE </span>
+        <span class="c1">#     TRACE AND POSSIBLY IN THE INTEGRATION.</span>
+        <span class="k">if</span> <span class="n">fake</span><span class="p">:</span>
+            <span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">internal_sp_comp_array</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">th_inf</span>  <span class="c1">#USE THIS FOR FAKE DATA</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="p">]</span><span class="o">-</span><span class="n">internal_sp_comp_array</span><span class="p">[</span><span class="n">all_spikeInd</span><span class="p">]</span><span class="o">-</span><span class="n">th_inf</span>  <span class="c1">#USE THIS FOR REAL DATA (although probably not necessary)</span>
+        <span class="c1">#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+        
+        <span class="c1"># For each ISI, calculate the difference between the voltage dependent component of the threshold</span>
+        <span class="c1"># and the value that would be determined via a model that uses the actual voltage of neuron.  </span>
+        <span class="n">sq_err</span> <span class="o">=</span> <span class="p">[]</span>    <span class="c1">#list to store squared error between the model and biological threshold</span>
+        <span class="k">for</span> <span class="n">spike_number</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_spikeInd</span><span class="p">)):</span>      <span class="c1">#loop over all ISI's in data</span>
+            <span class="n">v_start_ind</span> <span class="o">=</span> <span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="nb">int</span><span class="p">(</span><span class="n">spike_cut_length</span><span class="p">)</span> <span class="c1">#dont want to use voltage during a spike</span>
+            <span class="n">end_ind</span> <span class="o">=</span> <span class="n">all_spikeInd</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span>
+            <span class="n">v_in_ISI</span><span class="o">=</span><span class="n">v_trace</span><span class="p">[</span><span class="n">v_start_ind</span><span class="p">:</span><span class="n">end_ind</span><span class="p">]</span>
+            <span class="c1">#voltage component of threshold at the beginning and end of the ISI</span>
+            <span class="c1">#With fake data if go from one before fake data to fake data this should be exact</span>
+            <span class="n">theta0</span><span class="o">=</span><span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="p">[</span><span class="n">spike_number</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="c1">#this assumes that the voltage component of the threshold does not change over the time period of the spike</span>
+            <span class="c1"># not sure this makes sense any moretheta0=v_comp_of_th_at_each_spike_via_data[spike_number-1]+sp_comp_of_offset_at_spike_list[spike_number-1] #use this is you want to add the biological component back on</span>
+            <span class="n">theta1</span><span class="o">=</span><span class="n">v_comp_of_th_at_each_spike_via_data</span><span class="p">[</span><span class="n">spike_number</span><span class="p">]</span>
+            <span class="n">tvec</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v_in_ISI</span><span class="p">))</span><span class="o">*</span><span class="n">dt</span>
+    
+            <span class="c1">#analytical solution should be exact with fake data--small differences could be because of the differences in the voltage at </span>
+            <span class="c1">#spike indicies are off by one</span>
+            <span class="n">model</span><span class="o">=+</span><span class="n">theta0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">end_ind</span><span class="o">-</span><span class="n">v_start_ind</span><span class="p">))</span><span class="o">+</span><span class="n">a_voltage</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">tvec</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">v_in_ISI</span><span class="o">-</span><span class="n">El</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">b_voltage</span><span class="o">*</span><span class="n">tvec</span><span class="p">))</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta1</span><span class="o">-</span><span class="n">model</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+            <span class="k">if</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
+                <span class="n">sq_err</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        
+        <span class="n">total_err</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">sq_err</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">total_err</span></div>
+
+
+
+<span class="c1">#TODO: depricate confirmed use of fit_avoltage_bvoltage_th</span>
+<span class="c1">#def err_fix_th(x, v_trace, El, spike_cut_length, all_spikeInd, th_inf, dt, a_spike, b_spike):</span>
+<span class="c1">#    '''This function returns the squared error for the difference between the 'known' voltage </span>
+<span class="c1">#    component of the threshold obtained from the biological neuron and the voltage component </span>
+<span class="c1">#    of the threshold of the model obtained with the input parameters (so that the minimum can be </span>
+<span class="c1">#    searched for via fmin). The overall threshold is the sum of threshold infinity the spike component</span>
+<span class="c1">#    of the threshold and the voltage component of the threshold.  Therefore threshold infinity and </span>
+<span class="c1">#    the spike component of the threshold must be subtracted from the threshold of the neuron in order</span>
+<span class="c1">#    to isolate the voltage component of the threshold.  In the evaluation of the model the actual</span>
+<span class="c1">#    voltage of the neuron is used so that any errors in the other components of the model will not </span>
+<span class="c1">#    influence the fits here (for example if a afterspike current was estimated incorrectly)</span>
+<span class="c1">#  </span>
+<span class="c1">#    Notes:</span>
+<span class="c1">#    * The spike component of the threshold is subtracted from the </span>
+<span class="c1">#        voltage which means that the voltage component of the threshold should only be added to rules.</span>
+<span class="c1">#    * b_spike was fit using a negative value in the function therefore the negative is placed in the </span>
+<span class="c1">#        equation. </span>
+<span class="c1">#    * values in this function are in 'real' voltage as opposed to voltage</span>
+<span class="c1">#        relative to resting potential. </span>
+<span class="c1">#    * current injection during the spike is not taken into account.  This seems reasonable as the </span>
+<span class="c1">#        ion channels are open during this time and injected current may not greatly influence the neuron.</span>
+<span class="c1">#    </span>
+<span class="c1">#    x: numpy array</span>
+<span class="c1">#        x[0]=a_voltage input, x[1] is b_voltage_input</span>
+<span class="c1">#    voltage: numpy array</span>
+<span class="c1">#        voltage trace (voltage, El, and th_inf must be in the same frame of reference)</span>
+<span class="c1">#    El: float</span>
+<span class="c1">#        reversal potential (voltage, El, and th_inf must be in the same frame of reference)</span>
+<span class="c1">#    spike_cut_length: int</span>
+<span class="c1">#        number of indicies removed after initiation of a spike</span>
+<span class="c1">#    all_spikeInd: numpy array</span>
+<span class="c1">#        indicies of spike train </span>
+<span class="c1">#    th_inf: float</span>
+<span class="c1">#        threshold infinity (voltage, El, and th_inf must be in the same frame of reference)</span>
+<span class="c1">#    dt: float </span>
+<span class="c1">#        size of time step (SI units)</span>
+<span class="c1">#    a_spike: float</span>
+<span class="c1">#        amplitude of spike component of threshold.</span>
+<span class="c1">#    b_spike: float</span>
+<span class="c1">#        decay constant in spike component of the threshold</span>
+<span class="c1">#    '''</span>
+<span class="c1">#    a_voltage=x[0]</span>
+<span class="c1">#    b_voltage=x[1]</span>
+<span class="c1">#    # effect of the spike component of the threshold from each spike and previous spikes</span>
+<span class="c1">#    sp_comp_of_offset_sum_vector=[0] #vector of spike component of of the threshold from each spike and previous spikes; note at first spike there is no spike component of threshold so initialized at zero   </span>
+<span class="c1">#    for spike_number in range(1,len(all_spikeInd)):      #skipping first spike since no residual spike component of threshold</span>
+<span class="c1">#        t=(all_spikeInd[spike_number]-all_spikeInd[spike_number-1]-spike_cut_length)*dt #spike ISI</span>
+<span class="c1">#        sp_comp_of_th_offset_local = spike_component_of_threshold_exact(a_spike, b_spike, t) #spike component of threshold at each ISI for each individual spike</span>
+<span class="c1">#        #I THINK THE LINE BELOW MIGHT JUST BE WRONG BECAUSE THE OLD OFF SET WOULD DECAY AND I DONT THINK IT IS HERE:THIS IS WHAT IS BEING USED</span>
+<span class="c1">##        sp_comp_of_offset_sum_vector.append(sp_comp_of_offset_sum_vector[-1] + sp_comp_of_th_offset_local)  #keeping track of residual spike component of threshold at each spike</span>
+<span class="c1">#        left_over_decay=spike_component_of_threshold_exact(sp_comp_of_offset_sum_vector[-1], b_spike, t)</span>
+<span class="c1">#        sp_comp_of_offset_sum_vector.append(left_over_decay + sp_comp_of_th_offset_local)  #keeping track of spike component of threshold with residuals at each spike</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#    # Compute v_trace component of threshold at biological spike (subtract th_inf and spike component of threshold</span>
+<span class="c1">#    # from biological v_trace values at spike initiation)</span>
+<span class="c1">#    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+<span class="c1">#    # NOTE THAT THERE IS AN ISSUE HERE USING FAKE DATA.  THE -1 IS HERE BECAUSE THE NEURON CROSSES THRESHOLD SOMETIME BETWEEN TWO INDICIES.</span>
+<span class="c1">#    # FOR THE FAKE DATA THE TIME OF THE SPIKE (THE POINT FOLLOWING WHEN THE VOLTAGE CROSSES THRESHOLD) IS SET TO NAN.</span>
+<span class="c1">#    # THE INTERPOLATED VOLTAGE CAN BE USED BUT THEN THE INTERPOLATED VOLTAGE MUST BE CALCULATED FOR THE TRUE VOLTAGE </span>
+<span class="c1">#    # TRACE AND POSSIBLY IN THE INTEGRATION.</span>
+<span class="c1">#    v_comp_of_th_at_each_spike_via_data=v_trace[all_spikeInd-1]-np.array(sp_comp_of_offset_sum_vector)-th_inf  #USE THIS FOR FAKE DATA</span>
+<span class="c1">##    v_comp_of_th_at_each_spike_via_data=v_trace[all_spikeInd]-np.array(sp_comp_of_offset_sum_vector)-th_inf  #THIS IS PROBABLY APPROPRIATE FOR REAL DATA</span>
+<span class="c1">#    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</span>
+<span class="c1">#    </span>
+<span class="c1">#    # For each ISI, calculate the difference between the v_trace dependent component of the threshold</span>
+<span class="c1">#    # and the value that would be determined via a model that uses the actual v_trace of neuron.  </span>
+<span class="c1">#    sq_err = []    #list to store squared error between the model and biological threshold</span>
+<span class="c1">#    for spike_number in range(1, len(all_spikeInd)):      #loop over all ISI's in data</span>
+<span class="c1">#        v_start_ind = all_spikeInd[spike_number-1]+int(spike_cut_length) #dont want to use voltage during a spike</span>
+<span class="c1">#        end_ind = all_spikeInd[spike_number]</span>
+<span class="c1">#        v_in_ISI=v_trace[v_start_ind:end_ind]</span>
+<span class="c1">#        #v_trace component of threshold at the beginning and end of the ISI</span>
+<span class="c1">#    </span>
+<span class="c1">#        theta0=v_comp_of_th_at_each_spike_via_data[spike_number-1] #this assumes that the voltage component of the threshold does not change over the time period of the spike</span>
+<span class="c1">#        # not sure this makes sense any moretheta0=v_comp_of_th_at_each_spike_via_data[spike_number-1]+sp_comp_of_offset_sum_vector[spike_number-1] #use this is you want to add the biological component back on</span>
+<span class="c1">#        theta1=v_comp_of_th_at_each_spike_via_data[spike_number]</span>
+<span class="c1">#        tvec=np.arange(len(v_in_ISI))*dt</span>
+<span class="c1">#</span>
+<span class="c1">#        #need to prove this--NOTE THAT THIS SHOULD BE EXACT DURING FAKE DATA--DIFFERENCES COULD BE DUE TO GETTING VALUES AT DIFFERENT INDICIES</span>
+<span class="c1">#        model=+theta0*np.exp(-b_voltage*dt*(end_ind-v_start_ind))+a_voltage*np.exp(-b_voltage*tvec[-1])*np.sum(dt*(v_in_ISI-El)*np.exp(b_voltage*tvec))</span>
+<span class="c1">#        err = (theta1-model)**2</span>
+<span class="c1">#        if ~np.isnan(err):</span>
+<span class="c1">#            sq_err.append(err)</span>
+<span class="c1">#             </span>
+<span class="c1">#    return np.sum(sq_err)</span>
+
+<span class="c1"># TODO: can depricate, using sdk now</span>
+<span class="c1">#def find_multiblip_spikes(multi_SS_i, multi_SS_v, dt):</span>
+<span class="c1">#    '''artifacts caused by turning stimulus on and off created artifacts that </span>
+<span class="c1">#    created problems for the standard spike detection algorithm.  Several alterations </span>
+<span class="c1">#    were made so that the algorithm would detect spikes appropriately. Please see multiblip</span>
+<span class="c1">#    spike cutting documentation for more information on how the code differs from the SDK </span>
+<span class="c1">#    version and what was needed to solve specific issues.</span>
+<span class="c1">#    input:</span>
+<span class="c1">#    multi_SS_i: list of arrays</span>
+<span class="c1">#        each array corresponds to the current stimulation of one triblip stimulus</span>
+<span class="c1">#    multi_SS_v: list of arrays</span>
+<span class="c1">#        each array corresponds to the voltage trace of triblip simulus</span>
+<span class="c1">#    dt: float </span>
+<span class="c1">#    '''</span>
+<span class="c1">#    artifact_ave_window_time_s=0.0003 #</span>
+<span class="c1">#    window_indicies_to_ave_len=int(artifact_ave_window_time_s/dt)</span>
+<span class="c1">#    out_spk_idxs_list=[]</span>
+<span class="c1">#    for current, voltage in zip(multi_SS_i, multi_SS_v):</span>
+<span class="c1">#        #--Find the beginning and end of stimuli so that we can average the voltage traces at that time</span>
+<span class="c1">#        up_blip_index=np.where(np.diff(np.greater_equal(current, 1e-10).astype(int)) == 1)[0]#Note 1e-10 is larger than test pulse so it will not pick up test pulse</span>
+<span class="c1">#        down_blip_index=np.where(np.diff(np.less_equal(current, 1e-10).astype(int)) == 1)[0]</span>
+<span class="c1">#        potential_artifact_indexes=np.sort(np.append(up_blip_index, down_blip_index))</span>
+<span class="c1">#        artifact_removed_voltage=copy.deepcopy(voltage)</span>
+<span class="c1">#        window_boarders_index=[]</span>
+<span class="c1">#        #--remove artifacts </span>
+<span class="c1">#        for index in potential_artifact_indexes:</span>
+<span class="c1">#            smooth_window=range(index,index+window_indicies_to_ave_len+1)</span>
+<span class="c1">#            </span>
+<span class="c1">#            # interpolate in the smoothing window</span>
+<span class="c1">#            blah=interp1d([smooth_window[0], smooth_window[-1]], [artifact_removed_voltage[smooth_window[0]], artifact_removed_voltage[smooth_window[-1]]])</span>
+<span class="c1">#            artifact_removed_voltage[smooth_window]=blah(smooth_window)</span>
+<span class="c1">#            </span>
+<span class="c1">#            #windows boarders are just for plotting</span>
+<span class="c1">##            window_boarders_index.append(smooth_window[0])</span>
+<span class="c1">##            window_boarders_index.append(smooth_window[-1])</span>
+<span class="c1">##        plt.figure()</span>
+<span class="c1">##        plt.plot(voltage, 'b', lw=4)</span>
+<span class="c1">##        plt.plot(artifact_removed_voltage, 'r', lw=2)</span>
+<span class="c1">##        plt.plot(window_boarders_index, artifact_removed_voltage[window_boarders_index], '|g', ms=10)</span>
+<span class="c1">##        plt.xlim([40400, 41000])</span>
+<span class="c1">##        plt.show()</span>
+<span class="c1">##        </span>
+<span class="c1">##        t = np.arange(0, len()) * dt</span>
+<span class="c1">#</span>
+<span class="c1">#        # keeping the smooth_v convention of the SDK find spike code.  However in the SDK code </span>
+<span class="c1">#        # this is used to name data potentially smoothed by a bessel filter</span>
+<span class="c1">#        smooth_v = artifact_removed_voltage</span>
+<span class="c1">#        dv = np.diff(smooth_v)    </span>
+<span class="c1">#        dvdt = dv / dt</span>
+<span class="c1">#        dvv = np.diff(dvdt)</span>
+<span class="c1">#                </span>
+<span class="c1">#        v=smooth_v[:-1]  #truncating the end of v so it has the same dimensions as dvdt for time plotting</span>
+<span class="c1">#</span>
+<span class="c1">#        spikes = []</span>
+<span class="c1">#        out_spk_idxs = []</span>
+<span class="c1">#        </span>
+<span class="c1">#        peaks=get_peaks(v) # find potential spikes by finding peak over zero mv</span>
+<span class="c1">#      </span>
+<span class="c1">#        # Etay defines spike as time of threshold crossing.  Threshold is defined as the time at which dvdt is some percent of maximum threshold.</span>
+<span class="c1">#        # TODO: figure out how maximum threshold is defined in original code so I can say why I don't use it</span>
+<span class="c1">#        for spk_n, peak_idx in enumerate(peaks):</span>
+<span class="c1">#            #---------find spike peak----------------------------</span>
+<span class="c1">#            spk = {}</span>
+<span class="c1">#    </span>
+<span class="c1">#            spk["peak_idx"] = peak_idx </span>
+<span class="c1">#            upstroke_idx = np.argmax(dvdt[peak_idx-int(.001/dt):peak_idx]) + peak_idx-int(.001/dt)  </span>
+<span class="c1">#            spk["upstroke"] = dvdt[upstroke_idx]</span>
+<span class="c1">#            spk["upstroke_idx"] = upstroke_idx</span>
+<span class="c1">#            spk["upstroke_v"] = v[upstroke_idx]</span>
+<span class="c1">#                </span>
+<span class="c1">#            # Define threshold where dvdt = 5% * max upstroke</span>
+<span class="c1">#            dvdt_thr_target = THRESH_PCT_MULTIBLIP * spk["upstroke"]</span>
+<span class="c1">#            #print 'spk[upstroke]', spk["upstroke"], 'dvdt_thr_target', dvdt_thr_target</span>
+<span class="c1">#            prev_idx = peak_idx-int(.0035/dt)</span>
+<span class="c1">#            #check to make sure prev_idx is not before or in a window where the stimulus blip comes on because </span>
+<span class="c1">#            #it will errorniously trip the threshold dvdt</span>
+<span class="c1">#            for index in up_blip_index:</span>
+<span class="c1">#                if prev_idx&lt;=index+int(.0005/dt) and prev_idx&gt;= index-int(.0035/dt):</span>
+<span class="c1">#                    prev_idx=index+int(.0005/dt)</span>
+<span class="c1">#                    </span>
+<span class="c1">#            mean_dvv= [np.mean(dvv[pv-2:pv+3]) for pv in range(prev_idx,upstroke_idx)] #makes sure dv2/dt2 isnt spuriously going down by averaging 5 points</span>
+<span class="c1">#            find_thresh_idxs = np.where(np.logical_and(dvdt[prev_idx:upstroke_idx] &gt;= dvdt_thr_target,  np.greater(mean_dvv,0)))[0]  </span>
+<span class="c1">#               </span>
+<span class="c1">#            if len(find_thresh_idxs) &lt; 1: # Can't find a good threshold value - probably a bad simulation case</span>
+<span class="c1">#                # Fall back to the upstroke value</span>
+<span class="c1">#                threshold_idx = upstroke_idx</span>
+<span class="c1">#            else:</span>
+<span class="c1">#                threshold_idx = find_thresh_idxs[0] + prev_idx</span>
+<span class="c1">#                    </span>
+<span class="c1">#            spk["threshold_idx"] = threshold_idx</span>
+<span class="c1">#            spk["threshold_v"] = v[threshold_idx]</span>
+<span class="c1">#                </span>
+<span class="c1">#            # Check for things that are probably not spikes:</span>
+<span class="c1">#  </span>
+<span class="c1">#            # if the "spike" is less than 2 mV from threshold to peak, don't count it</span>
+<span class="c1">#            if v[peak_idx] - v[threshold_idx] &lt; 0.002:  </span>
+<span class="c1">#                print("\tnot counting spike is closer to peak than 2 mV")</span>
+<span class="c1">#                continue</span>
+<span class="c1">#    </span>
+<span class="c1">#            #NOTE: because threshold doesnt decay to zero in the multiblip this doesnt get rid of the situation that usually is only in the first spike of a stimulus</span>
+<span class="c1">#            # if the spike is less the -30mV, don't count it</span>
+<span class="c1">#            if v[peak_idx] &lt; -0.04:</span>
+<span class="c1">#                print("\tnot counting spike: peak is too small")</span>
+<span class="c1">#                continue</span>
+<span class="c1">#    </span>
+<span class="c1">#            spikes.append(spk)</span>
+<span class="c1">#    </span>
+<span class="c1">#    #----figure out if I should still find a global threshold and then do it all again</span>
+<span class="c1">#    #    # find global threshold which is an average of the individual thresholds</span>
+<span class="c1">#    #    if len(spikes) &gt; 0:</span>
+<span class="c1">#    #        dvdt_thr_target = np.array([spk["upstroke"] for spk in spikes]).mean() * THRESH_PCT_MULTIBLIP</span>
+<span class="c1">#    #    else: # if there weren't any spikes, move along</span>
+<span class="c1">#    #        return np.array([])</span>
+<span class="c1">#        </span>
+<span class="c1">#            out_spk_idxs.append(spk["threshold_idx"])</span>
+<span class="c1">#        </span>
+<span class="c1">#        out_spk_idxs_list.append(np.array(out_spk_idxs))</span>
+<span class="c1">#        </span>
+<span class="c1">##        time_vector=np.arange(len(v))*dt</span>
+<span class="c1">##        plt.figure()</span>
+<span class="c1">##    #    plt.subplot(3,1,1)</span>
+<span class="c1">##    #    plt.plot(time_vector, ddv)</span>
+<span class="c1">##    #    plt.plot(time_vector[out_spk_idxs], ddv[out_spk_idxs], '.r', ms=16)</span>
+<span class="c1">##    #    plt.xlim([40300, 42000])</span>
+<span class="c1">##    #    plt.ylabel('ddv')</span>
+<span class="c1">##        plt.subplot(2,1,1)</span>
+<span class="c1">##        plt.plot(time_vector, dvdt)</span>
+<span class="c1">##        plt.plot(time_vector[out_spk_idxs], dvdt[out_spk_idxs], '.r', ms=16)</span>
+<span class="c1">##        plt.plot(time_vector[potential_artifact_indexes], dvdt[potential_artifact_indexes], 'b|', ms=24, lw=4)</span>
+<span class="c1">##        plt.xlim([40300*dt, 42000*dt])</span>
+<span class="c1">##        plt.ylabel('dvdt')</span>
+<span class="c1">##        plt.subplot(2,1,2)</span>
+<span class="c1">##        plt.plot(time_vector, v)</span>
+<span class="c1">##        plt.plot(time_vector[out_spk_idxs], v[out_spk_idxs], 'r.', ms=16, label='threshold')</span>
+<span class="c1">##        plt.xlim([40300*dt, 42000*dt])</span>
+<span class="c1">##        plt.ylabel('voltage (V)')</span>
+<span class="c1">##        plt.plot(time_vector[peaks], v[peaks], '.g', ms=16, label='peaks')</span>
+<span class="c1">##        plt.plot(time_vector[[spikes[ii]['upstroke_idx'] for ii in range(len(spikes))]], [spikes[ii]['upstroke_v'] for ii in range(len(spikes))], '.c', ms=16, label = 'max upstroke')</span>
+<span class="c1">##        plt.plot(time_vector[potential_artifact_indexes], v[potential_artifact_indexes], 'b|', ms=24, lw=4)</span>
+<span class="c1">##        plt.legend()</span>
+<span class="c1">##        plt.show()</span>
+<span class="c1">#        </span>
+<span class="c1">#    return out_spk_idxs_list</span>
+
+<div class="viewcode-block" id="get_peaks">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.get_peaks">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_peaks</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">aboveValue</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''This function was written by Corinne Teeter and calculates the action potential peaks of a voltage equation"</span>
+<span class="sd">    inputs</span>
+<span class="sd">        voltage: numpy array of voltages</span>
+<span class="sd">        aboveValue: scalar voltage value over which voltage is considered a spike.</span>
+<span class="sd">    outputs:    </span>
+<span class="sd">        peakInd: array of indicies of peaks'''</span>
+    <span class="n">VshiftR</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="mi">0</span><span class="p">],</span> <span class="n">voltage</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">voltage</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="n">VshiftL</span><span class="o">=</span><span class="n">voltage</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">voltage</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+    <span class="n">IndShiftR</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">voltage</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">voltage</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">VshiftR</span><span class="p">)</span>
+    <span class="n">IndShiftL</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">voltage</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">voltage</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">VshiftL</span><span class="p">)</span>
+    <span class="n">greatThanThresh</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">voltage</span><span class="o">&gt;</span><span class="n">aboveValue</span><span class="p">)</span> <span class="c1">#finds indicies greater than the value provided</span>
+    <span class="n">peakInd</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">IndShiftL</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">IndShiftR</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">greatThanThresh</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="c1">#find the indicies of the peak</span>
+    <span class="k">return</span> <span class="n">peakInd</span></div>
+
+
+<div class="viewcode-block" id="exp_force_c">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.exp_force_c">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exp_force_c</span><span class="p">(</span><span class="n">t_const</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">k1</span><span class="p">):</span>
+    <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span> <span class="o">=</span> <span class="n">t_const</span>
+    <span class="k">return</span> <span class="n">a1</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">k1</span><span class="o">*</span><span class="n">t</span><span class="p">))</span><span class="o">+</span><span class="n">const</span></div>
+
+
+<div class="viewcode-block" id="exp_fit_c">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.threshold_adaptation.html#allensdk.internal.model.glif.threshold_adaptation.exp_fit_c">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exp_fit_c</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">k1</span><span class="p">,</span> <span class="n">const</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a1</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">k1</span><span class="o">*</span><span class="n">t</span><span class="p">))</span><span class="o">+</span><span class="n">const</span></div>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

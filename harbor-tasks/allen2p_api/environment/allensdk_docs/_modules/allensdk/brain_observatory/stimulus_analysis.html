@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.stimulus_analysis &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.stimulus_analysis</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2016-2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">st</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.findlevel</span><span class="w"> </span><span class="kn">import</span> <span class="n">findlevel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.brain_observatory_exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrainObservatoryAnalysisException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">observatory_plots</span> <span class="k">as</span> <span class="n">oplots</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+
+<div class="viewcode-block" id="StimulusAnalysis">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StimulusAnalysis</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Base class for all response analysis code. Subclasses are responsible</span>
+<span class="sd">    for computing metrics and traces relevant to a particular stimulus.</span>
+<span class="sd">    The base class contains methods for organizing sweep responses row of</span>
+<span class="sd">    a stimulus stable (get_sweep_response).  Subclasses implement the</span>
+<span class="sd">    get_response method, computes the mean sweep response to all sweeps for</span>
+<span class="sd">    a each stimulus condition.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data_set: BrainObservatoryNwbDataSet instance</span>
+
+<span class="sd">    speed_tuning: boolean, deprecated</span>
+<span class="sd">       Whether or not to compute speed tuning histograms</span>
+
+<span class="sd">    """</span>
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'allensdk.brain_observatory.stimulus_analysis'</span><span class="p">)</span>
+    <span class="n">_PRELOAD</span> <span class="o">=</span> <span class="s2">"PRELOAD"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_set</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span> <span class="o">=</span> <span class="n">data_set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestamps</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_celltraces</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_rate</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_numbercells</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_roi_id</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cell_id</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dfftraces</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dxcm</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dxtime</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span> <span class="o">=</span> <span class="mi">800</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_response</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_peak</span> <span class="o">=</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span>
+
+        <span class="c1"># get_speed_tuning emits a warning describing a scipy ks_2samp update.</span>
+        <span class="c1"># we only want to see this warning once</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__warned_speed_tuning</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stim_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">populate_stimulus_table</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stim_table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sweep_response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_sweep_response</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mean_sweep_response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_sweep_response</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_sweep_response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_sweep_response</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pval</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_response</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">peak</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_peak</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_peak</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak</span>
+
+<div class="viewcode-block" id="StimulusAnalysis.get_fluorescence">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.get_fluorescence">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_fluorescence</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># get fluorescence</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timestamps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_celltraces</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_corrected_fluorescence_traces</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_rate</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_numbercells</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">celltraces</span><span class="p">)</span>  <span class="c1"># number of cells in dataset</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timestamps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamps</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_fluorescence</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timestamps</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">celltraces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_celltraces</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_fluorescence</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_celltraces</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquisition_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_rate</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_fluorescence</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_acquisition_rate</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">numbercells</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_numbercells</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_fluorescence</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_numbercells</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">roi_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_roi_id</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_roi_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_roi_ids</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_roi_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cell_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_id</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cell_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_cell_specimen_ids</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cell_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dfftraces</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfftraces</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfftraces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_dff_traces</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dfftraces</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dxcm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxcm</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dxcm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxtime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_running_speed</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxcm</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dxtime</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxtime</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_dxcm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxtime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_running_speed</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dxtime</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">binned_dx_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_speed_tuning</span><span class="p">(</span><span class="n">binsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">binned_cells_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_speed_tuning</span><span class="p">(</span><span class="n">binsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">binned_dx_vis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_speed_tuning</span><span class="p">(</span><span class="n">binsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">binned_cells_vis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_speed_tuning</span><span class="p">(</span><span class="n">binsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">peak_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span> <span class="ow">is</span> <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_PRELOAD</span><span class="p">:</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_sp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_binned_dx_vis</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">_binned_cells_vis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_speed_tuning</span><span class="p">(</span><span class="n">binsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_binsize</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_peak_run</span>
+
+<div class="viewcode-block" id="StimulusAnalysis.populate_stimulus_table">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.populate_stimulus_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_stimulus_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Implemented by subclasses. """</span>
+        <span class="k">raise</span> <span class="n">BrainObservatoryAnalysisException</span><span class="p">(</span>
+            <span class="s2">"populate_stimulus_table not implemented"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.get_response">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.get_response">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Implemented by subclasses. """</span>
+        <span class="k">raise</span> <span class="n">BrainObservatoryAnalysisException</span><span class="p">(</span><span class="s2">"get_response not implemented"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.get_peak">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.get_peak">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_peak</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Implemented by subclasses. """</span>
+        <span class="k">raise</span> <span class="n">BrainObservatoryAnalysisException</span><span class="p">(</span><span class="s2">"get_peak not implemented"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.get_speed_tuning">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.get_speed_tuning">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_speed_tuning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binsize</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculates speed tuning, spontaneous versus visually driven.</span>
+<span class="sd">        The return is a 5-tuple</span>
+<span class="sd">        of speed and dF/F histograms.</span>
+
+<span class="sd">            binned_dx_sp: (bins,2) np.ndarray of running speeds binned</span>
+<span class="sd">            during spontaneous activity stimulus.</span>
+<span class="sd">            The first bin contains all speeds below 1 cm/s.  Dimension 0 is</span>
+<span class="sd">            mean running speed in the bin.</span>
+<span class="sd">            Dimension 1 is the standard error of the mean.</span>
+
+<span class="sd">            binned_cells_sp: (bins,2) np.ndarray of fluorescence during</span>
+<span class="sd">            spontaneous activity stimulus.</span>
+<span class="sd">            First bin contains all data for speeds below 1 cm/s. Dimension 0</span>
+<span class="sd">            is mean fluorescence in the bin.</span>
+<span class="sd">            Dimension 1 is the standard error of the mean.</span>
+
+<span class="sd">            binned_dx_vis: (bins,2) np.ndarray of running speeds outside of</span>
+<span class="sd">            spontaneous activity stimulus.</span>
+<span class="sd">            The first bin contains all speeds below 1 cm/s.  Dimension 0 is</span>
+<span class="sd">            mean running speed in the bin.</span>
+<span class="sd">            Dimension 1 is the standard error of the mean.</span>
+
+<span class="sd">            binned_cells_vis: np.ndarray of fluorescence outside of</span>
+<span class="sd">            spontaneous activity stimulu.</span>
+<span class="sd">            First bin contains all data for speeds below 1 cm/s. Dimension 0</span>
+<span class="sd">            is mean fluorescence in the bin.</span>
+<span class="sd">            Dimension 1 is the standard error of the mean.</span>
+
+<span class="sd">            peak_run: pd.DataFrame of speed-related properties of a cell.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple: binned_dx_sp, binned_cells_sp, binned_dx_vis,</span>
+<span class="sd">        binned_cells_vis, peak_run</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__warned_speed_tuning</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__warned_speed_tuning</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"scipy 1.3 (your version: </span><span class="si">{</span><span class="n">scipy</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">) improved "</span>
+                <span class="sa">f</span><span class="s2">"two-sample Kolmogorov-Smirnoff test p values for small and "</span>
+                <span class="sa">f</span><span class="s2">"medium-sized samples. "</span>
+                <span class="s2">"Precalculated speed tuning p values may not agree with "</span>
+                <span class="s2">"outputs obtained under recent scipy versions!"</span>
+            <span class="p">)</span>
+
+        <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">'Calculating speed tuning, spontaneous vs visually driven'</span><span class="p">)</span>
+
+        <span class="n">celltraces_trimmed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfftraces</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfftraces</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># pull out spontaneous epoch(s)</span>
+        <span class="n">spontaneous</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_stimulus_table</span><span class="p">(</span><span class="s1">'spontaneous'</span><span class="p">)</span>
+
+        <span class="n">peak_run</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="p">(</span>
+            <span class="s1">'speed_max_sp'</span><span class="p">,</span> <span class="s1">'speed_min_sp'</span><span class="p">,</span> <span class="s1">'ptest_sp'</span><span class="p">,</span> <span class="s1">'mod_sp'</span><span class="p">,</span>
+            <span class="s1">'speed_max_vis'</span><span class="p">,</span> <span class="s1">'speed_min_vis'</span><span class="p">,</span> <span class="s1">'ptest_vis'</span><span class="p">,</span> <span class="s1">'mod_vis'</span><span class="p">))</span>
+
+        <span class="n">dx_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">[</span><span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span><span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">celltraces_sp</span> <span class="o">=</span> <span class="n">celltraces_trimmed</span><span class="p">[</span>
+                        <span class="p">:,</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span><span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">dx_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+            <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">celltraces_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_trimmed</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+            <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spontaneous</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">dx_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">dx_sp</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">[</span><span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]:</span><span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]],</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">celltraces_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">celltraces_sp</span><span class="p">,</span>
+                <span class="n">celltraces_trimmed</span><span class="p">[:,</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]:</span>
+                                   <span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">dx_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="n">celltraces_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_vis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
+                <span class="n">spontaneous</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">spontaneous</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">celltraces_vis</span> <span class="o">=</span> <span class="n">celltraces_vis</span><span class="p">[:,</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">)]</span>
+        <span class="n">dx_vis</span> <span class="o">=</span> <span class="n">dx_vis</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">)]</span>
+
+        <span class="n">nbins</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dx_sp</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="n">binsize</span>
+        <span class="n">dx_sorted</span> <span class="o">=</span> <span class="n">dx_sp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_sp</span><span class="p">)]</span>
+        <span class="n">celltraces_sorted_sp</span> <span class="o">=</span> <span class="n">celltraces_sp</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_sp</span><span class="p">)]</span>
+        <span class="n">binned_cells_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">binned_dx_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="n">BrainObservatoryAnalysisException</span><span class="p">(</span>
+                    <span class="s2">"dx is filled with NaNs"</span><span class="p">)</span>
+
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">findlevel</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">"dx never crosses 1, all speed data going into single bin"</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">[:</span><span class="n">offset</span><span class="p">])</span>
+                <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">dx_sorted</span><span class="p">[:</span><span class="n">offset</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+                <span class="n">binned_cells_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_sp</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">binned_cells_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_sp</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span>
+                <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">])</span>
+                <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">dx_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">binsize</span><span class="p">)</span>
+                <span class="n">binned_cells_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_sp</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">binned_cells_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_sp</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">binsize</span><span class="p">)</span>
+
+        <span class="n">binned_cells_shuffled_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">shuf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
+            <span class="n">celltraces_shuffled</span> <span class="o">=</span> \
+                <span class="n">celltraces_sp</span><span class="p">[:,</span>
+                              <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">celltraces_sp</span><span class="p">,</span> <span class="mi">1</span><span class="p">))]</span>
+            <span class="n">celltraces_shuffled_sorted</span> <span class="o">=</span> <span class="n">celltraces_shuffled</span><span class="p">[</span>
+                                         <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_sp</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">findlevel</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">"dx never crosses 1, all speed data going into "</span>
+                        <span class="s2">"single bin"</span><span class="p">)</span>
+                    <span class="n">offset</span> <span class="o">=</span> <span class="n">celltraces_shuffled_sorted</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">binned_cells_shuffled_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">binned_cells_shuffled_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span>
+                    <span class="n">binned_cells_shuffled_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">binned_cells_shuffled_sp</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">nbins</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dx_vis</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="n">binsize</span>
+        <span class="n">dx_sorted</span> <span class="o">=</span> <span class="n">dx_vis</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">)]</span>
+        <span class="n">celltraces_sorted_vis</span> <span class="o">=</span> <span class="n">celltraces_vis</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">)]</span>
+        <span class="n">binned_cells_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">binned_dx_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">findlevel</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">"dx never crosses 1, all speed data going into single bin"</span><span class="p">)</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">[:</span><span class="n">offset</span><span class="p">])</span>
+                <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">dx_sorted</span><span class="p">[:</span><span class="n">offset</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+                <span class="n">binned_cells_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_vis</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">binned_cells_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">celltraces_sorted_vis</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">offset</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># TODO 9 lines of repeated code!!!!!!!!!!!!</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span>
+                <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">])</span>
+                <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">dx_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">binsize</span><span class="p">)</span>
+                <span class="n">binned_cells_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_vis</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">binned_cells_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                    <span class="n">celltraces_sorted_vis</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">binsize</span><span class="p">)</span>
+
+        <span class="n">binned_cells_shuffled_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">,</span> <span class="n">nbins</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">200</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">shuf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200</span><span class="p">):</span>
+            <span class="n">celltraces_shuffled</span> <span class="o">=</span> \
+                <span class="n">celltraces_vis</span><span class="p">[:,</span>
+                               <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span>
+                                   <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">celltraces_vis</span><span class="p">,</span> <span class="mi">1</span><span class="p">))]</span>
+            <span class="n">celltraces_shuffled_sorted</span> <span class="o">=</span> <span class="n">celltraces_shuffled</span><span class="p">[</span>
+                                         <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">dx_vis</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nbins</span><span class="p">):</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">findlevel</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'up'</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">"dx never crosses 1, all speed data going into "</span>
+                        <span class="s2">"single bin"</span><span class="p">)</span>
+                    <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dx_sorted</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">binned_cells_shuffled_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">binned_cells_shuffled_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="p">:</span><span class="n">offset</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span>
+                    <span class="n">binned_cells_shuffled_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="n">binned_cells_shuffled_vis</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">shuf</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
+                        <span class="n">celltraces_shuffled_sorted</span><span class="p">[:,</span> <span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">binsize</span><span class="p">],</span>
+                        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">shuffled_variance_sp</span> <span class="o">=</span> <span class="n">binned_cells_shuffled_sp</span><span class="p">[</span>
+                               <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">variance_threshold_sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
+            <span class="n">shuffled_variance_sp</span><span class="p">,</span> <span class="mf">99.9</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">response_variance_sp</span> <span class="o">=</span> <span class="n">binned_cells_sp</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+        <span class="n">shuffled_variance_vis</span> <span class="o">=</span> <span class="n">binned_cells_shuffled_vis</span><span class="p">[</span>
+                                <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">variance_threshold_vis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
+            <span class="n">shuffled_variance_vis</span><span class="p">,</span> <span class="mf">99.9</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">response_variance_vis</span> <span class="o">=</span> <span class="n">binned_cells_vis</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+        <span class="k">for</span> <span class="n">nc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">response_variance_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">variance_threshold_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">peak_run</span><span class="o">.</span><span class="n">mod_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">response_variance_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">variance_threshold_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">peak_run</span><span class="o">.</span><span class="n">mod_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">response_variance_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">variance_threshold_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">peak_run</span><span class="o">.</span><span class="n">mod_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">response_variance_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">variance_threshold_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">peak_run</span><span class="o">.</span><span class="n">mod_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">binned_cells_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">start_max</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+            <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_max_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">start_max</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">start_min</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_min_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="n">binned_dx_sp</span><span class="p">[</span><span class="n">start_min</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_max_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_min_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">test_values</span> <span class="o">=</span> <span class="n">celltraces_sorted_sp</span><span class="p">[</span>
+                              <span class="n">nc</span><span class="p">,</span>
+                              <span class="n">start_max</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">:(</span><span class="n">start_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">]</span>
+                <span class="n">other_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_sorted_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:],</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">start_max</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">,</span> <span class="p">(</span><span class="n">start_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">))</span>
+                <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">ptest_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">])</span> <span class="o">=</span> <span class="n">nonraising_ks_2samp</span><span class="p">(</span>
+                    <span class="n">test_values</span><span class="p">,</span> <span class="n">other_values</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">test_values</span> <span class="o">=</span> <span class="n">celltraces_sorted_sp</span><span class="p">[</span>
+                              <span class="n">nc</span><span class="p">,</span>
+                              <span class="n">start_min</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">:(</span><span class="n">start_min</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">]</span>
+                <span class="n">ind_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">celltraces_sorted_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+                              <span class="p">(</span><span class="n">start_min</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">)</span>
+                <span class="n">other_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_sorted_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:],</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">start_min</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">,</span> <span class="n">ind_max</span><span class="p">))</span>
+                <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">ptest_sp</span><span class="p">[</span><span class="n">nc</span><span class="p">])</span> <span class="o">=</span> <span class="n">nonraising_ks_2samp</span><span class="p">(</span>
+                    <span class="n">test_values</span><span class="p">,</span> <span class="n">other_values</span><span class="p">)</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">binned_cells_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">start_max</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+            <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_max_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">start_max</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">start_min</span> <span class="o">=</span> <span class="n">temp</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_min_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">=</span> <span class="n">binned_dx_vis</span><span class="p">[</span><span class="n">start_min</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_max_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">speed_min_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">]:</span>
+                <span class="n">test_values</span> <span class="o">=</span> <span class="n">celltraces_sorted_vis</span><span class="p">[</span>
+                              <span class="n">nc</span><span class="p">,</span>
+                              <span class="n">start_max</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">:(</span><span class="n">start_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">]</span>
+                <span class="n">other_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_sorted_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:],</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">start_max</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">,</span> <span class="p">(</span><span class="n">start_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">test_values</span> <span class="o">=</span> <span class="n">celltraces_sorted_vis</span><span class="p">[</span>
+                              <span class="n">nc</span><span class="p">,</span>
+                              <span class="n">start_min</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">:(</span><span class="n">start_min</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">]</span>
+                <span class="n">other_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">celltraces_sorted_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">,</span> <span class="p">:],</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">start_min</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">,</span> <span class="p">(</span><span class="n">start_min</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">binsize</span><span class="p">))</span>
+            <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">peak_run</span><span class="o">.</span><span class="n">ptest_vis</span><span class="p">[</span><span class="n">nc</span><span class="p">])</span> <span class="o">=</span> <span class="n">nonraising_ks_2samp</span><span class="p">(</span>
+                <span class="n">test_values</span><span class="p">,</span> <span class="n">other_values</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">binned_dx_sp</span><span class="p">,</span> <span class="n">binned_cells_sp</span><span class="p">,</span> <span class="n">binned_dx_vis</span><span class="p">,</span> \
+            <span class="n">binned_cells_vis</span><span class="p">,</span> <span class="n">peak_run</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.get_sweep_response">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.get_sweep_response">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_sweep_response</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculates the response to each sweep in the stimulus table for</span>
+<span class="sd">        each cell and the mean response.</span>
+<span class="sd">        The return is a 3-tuple of:</span>
+
+<span class="sd">            * sweep_response: pd.DataFrame of response dF/F traces organized</span>
+<span class="sd">            by cell (column) and sweep (row)</span>
+
+<span class="sd">            * mean_sweep_response: mean values of the traces returned in</span>
+<span class="sd">            sweep_response</span>
+
+<span class="sd">            * pval: p value from 1-way ANOVA comparing response during sweep</span>
+<span class="sd">            to response prior to sweep</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        3-tuple: sweep_response, mean_sweep_response, pval</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">do_mean</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="c1"># +1])</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">:</span>
+                  <span class="bp">self</span><span class="o">.</span><span class="n">interlength</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeplength</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extralength</span><span class="p">])</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">do_p_value</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">=</span> \
+                <span class="n">st</span><span class="o">.</span><span class="n">f_oneway</span><span class="p">(</span>
+                    <span class="n">x</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">],</span>
+                    <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">:</span>
+                      <span class="bp">self</span><span class="o">.</span><span class="n">interlength</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeplength</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extralength</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">p</span>
+
+        <span class="n">StimulusAnalysis</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'Calculating responses for each sweep'</span><span class="p">)</span>
+        <span class="n">sweep_response</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                                      <span class="n">columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))))</span>
+
+        <span class="n">sweep_response</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">):</span> <span class="s1">'dx'</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">'start'</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">)</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">'start'</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sweeplength</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">nc</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numbercells</span><span class="p">):</span>
+                <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">celltraces</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">nc</span><span class="p">),</span> <span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+                <span class="n">sweep_response</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">nc</span><span class="p">)][</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="mi">100</span> <span class="o">*</span> <span class="p">((</span><span class="n">temp</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">temp</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">interlength</span><span class="p">]))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">sweep_response</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="n">mean_sweep_response</span> <span class="o">=</span> <span class="n">sweep_response</span><span class="o">.</span><span class="n">applymap</span><span class="p">(</span><span class="n">do_mean</span><span class="p">)</span>
+
+        <span class="n">pval</span> <span class="o">=</span> <span class="n">sweep_response</span><span class="o">.</span><span class="n">applymap</span><span class="p">(</span><span class="n">do_p_value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sweep_response</span><span class="p">,</span> <span class="n">mean_sweep_response</span><span class="p">,</span> <span class="n">pval</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.plot_representational_similarity">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.plot_representational_similarity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_representational_similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repsim</span><span class="p">,</span> <span class="n">stimulus</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">stimulus</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">repsim</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">'nearest'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'plasma'</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.plot_running_speed_histogram">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.plot_running_speed_histogram">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_running_speed_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nbins</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">xlim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xlim</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">nbins</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nbins</span> <span class="o">=</span> <span class="mi">40</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dxcm</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">nbins</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="n">xlim</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">oplots</span><span class="o">.</span><span class="n">STIM_COLOR</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlim</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"running speed (cm/s)"</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"time points"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.plot_speed_tuning">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.plot_speed_tuning">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_speed_tuning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell_specimen_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">cell_index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">evoked_color</span><span class="o">=</span><span class="n">oplots</span><span class="o">.</span><span class="n">EVOKED_COLOR</span><span class="p">,</span>
+                          <span class="n">spontaneous_color</span><span class="o">=</span><span class="n">oplots</span><span class="o">.</span><span class="n">SPONTANEOUS_COLOR</span><span class="p">):</span>
+        <span class="n">cell_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">row_from_cell_id</span><span class="p">(</span><span class="n">cell_specimen_id</span><span class="p">,</span> <span class="n">cell_index</span><span class="p">)</span>
+
+        <span class="n">oplots</span><span class="o">.</span><span class="n">plot_combined_speed</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binned_cells_vis</span><span class="p">[</span><span class="n">cell_index</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binned_dx_vis</span><span class="p">[:,</span> <span class="p">:],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binned_cells_sp</span><span class="p">[</span><span class="n">cell_index</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binned_dx_sp</span><span class="p">[:,</span> <span class="p">:],</span>
+            <span class="n">evoked_color</span><span class="p">,</span> <span class="n">spontaneous_color</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"running speed (cm/s)"</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"percent dF/F"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StimulusAnalysis.row_from_cell_id">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.StimulusAnalysis.row_from_cell_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">row_from_cell_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">csid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">csid</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="o">.</span><span class="n">get_cell_specimen_ids</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">csid</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">idx</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Could not find row for csid(</span><span class="si">%s</span><span class="s2">) idx(</span><span class="si">%s</span><span class="s2">)"</span>
+                            <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">csid</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="nonraising_ks_2samp">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.stimulus_analysis.html#allensdk.brain_observatory.stimulus_analysis.nonraising_ks_2samp">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nonraising_ks_2samp</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" scipy.stats.ks_2samp now raises a ValueError if one of the input arrays</span>
+<span class="sd">    is of length 0. Previously it signaled this case by returning nans. This</span>
+<span class="sd">    function restores the prior behavior.</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data1</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">data2</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">st</span><span class="o">.</span><span class="n">ks_2samp</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

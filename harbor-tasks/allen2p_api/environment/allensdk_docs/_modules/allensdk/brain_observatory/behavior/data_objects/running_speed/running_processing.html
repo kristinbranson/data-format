@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">signal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">zscore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="calc_deriv">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.calc_deriv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc_deriv</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">prepend</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">prepend</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dx</span> <span class="o">/</span> <span class="n">dt</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_angular_change</span><span class="p">(</span><span class="n">summed_voltage</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                    <span class="n">vmax</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute the change in degrees in radians at each point from the</span>
+<span class="sd">    summed voltage encoder data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    summed_voltage: 1d np.ndarray</span>
+<span class="sd">        The "unwrapped" voltage signal from the encoder, cumulatively</span>
+<span class="sd">        summed. See `_unwrap_voltage_signal`.</span>
+<span class="sd">    vmax: 1d np.ndarray or float</span>
+<span class="sd">        Either a constant float, or a 1d array (typically constant)</span>
+<span class="sd">        of values. These values represent the theoretical max voltage</span>
+<span class="sd">        value of the encoder. If an array, needs to be the same length</span>
+<span class="sd">        as the summed_voltage array.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        1d array of change in degrees in radians from each point</span>
+<span class="sd">    """</span>
+    <span class="n">delta_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">summed_voltage</span><span class="p">,</span> <span class="n">prepend</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="o">/</span> <span class="n">vmax</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="k">return</span> <span class="n">delta_theta</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_shift</span><span class="p">(</span>
+        <span class="n">arr</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">periods</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">fill_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Shift index of an iterable (array-like) by desired number of</span>
+<span class="sd">    periods with an optional fill value (default = NaN).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    arr: Iterable (array-like)</span>
+<span class="sd">        Iterable containing numeric data. If int, will be converted to</span>
+<span class="sd">        float in returned object.</span>
+<span class="sd">    periods: int (default=1)</span>
+<span class="sd">        The number of elements to shift.</span>
+<span class="sd">    fill_value: float (default=np.nan)</span>
+<span class="sd">        The value to fill at the beginning of the shifted array</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray (1d)</span>
+<span class="sd">        Copy of input object as a 1d array, shifted.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">periods</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Can only shift for periods &gt; 0."</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fill_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fill_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill_value</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="c1"># Circumvent issue if int-like array with np.nan as fill</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">periods</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">periods</span><span class="p">)</span>
+    <span class="n">shifted</span><span class="p">[:</span><span class="n">periods</span><span class="p">]</span> <span class="o">=</span> <span class="n">fill_value</span>
+    <span class="k">return</span> <span class="n">shifted</span>
+
+
+<div class="viewcode-block" id="deg_to_dist">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.deg_to_dist">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">deg_to_dist</span><span class="p">(</span><span class="n">angular_speed</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Takes the angular speed (radians/s) at each step in radians, and</span>
+<span class="sd">    computes the linear speed in cm/s.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    angular_speed: np.ndarray (1d)</span>
+<span class="sd">        1d array of angular speed in radians/s</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray (1d)</span>
+<span class="sd">        Linear speed in cm/s at each time point.</span>
+<span class="sd">    """</span>
+    <span class="n">wheel_diameter</span> <span class="o">=</span> <span class="mf">6.5</span> <span class="o">*</span> <span class="mf">2.54</span>  <span class="c1"># 6.5" wheel diameter, 2.54 = cm/in</span>
+    <span class="n">running_radius</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="c1"># assume the animal runs at 2/3 the distance from the wheel center</span>
+        <span class="mf">2.0</span> <span class="o">*</span> <span class="n">wheel_diameter</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
+    <span class="n">running_speed_cm_per_sec</span> <span class="o">=</span> <span class="n">angular_speed</span> <span class="o">*</span> <span class="n">running_radius</span>
+    <span class="k">return</span> <span class="n">running_speed_cm_per_sec</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_identify_wraps</span><span class="p">(</span><span class="n">vsig</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                    <span class="n">min_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span><span class="p">,</span>
+                    <span class="n">max_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Identify "wraps" in the voltage signal. In practice, this is when</span>
+<span class="sd">    the encoder voltage signal crosses 5V and wraps to 0V, or</span>
+<span class="sd">    vice-versa.</span>
+
+<span class="sd">    Argument defaults and implementation suggestion via @dougo</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vsig: Iterable (array-like)</span>
+<span class="sd">        1d array-like iterable of voltage signal</span>
+<span class="sd">    min_threshold: float (default=1.5)</span>
+<span class="sd">        The min_threshold value that must be crossed to be considered</span>
+<span class="sd">        a possible wrapping point.</span>
+<span class="sd">    max_threshold: float (default=3.5)</span>
+<span class="sd">        The max threshold value that must be crossed to be considered</span>
+<span class="sd">        a possible wrapping point.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple</span>
+<span class="sd">        Tuple of ([indices of positive wraps], [indices of negative wraps])</span>
+<span class="sd">    """</span>
+    <span class="c1"># Compare against previous value</span>
+    <span class="n">shifted_vsig</span> <span class="o">=</span> <span class="n">_shift</span><span class="p">(</span><span class="n">vsig</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vsig</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">vsig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vsig</span><span class="p">)</span>
+    <span class="c1"># Suppress warnings for when comparing to nan values</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">):</span>
+        <span class="n">pos_wraps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vsig</span> <span class="o">&lt;</span> <span class="n">min_threshold</span><span class="p">,</span> <span class="n">shifted_vsig</span> <span class="o">&gt;</span> <span class="n">max_threshold</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">neg_wraps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">vsig</span> <span class="o">&gt;</span> <span class="n">max_threshold</span><span class="p">,</span> <span class="n">shifted_vsig</span> <span class="o">&lt;</span> <span class="n">min_threshold</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">pos_wraps</span><span class="p">,</span> <span class="n">neg_wraps</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_local_boundaries</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">span</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given a 1d array of monotonically increasing timestamps, and a</span>
+<span class="sd">    point in that array (`index`), compute the indices that form the</span>
+<span class="sd">    inclusive boundary around `index` for timespan `span`.</span>
+
+<span class="sd">    Values in `time` must monotonically increase. Flat lines (same value</span>
+<span class="sd">    multiple times) are OK. The neighborhood may terminate around the</span>
+<span class="sd">    index if the `span` is too small for the sampling rate. A warning</span>
+<span class="sd">    will be raised in this case.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple</span>
+<span class="sd">        Tuple of corresponding to the start, end indices that bound</span>
+<span class="sd">        a time span of length `span` (maximally)</span>
+
+<span class="sd">    E.g.</span>
+<span class="sd">    ```</span>
+<span class="sd">    time = np.array([0, 1, 1.5, 2, 2.2, 2.5, 3, 3.5])</span>
+<span class="sd">    _local_boundary(time, 3, 1.0)</span>
+<span class="sd">    &gt;&gt;&gt; (1, 6)</span>
+<span class="sd">    ```</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">time</span><span class="p">)])</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Data do not monotonically increase. This probably "</span>
+                         <span class="s2">"means there is an error in your time series."</span><span class="p">)</span>
+    <span class="n">t_val</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">max_val</span> <span class="o">=</span> <span class="n">t_val</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+    <span class="n">min_val</span> <span class="o">=</span> <span class="n">t_val</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="n">span</span><span class="p">)</span>
+    <span class="n">eligible_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">((</span><span class="n">time</span> <span class="o">&lt;=</span> <span class="n">max_val</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="n">min_val</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">max_ix</span> <span class="o">=</span> <span class="n">eligible_indices</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">min_ix</span> <span class="o">=</span> <span class="n">eligible_indices</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">min_ix</span> <span class="o">==</span> <span class="n">index</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">max_ix</span> <span class="o">==</span> <span class="n">index</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Unable to find two data points around index "</span>
+                      <span class="sa">f</span><span class="s2">"for span=</span><span class="si">{</span><span class="n">span</span><span class="si">}</span><span class="s2"> that do not include the index. "</span>
+                      <span class="s2">"This could mean that your time span is too small for "</span>
+                      <span class="s2">"the time data sampling rate, the data are not "</span>
+                      <span class="s2">"monotonically increasing, or that you are trying "</span>
+                      <span class="s2">"to find a neighborhood at the beginning/end of the "</span>
+                      <span class="s2">"data stream."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">min_ix</span><span class="p">,</span> <span class="n">max_ix</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_clip_speed_wraps</span><span class="p">(</span><span class="n">speed</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">wrap_indices</span><span class="p">,</span> <span class="n">t_span</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Correct for artifacts at the voltage 'wraps'. Sometimes there are</span>
+<span class="sd">    transient spikes in speed at the 'wrap' points. This doesn't make</span>
+<span class="sd">    sense since speed on a running wheel should be a smoothly varying</span>
+<span class="sd">    function. Take the neighborhood of values in +/- `t_span` seconds</span>
+<span class="sd">    around wrap points, and clip the value at the wrap point</span>
+<span class="sd">    such that it does not exceed the min/max values in the neighborhood.</span>
+<span class="sd">    """</span>
+    <span class="n">corrected_speed</span> <span class="o">=</span> <span class="n">speed</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">wrap</span> <span class="ow">in</span> <span class="n">wrap_indices</span><span class="p">:</span>
+        <span class="n">start_ix</span><span class="p">,</span> <span class="n">end_ix</span> <span class="o">=</span> <span class="n">_local_boundaries</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">wrap</span><span class="p">,</span> <span class="n">t_span</span><span class="p">)</span>
+        <span class="n">local_slice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>       <span class="c1"># Remove the wrap point</span>
+            <span class="p">(</span><span class="n">speed</span><span class="p">[</span><span class="n">start_ix</span><span class="p">:</span><span class="n">wrap</span><span class="p">],</span> <span class="n">speed</span><span class="p">[</span><span class="n">wrap</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">end_ix</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">corrected_speed</span><span class="p">[</span><span class="n">wrap</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
+            <span class="n">speed</span><span class="p">[</span><span class="n">wrap</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">local_slice</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">local_slice</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">corrected_speed</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_unwrap_voltage_signal</span><span class="p">(</span>
+        <span class="n">vsig</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">pos_wrap_ix</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">neg_wrap_ix</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">vmax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.1</span><span class="p">,</span>
+        <span class="n">max_diff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate the change in voltage at each timestamp.</span>
+<span class="sd">    'Unwraps' the</span>
+<span class="sd">    voltage data coming from the encoder at the value `vmax`. If `vmax`</span>
+<span class="sd">    is a float, use that value to 'wrap'. If it is None, then compute</span>
+<span class="sd">    the maximum value from the observed voltage signal (`vsig`, as long</span>
+<span class="sd">    as the maximum value is under the value of `max_threshold` (to</span>
+<span class="sd">    account for possible outlier data/encoder errors).</span>
+<span class="sd">    The reason is because the rotary encoder should theoretically wrap</span>
+<span class="sd">    at 5V, but in practice does not always reach 5V before wrapping</span>
+<span class="sd">    back to 0V. If it is assumed that the encoder wraps at 5V, but</span>
+<span class="sd">    actually does not reach that voltage, then the computed running</span>
+<span class="sd">    speed can be transiently higher at the timestamps of the signal</span>
+<span class="sd">    'wraps'.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vsig: Iterable (array-like)</span>
+<span class="sd">        The raw voltage data from the rotary encoder</span>
+<span class="sd">    vmax: Optional[float] (default=None)</span>
+<span class="sd">        The value at which, upon passing this threshold, the voltage</span>
+<span class="sd">         "wraps" back to 0V on the encoder.</span>
+<span class="sd">    max_threshold: float (default=5.1)</span>
+<span class="sd">        The maximum threshold for the `vmax` value. Used only if</span>
+<span class="sd">        `vmax` is `None`. To account for the possibility of outlier</span>
+<span class="sd">        data/encoder errors, the computed `vmax` should not exceed</span>
+<span class="sd">        this value.</span>
+<span class="sd">    max_diff: float (default=1.0)</span>
+<span class="sd">        The maximum voltage difference allowed between two adjacent</span>
+<span class="sd">        points, after accounting for the voltage "wrap". Values</span>
+<span class="sd">        exceeding this threshold will be set to np.nan.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        1d np.ndarray of the "unwrapped" signal from `vsig`.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vsig</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">vsig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vsig</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vmax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="n">vsig</span><span class="p">[</span><span class="n">vsig</span> <span class="o">&lt;</span> <span class="n">max_threshold</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">unwrapped_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">vsig</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">vsig_last</span> <span class="o">=</span> <span class="n">_shift</span><span class="p">(</span><span class="n">vsig</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pos_wrap_ix</span><span class="p">):</span>
+        <span class="c1"># positive wraps: subtract from the previous value and add vmax</span>
+        <span class="n">unwrapped_diff</span><span class="p">[</span><span class="n">pos_wrap_ix</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">vsig</span><span class="p">[</span><span class="n">pos_wrap_ix</span><span class="p">]</span> <span class="o">+</span> <span class="n">vmax</span><span class="p">)</span> <span class="o">-</span> <span class="n">vsig_last</span><span class="p">[</span><span class="n">pos_wrap_ix</span><span class="p">])</span>
+    <span class="c1"># negative: subtract vmax and the previous value</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">neg_wrap_ix</span><span class="p">):</span>
+        <span class="n">unwrapped_diff</span><span class="p">[</span><span class="n">neg_wrap_ix</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">vsig</span><span class="p">[</span><span class="n">neg_wrap_ix</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">vsig_last</span><span class="p">[</span><span class="n">neg_wrap_ix</span><span class="p">]</span> <span class="o">+</span> <span class="n">vmax</span><span class="p">))</span>
+    <span class="c1"># Other indices, just compute straight diff from previous value</span>
+    <span class="n">wrap_ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">pos_wrap_ix</span><span class="p">,</span> <span class="n">neg_wrap_ix</span><span class="p">))</span>
+    <span class="n">other_ix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vsig_last</span><span class="p">)))</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">wrap_ix</span><span class="p">)))</span>
+    <span class="n">unwrapped_diff</span><span class="p">[</span><span class="n">other_ix</span><span class="p">]</span> <span class="o">=</span> <span class="n">vsig</span><span class="p">[</span><span class="n">other_ix</span><span class="p">]</span> <span class="o">-</span> <span class="n">vsig_last</span><span class="p">[</span><span class="n">other_ix</span><span class="p">]</span>
+    <span class="c1"># Correct for wrap artifacts based on allowed `max_diff` value</span>
+    <span class="c1"># (fill with nan)</span>
+    <span class="c1"># Suppress warnings when comparing with nan values to reduce noise</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">):</span>
+        <span class="n">unwrapped_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">unwrapped_diff</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_diff</span><span class="p">,</span> <span class="n">unwrapped_diff</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="c1"># Get nan indices to propogate to the cumulative sum (otherwise</span>
+    <span class="c1"># treated as 0)</span>
+    <span class="n">unwrapped_nans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">unwrapped_diff</span><span class="p">))</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+    <span class="n">summed_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nancumsum</span><span class="p">(</span><span class="n">unwrapped_diff</span><span class="p">)</span> <span class="o">+</span> <span class="n">vsig</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>    <span class="c1"># Add the baseline</span>
+    <span class="n">summed_diff</span><span class="p">[</span><span class="n">unwrapped_nans</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">summed_diff</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_zscore_threshold_1d</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+                         <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Replace values in 1d array `data` that exceed `threshold` number</span>
+<span class="sd">    of SDs from the mean with NaN.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ---------</span>
+<span class="sd">    data: np.ndarray</span>
+<span class="sd">        1d np array of values</span>
+<span class="sd">    threshold: float (default=5.0)</span>
+<span class="sd">        Z-score threshold to replace with NaN.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray (1d)</span>
+<span class="sd">        A copy of `data` with values exceeding `threshold` SDs from</span>
+<span class="sd">        the mean replaced with NaN.</span>
+<span class="sd">    """</span>
+    <span class="n">corrected_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float"</span><span class="p">)</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">zscore</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nan_policy</span><span class="o">=</span><span class="s2">"omit"</span><span class="p">)</span>
+    <span class="c1"># Suppress warnings when comparing to nan values to reduce noise</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">):</span>
+        <span class="n">corrected_data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">corrected_data</span>
+
+
+<div class="viewcode-block" id="get_running_df">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.html#allensdk.brain_observatory.behavior.data_objects.running_speed.running_processing.get_running_df">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_running_df</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">lowpass</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">zscore_threshold</span><span class="o">=</span><span class="mf">10.0</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given the data from the behavior 'pkl' file object and a 1d</span>
+<span class="sd">    array of timestamps, compute the running speed. Returns a</span>
+<span class="sd">    dataframe with the raw voltage data as well as the computed speed</span>
+<span class="sd">    at each timestamp. By default, the running speed is filtered with</span>
+<span class="sd">    a 10 Hz Butterworth lowpass filter to remove artifacts caused by</span>
+<span class="sd">    the rotary encoder.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data</span>
+<span class="sd">        Deserialized 'behavior pkl' file data</span>
+<span class="sd">    time: np.ndarray (1d)</span>
+<span class="sd">        Timestamps for running data measurements</span>
+<span class="sd">    lowpass: bool (default=True)</span>
+<span class="sd">        Whether to apply a 10Hz low-pass filter to the running speed</span>
+<span class="sd">        data.</span>
+<span class="sd">    zscore_threshold: float</span>
+<span class="sd">        The threshold to use for removing outlier running speeds which might</span>
+<span class="sd">        be noise and not true signal.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame</span>
+<span class="sd">        Dataframe with an index of timestamps and the following</span>
+<span class="sd">        columns:</span>
+<span class="sd">            "speed": computed running speed</span>
+<span class="sd">            "dx": angular change, computed during data collection</span>
+<span class="sd">            "v_sig": voltage signal from the encoder</span>
+<span class="sd">            "v_in": the theoretical maximum voltage that the encoder</span>
+<span class="sd">                will reach prior to "wrapping". This should</span>
+<span class="sd">                theoretically be 5V (after crossing 5V goes to 0V, or</span>
+<span class="sd">                vice versa). In practice the encoder does not always</span>
+<span class="sd">                reach this value before wrapping, which can cause</span>
+<span class="sd">                transient spikes in speed at the voltage "wraps".</span>
+<span class="sd">        The raw data are provided so that the user may compute their</span>
+<span class="sd">        own speed from source, if desired.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Though the angular change is available in the raw data</span>
+<span class="sd">    (key="dx"), this method recomputes the angular change from the</span>
+<span class="sd">    voltage signal (key="vsig") due to very specific, low-level</span>
+<span class="sd">    artifacts in the data caused by the encoder. See method</span>
+<span class="sd">    docstrings for more detailed information. The raw data is</span>
+<span class="sd">    included in the final output in case the end user wants to apply</span>
+<span class="sd">    their own corrections and compute running speed from the raw</span>
+<span class="sd">    source.</span>
+<span class="sd">    """</span>
+    <span class="n">v_sig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"encoders"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"vsig"</span><span class="p">]</span>
+    <span class="n">v_in</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"encoders"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"vin"</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v_in</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">error_string</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"length of v_in (</span><span class="si">{}</span><span class="s2">) cannot be longer than length of "</span>
+                        <span class="s2">"time (</span><span class="si">{}</span><span class="s2">) + 1, they are off by </span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">v_in</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">),</span>
+            <span class="nb">abs</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v_in</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v_in</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"Time array is 1 value shorter than encoder array. Last encoder "</span>
+            <span class="s2">"value removed</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">v_in</span> <span class="o">=</span> <span class="n">v_in</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">v_sig</span> <span class="o">=</span> <span class="n">v_sig</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># dx = 'd_theta' = angular change</span>
+    <span class="c1"># There are some issues with angular change in the raw data so we</span>
+    <span class="c1"># recompute this value</span>
+    <span class="n">dx_raw</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"encoders"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"dx"</span><span class="p">]</span>
+    <span class="c1"># Identify "wraps" in the voltage signal that need to be unwrapped</span>
+    <span class="c1"># This is where the encoder switches from 0V to 5V or vice versa</span>
+    <span class="n">pos_wraps</span><span class="p">,</span> <span class="n">neg_wraps</span> <span class="o">=</span> <span class="n">_identify_wraps</span><span class="p">(</span>
+        <span class="n">v_sig</span><span class="p">,</span> <span class="n">min_threshold</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">max_threshold</span><span class="o">=</span><span class="mf">3.5</span><span class="p">)</span>
+    <span class="c1"># Unwrap the voltage signal and apply correction for transient spikes</span>
+    <span class="n">unwrapped_vsig</span> <span class="o">=</span> <span class="n">_unwrap_voltage_signal</span><span class="p">(</span>
+        <span class="n">v_sig</span><span class="p">,</span> <span class="n">pos_wraps</span><span class="p">,</span> <span class="n">neg_wraps</span><span class="p">,</span> <span class="n">max_threshold</span><span class="o">=</span><span class="mf">5.1</span><span class="p">,</span> <span class="n">max_diff</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">angular_change_point</span> <span class="o">=</span> <span class="n">_angular_change</span><span class="p">(</span><span class="n">unwrapped_vsig</span><span class="p">,</span> <span class="n">v_in</span><span class="p">)</span>
+    <span class="n">angular_change</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nancumsum</span><span class="p">(</span><span class="n">angular_change_point</span><span class="p">)</span>
+    <span class="c1"># Add the nans back in (get turned to 0 in nancumsum)</span>
+    <span class="n">angular_change</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">angular_change_point</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">angular_speed</span> <span class="o">=</span> <span class="n">calc_deriv</span><span class="p">(</span><span class="n">angular_change</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>  <span class="c1"># speed in radians/s</span>
+    <span class="n">linear_speed</span> <span class="o">=</span> <span class="n">deg_to_dist</span><span class="p">(</span><span class="n">angular_speed</span><span class="p">)</span>
+    <span class="c1"># Artifact correction to speed data</span>
+    <span class="n">wrap_corrected_linear_speed</span> <span class="o">=</span> <span class="n">_clip_speed_wraps</span><span class="p">(</span>
+        <span class="n">linear_speed</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pos_wraps</span><span class="p">,</span> <span class="n">neg_wraps</span><span class="p">]),</span>
+        <span class="n">t_span</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">outlier_corrected_linear_speed</span> <span class="o">=</span> <span class="n">_zscore_threshold_1d</span><span class="p">(</span>
+        <span class="n">wrap_corrected_linear_speed</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">zscore_threshold</span><span class="p">)</span>
+
+    <span class="c1"># Final filtering (optional) for smoothing out the speed data</span>
+    <span class="k">if</span> <span class="n">lowpass</span><span class="p">:</span>
+        <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">Wn</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">btype</span><span class="o">=</span><span class="s2">"lowpass"</span><span class="p">)</span>
+        <span class="n">outlier_corrected_linear_speed</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">(</span>
+            <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">outlier_corrected_linear_speed</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+        <span class="s1">'speed'</span><span class="p">:</span> <span class="n">outlier_corrected_linear_speed</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)],</span>
+        <span class="s1">'dx'</span><span class="p">:</span> <span class="n">dx_raw</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)],</span>
+        <span class="s1">'v_sig'</span><span class="p">:</span> <span class="n">v_sig</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)],</span>
+        <span class="s1">'v_in'</span><span class="p">:</span> <span class="n">v_in</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)],</span>
+    <span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'timestamps'</span><span class="p">))</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

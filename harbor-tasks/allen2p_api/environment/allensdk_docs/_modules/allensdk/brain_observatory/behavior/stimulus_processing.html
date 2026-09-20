@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.stimulus_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.stimulus_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">BehaviorStimulusFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.stimulus_templates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">StimulusTemplate</span><span class="p">,</span>
+    <span class="n">StimulusTemplateFactory</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.util</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">convert_filepath_caseinsensitive</span><span class="p">,</span>
+    <span class="n">get_image_set_name</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ophys.project_constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PROJECT_CODES</span><span class="p">,</span>
+    <span class="n">VBO_ACTIVE_MAP</span><span class="p">,</span>
+    <span class="n">VBO_PASSIVE_MAP</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.dataframe_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">INT_NULL</span>
+
+
+<div class="viewcode-block" id="load_pickle">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.load_pickle">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_pickle</span><span class="p">(</span><span class="n">pstream</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">pstream</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"bytes"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_stimulus_presentations">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_stimulus_presentations">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_presentations</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">stimulus_timestamps</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This function retrieves the stimulus presentation dataframe and</span>
+<span class="sd">    renames the columns, adds a stop_time column, and set's index to</span>
+<span class="sd">    stimulus_presentation_id before sorting and returning the dataframe.</span>
+<span class="sd">    :param data: stimulus file associated with experiment id</span>
+<span class="sd">    :param stimulus_timestamps: timestamps indicating when stimuli switched</span>
+<span class="sd">                                during experiment</span>
+<span class="sd">    :return: stimulus_table: dataframe containing the stimuli metadata as well</span>
+<span class="sd">                             as what stimuli was presented</span>
+<span class="sd">    """</span>
+    <span class="n">stimulus_table</span> <span class="o">=</span> <span class="n">get_visual_stimuli_df</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">stimulus_timestamps</span><span class="p">)</span>
+    <span class="c1"># workaround to rename columns to harmonize with visual</span>
+    <span class="c1"># coding and rebase timestamps to sync time</span>
+    <span class="n">stimulus_table</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+        <span class="n">loc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="s2">"flash_number"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">stimulus_table</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">stimulus_table</span> <span class="o">=</span> <span class="n">stimulus_table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"frame"</span><span class="p">:</span> <span class="s2">"start_frame"</span><span class="p">,</span>
+            <span class="s2">"time"</span><span class="p">:</span> <span class="s2">"start_time"</span><span class="p">,</span>
+            <span class="s2">"flash_number"</span><span class="p">:</span> <span class="s2">"stimulus_presentations_id"</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">stimulus_table</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">stimulus_timestamps</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">start_frame</span><span class="p">)]</span>
+        <span class="k">for</span> <span class="n">start_frame</span> <span class="ow">in</span> <span class="n">stimulus_table</span><span class="o">.</span><span class="n">start_frame</span><span class="o">.</span><span class="n">values</span>
+    <span class="p">]</span>
+    <span class="n">end_time</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">end_frame</span> <span class="ow">in</span> <span class="n">stimulus_table</span><span class="o">.</span><span class="n">end_frame</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">end_frame</span><span class="p">):</span>
+            <span class="n">end_time</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stimulus_timestamps</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">end_frame</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">end_time</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s2">"nan"</span><span class="p">))</span>
+
+    <span class="n">stimulus_table</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="s2">"stop_time"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">end_time</span><span class="p">)</span>
+    <span class="n">stimulus_table</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"stimulus_presentations_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">stimulus_table</span> <span class="o">=</span> <span class="n">stimulus_table</span><span class="p">[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">stimulus_table</span><span class="o">.</span><span class="n">columns</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">stimulus_table</span></div>
+
+
+
+<div class="viewcode-block" id="get_images_dict">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_images_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_images_dict</span><span class="p">(</span><span class="n">pkl</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gets the dictionary of images that were presented during an experiment</span>
+<span class="sd">    along with image set metadata and the image specific metadata. This</span>
+<span class="sd">    function uses the path to the image pkl file to read the images and their</span>
+<span class="sd">    metadata from the pkl file and return this dictionary.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pkl: The pkl file containing the data for the stimuli presented during</span>
+<span class="sd">         experiment</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict:</span>
+<span class="sd">        A dictionary containing keys images, metadata, and image_attributes.</span>
+<span class="sd">        These correspond to paths to image arrays presented, metadata</span>
+<span class="sd">        on the whole set of images, and metadata on specific images,</span>
+<span class="sd">        respectively.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># Sometimes the source is a zipped pickle:</span>
+    <span class="n">pkl_stimuli</span> <span class="o">=</span> <span class="n">pkl</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"stimuli"</span><span class="p">]</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"image_set"</span><span class="p">:</span> <span class="n">pkl_stimuli</span><span class="p">[</span><span class="s2">"images"</span><span class="p">][</span><span class="s2">"image_path"</span><span class="p">]}</span>
+
+    <span class="c1"># Get image file name;</span>
+    <span class="c1"># These are encoded case-insensitive in the pickle file :/</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">convert_filepath_caseinsensitive</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"image_set"</span><span class="p">])</span>
+
+    <span class="n">image_set</span> <span class="o">=</span> <span class="n">load_pickle</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">))</span>
+    <span class="n">images</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">images_meta</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">ii</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">cat</span><span class="p">,</span> <span class="n">cat_images</span> <span class="ow">in</span> <span class="n">image_set</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">img_name</span><span class="p">,</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">cat_images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">image_category</span><span class="o">=</span><span class="n">cat</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span>
+                <span class="n">image_name</span><span class="o">=</span><span class="n">img_name</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span>
+                <span class="n">orientation</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="n">phase</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="n">spatial_frequency</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+                <span class="n">image_index</span><span class="o">=</span><span class="n">ii</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+            <span class="n">images_meta</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+
+            <span class="n">ii</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">images_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="n">images</span><span class="o">=</span><span class="n">images</span><span class="p">,</span>
+        <span class="n">image_attributes</span><span class="o">=</span><span class="n">images_meta</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">images_dict</span></div>
+
+
+
+<div class="viewcode-block" id="get_gratings_metadata">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_gratings_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gratings_metadata</span><span class="p">(</span><span class="n">stimuli</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">start_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This function returns the metadata for each unique grating that was</span>
+<span class="sd">    presented during the experiment. If no gratings were displayed during</span>
+<span class="sd">    this experiment it returns an empty dataframe with the expected columns.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stimuli:</span>
+<span class="sd">        The stimuli field (pkl['items']['behavior']['stimuli']) loaded</span>
+<span class="sd">        from the experiment pkl file.</span>
+<span class="sd">    start_idx:</span>
+<span class="sd">        The index to start index column</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame:</span>
+<span class="sd">        DataFrame containing the unique stimuli presented during an</span>
+<span class="sd">        experiment. The columns contained in this DataFrame are</span>
+<span class="sd">        'image_category', 'image_name', 'image_set', 'phase',</span>
+<span class="sd">        'spatial_frequency', 'orientation', and 'image_index'.</span>
+<span class="sd">        This returns empty if no gratings were presented.</span>
+
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="s2">"grating"</span> <span class="ow">in</span> <span class="n">stimuli</span><span class="p">:</span>
+        <span class="n">phase</span> <span class="o">=</span> <span class="n">stimuli</span><span class="p">[</span><span class="s2">"grating"</span><span class="p">][</span><span class="s2">"phase"</span><span class="p">]</span>
+        <span class="n">correct_freq</span> <span class="o">=</span> <span class="n">stimuli</span><span class="p">[</span><span class="s2">"grating"</span><span class="p">][</span><span class="s2">"sf"</span><span class="p">]</span>
+        <span class="n">set_logs</span> <span class="o">=</span> <span class="n">stimuli</span><span class="p">[</span><span class="s2">"grating"</span><span class="p">][</span><span class="s2">"set_log"</span><span class="p">]</span>
+        <span class="n">unique_oris</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">set_log</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">set_log</span> <span class="ow">in</span> <span class="n">set_logs</span><span class="p">])</span>
+
+        <span class="n">image_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">unique_ori</span> <span class="ow">in</span> <span class="n">unique_oris</span><span class="p">:</span>
+            <span class="n">image_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gratings_</span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">unique_ori</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">grating_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"image_category"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"grating"</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span>
+            <span class="s2">"image_name"</span><span class="p">:</span> <span class="n">image_names</span><span class="p">,</span>
+            <span class="s2">"orientation"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span>
+            <span class="s2">"image_set"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"grating"</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span>
+            <span class="s2">"phase"</span><span class="p">:</span> <span class="p">[</span><span class="n">phase</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span>
+            <span class="s2">"spatial_frequency"</span><span class="p">:</span> <span class="p">[</span><span class="n">correct_freq</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span>
+            <span class="s2">"image_index"</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_idx</span><span class="p">,</span> <span class="n">start_idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_oris</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="n">grating_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">grating_dict</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">grating_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"image_category"</span><span class="p">,</span>
+                <span class="s2">"image_name"</span><span class="p">,</span>
+                <span class="s2">"image_set"</span><span class="p">,</span>
+                <span class="s2">"phase"</span><span class="p">,</span>
+                <span class="s2">"spatial_frequency"</span><span class="p">,</span>
+                <span class="s2">"orientation"</span><span class="p">,</span>
+                <span class="s2">"image_index"</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">grating_df</span></div>
+
+
+
+<div class="viewcode-block" id="get_stimulus_templates">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_stimulus_templates">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_templates</span><span class="p">(</span>
+    <span class="n">pkl</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">grating_images_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit_to_images</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StimulusTemplate</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gets images presented during experiments from the behavior stimulus file</span>
+<span class="sd">    (*.pkl)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pkl : dict</span>
+<span class="sd">        Loaded pkl dict containing data for the presented stimuli.</span>
+<span class="sd">    grating_images_dict : Optional[dict]</span>
+<span class="sd">        Because behavior pkl files do not contain image versions of grating</span>
+<span class="sd">        stimuli, they must be obtained from an external source. The</span>
+<span class="sd">        grating_images_dict is a nested dictionary where top level keys</span>
+<span class="sd">        correspond to grating image names (e.g. 'gratings_0.0',</span>
+<span class="sd">        'gratings_270.0') as they would appear in table returned by</span>
+<span class="sd">        get_gratings_metadata(). Sub-nested dicts are expected to have 'warped'</span>
+<span class="sd">        and 'unwarped' keys where values are numpy image arrays</span>
+<span class="sd">        of aforementioned warped or unwarped grating stimuli.</span>
+<span class="sd">    limit_to_images: Optional[list]</span>
+<span class="sd">        Only return images given by these image names</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    StimulusTemplate:</span>
+<span class="sd">        StimulusTemplate object containing images that were presented during</span>
+<span class="sd">        the experiment</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">pkl_stimuli</span> <span class="o">=</span> <span class="n">pkl</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"stimuli"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">"images"</span> <span class="ow">in</span> <span class="n">pkl_stimuli</span><span class="p">:</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="n">get_images_dict</span><span class="p">(</span><span class="n">pkl</span><span class="p">)</span>
+        <span class="n">image_set_filepath</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s2">"metadata"</span><span class="p">][</span><span class="s2">"image_set"</span><span class="p">]</span>
+        <span class="n">image_set_name</span> <span class="o">=</span> <span class="n">get_image_set_name</span><span class="p">(</span><span class="n">image_set_path</span><span class="o">=</span><span class="n">image_set_filepath</span><span class="p">)</span>
+        <span class="n">image_set_name</span> <span class="o">=</span> <span class="n">convert_filepath_caseinsensitive</span><span class="p">(</span><span class="n">image_set_name</span><span class="p">)</span>
+
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s2">"image_attributes"</span><span class="p">]</span>
+        <span class="n">image_values</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">limit_to_images</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">keep_idxs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">i</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">"image_name"</span><span class="p">]</span> <span class="ow">in</span> <span class="n">limit_to_images</span>
+            <span class="p">]</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">attrs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_idxs</span><span class="p">]</span>
+            <span class="n">image_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">image_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">keep_idxs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">StimulusTemplateFactory</span><span class="o">.</span><span class="n">from_unprocessed</span><span class="p">(</span>
+            <span class="n">image_set_name</span><span class="o">=</span><span class="n">image_set_name</span><span class="p">,</span>
+            <span class="n">image_attributes</span><span class="o">=</span><span class="n">attrs</span><span class="p">,</span>
+            <span class="n">images</span><span class="o">=</span><span class="n">image_values</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="s2">"grating"</span> <span class="ow">in</span> <span class="n">pkl_stimuli</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">grating_images_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">grating_images_dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">"The 'grating_images_dict' param MUST "</span>
+                <span class="s2">"be provided to get stimulus templates "</span>
+                <span class="s2">"because this pkl data contains "</span>
+                <span class="s2">"gratings presentations."</span>
+            <span class="p">)</span>
+        <span class="n">gratings_metadata</span> <span class="o">=</span> <span class="n">get_gratings_metadata</span><span class="p">(</span><span class="n">pkl_stimuli</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span>
+            <span class="n">orient</span><span class="o">=</span><span class="s2">"records"</span>
+        <span class="p">)</span>
+
+        <span class="n">unwarped_images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">warped_images</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">image_attrs</span> <span class="ow">in</span> <span class="n">gratings_metadata</span><span class="p">:</span>
+            <span class="n">image_name</span> <span class="o">=</span> <span class="n">image_attrs</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span>
+            <span class="n">grating_imgs_sub_dict</span> <span class="o">=</span> <span class="n">grating_images_dict</span><span class="p">[</span><span class="n">image_name</span><span class="p">]</span>
+            <span class="n">unwarped_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grating_imgs_sub_dict</span><span class="p">[</span><span class="s2">"unwarped"</span><span class="p">])</span>
+            <span class="n">warped_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grating_imgs_sub_dict</span><span class="p">[</span><span class="s2">"warped"</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">StimulusTemplateFactory</span><span class="o">.</span><span class="n">from_processed</span><span class="p">(</span>
+            <span class="n">image_set_name</span><span class="o">=</span><span class="s2">"grating"</span><span class="p">,</span>
+            <span class="n">image_attributes</span><span class="o">=</span><span class="n">gratings_metadata</span><span class="p">,</span>
+            <span class="n">unwarped</span><span class="o">=</span><span class="n">unwarped_images</span><span class="p">,</span>
+            <span class="n">warped</span><span class="o">=</span><span class="n">warped_images</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">"Could not determine stimulus template images from pkl file. "</span>
+            <span class="sa">f</span><span class="s2">"The pkl stimuli nested dict "</span>
+            <span class="s2">"(pkl['items']['behavior']['stimuli']) contained neither "</span>
+            <span class="s2">"'images' nor 'grating' but instead: "</span>
+            <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">pkl_stimuli</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">'"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="get_stimulus_metadata">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_stimulus_metadata">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stimulus_metadata</span><span class="p">(</span><span class="n">pkl</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gets the stimulus metadata for each type of stimulus presented during</span>
+<span class="sd">    the experiment. The metadata is return for gratings, images, and omitted</span>
+<span class="sd">    stimuli.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pkl: the pkl file containing the information about what stimuli were</span>
+<span class="sd">         presented during the experiment</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pd.DataFrame:</span>
+<span class="sd">        The dataframe containing a row for every stimulus that was presented</span>
+<span class="sd">        during the experiment. The row contains the following data,</span>
+<span class="sd">        image_category, image_name, image_set, phase, spatial_frequency,</span>
+<span class="sd">        orientation, and image index.</span>
+
+<span class="sd">    """</span>
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">pkl</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"stimuli"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">"images"</span> <span class="ow">in</span> <span class="n">stimuli</span><span class="p">:</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="n">get_images_dict</span><span class="p">(</span><span class="n">pkl</span><span class="p">)</span>
+        <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="s2">"image_attributes"</span><span class="p">])</span>
+        <span class="n">image_set_filename</span> <span class="o">=</span> <span class="n">convert_filepath_caseinsensitive</span><span class="p">(</span>
+            <span class="n">images</span><span class="p">[</span><span class="s2">"metadata"</span><span class="p">][</span><span class="s2">"image_set"</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_index_df</span><span class="p">[</span><span class="s2">"image_set"</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_image_set_name</span><span class="p">(</span>
+            <span class="n">image_set_path</span><span class="o">=</span><span class="n">image_set_filename</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span>
+                <span class="s2">"image_name"</span><span class="p">,</span>
+                <span class="s2">"image_category"</span><span class="p">,</span>
+                <span class="s2">"image_set"</span><span class="p">,</span>
+                <span class="s2">"phase"</span><span class="p">,</span>
+                <span class="s2">"spatial_frequency"</span><span class="p">,</span>
+                <span class="s2">"image_index"</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="n">stimulus_index_df</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"image_name"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="s2">"image_category"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="s2">"image_set"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                <span class="s2">"phase"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="s2">"spatial_frequency"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                <span class="s2">"image_index"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># get the grating metadata will be empty if gratings are absent</span>
+    <span class="n">grating_df</span> <span class="o">=</span> <span class="n">get_gratings_metadata</span><span class="p">(</span>
+        <span class="n">stimuli</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">stimulus_index_df</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">stimulus_index_df</span><span class="p">,</span> <span class="n">grating_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add an entry for omitted stimuli</span>
+    <span class="n">omitted_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">"image_category"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"omitted"</span><span class="p">],</span>
+            <span class="s2">"image_name"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"omitted"</span><span class="p">],</span>
+            <span class="s2">"image_set"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"omitted"</span><span class="p">],</span>
+            <span class="s2">"orientation"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="s2">"phase"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="s2">"spatial_frequency"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+            <span class="s2">"image_index"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">stimulus_index_df</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">stimulus_index_df</span><span class="p">,</span> <span class="n">omitted_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="n">stimulus_index_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">"image_index"</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stimulus_index_df</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve_image_category</span><span class="p">(</span><span class="n">change_log</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="p">(</span><span class="n">unpack_change_log</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">change_log</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">frame</span> <span class="o">&lt;</span> <span class="n">change</span><span class="p">[</span><span class="s2">"frame"</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">change</span><span class="p">[</span><span class="s2">"from_category"</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">change</span><span class="p">[</span><span class="s2">"to_category"</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_stimulus_epoch</span><span class="p">(</span>
+    <span class="n">set_log</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+    <span class="n">current_set_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">start_frame</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">n_frames</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gets the frame range for which a stimuli was presented and the transition</span>
+<span class="sd">    to the next stimuli was ongoing. Returns this in the form of a tuple.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    set_log: List[Tuple[str, Union[str, int], int, int</span>
+<span class="sd">        The List of Tuples in the form of</span>
+<span class="sd">        (stimuli_type ('Image' or 'Grating'),</span>
+<span class="sd">         stimuli_descriptor (image_name or orientation of grating in degrees),</span>
+<span class="sd">         nonsynced_time_of_display (not sure, it's never used),</span>
+<span class="sd">         display_frame (frame that stimuli was displayed))</span>
+<span class="sd">    current_set_index: int</span>
+<span class="sd">        Index of stimuli set to calculate window</span>
+<span class="sd">    start_frame: int</span>
+<span class="sd">        frame where stimuli was set, set_log[current_set_index][3]</span>
+<span class="sd">    n_frames: int</span>
+<span class="sd">        number of frames for which stimuli were displayed</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[int, int]:</span>
+<span class="sd">        A tuple where index 0 is start frame of stimulus window and index 1 is</span>
+<span class="sd">        end frame of stimulus window</span>
+
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">next_set_event</span> <span class="o">=</span> <span class="n">set_log</span><span class="p">[</span><span class="n">current_set_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>  <span class="c1"># assume this is the last set event</span>
+        <span class="n">next_set_event</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_frames</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">start_frame</span><span class="p">,</span> <span class="n">next_set_event</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># end frame isn't inclusive</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_draw_epochs</span><span class="p">(</span>
+    <span class="n">draw_log</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">start_frame</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">stop_frame</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Gets the frame numbers of the active frames within a stimulus window.</span>
+<span class="sd">    Stimulus epochs come in the form [0, 0, 1, 1, 0, 0] where the stimulus is</span>
+<span class="sd">    active for some amount of time in the window indicated by int 1 at that</span>
+<span class="sd">    frame. This function returns the ranges for which the set_log is 1 within</span>
+<span class="sd">    the draw_log window.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    draw_log: List[int]</span>
+<span class="sd">        A list of ints indicating for what frames stimuli were active</span>
+<span class="sd">    start_frame: int</span>
+<span class="sd">        The start frame to search within the draw_log for active values</span>
+<span class="sd">    stop_frame: int</span>
+<span class="sd">        The end frame to search within the draw_log for active values</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    List[Tuple[int, int]]</span>
+<span class="sd">        A list of tuples indicating the start and end frames of every</span>
+<span class="sd">        contiguous set of active values within the specified window</span>
+<span class="sd">        of the draw log.</span>
+<span class="sd">    """</span>
+    <span class="n">draw_epochs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">current_frame</span> <span class="o">=</span> <span class="n">start_frame</span>
+
+    <span class="k">while</span> <span class="n">current_frame</span> <span class="o">&lt;=</span> <span class="n">stop_frame</span><span class="p">:</span>
+        <span class="n">epoch_length</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">current_frame</span> <span class="o">&lt;</span> <span class="n">stop_frame</span> <span class="ow">and</span> <span class="n">draw_log</span><span class="p">[</span><span class="n">current_frame</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">epoch_length</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">current_frame</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_frame</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">epoch_length</span><span class="p">:</span>
+            <span class="n">draw_epochs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">current_frame</span> <span class="o">-</span> <span class="n">epoch_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                    <span class="n">current_frame</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">draw_epochs</span>
+
+
+<div class="viewcode-block" id="unpack_change_log">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.unpack_change_log">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unpack_change_log</span><span class="p">(</span><span class="n">change</span><span class="p">):</span>
+    <span class="p">(</span>
+        <span class="p">(</span><span class="n">from_category</span><span class="p">,</span> <span class="n">from_name</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="n">to_category</span><span class="p">,</span>
+            <span class="n">to_name</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">time</span><span class="p">,</span>
+        <span class="n">frame</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">change</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span>
+        <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+        <span class="n">from_category</span><span class="o">=</span><span class="n">from_category</span><span class="p">,</span>
+        <span class="n">to_category</span><span class="o">=</span><span class="n">to_category</span><span class="p">,</span>
+        <span class="n">from_name</span><span class="o">=</span><span class="n">from_name</span><span class="p">,</span>
+        <span class="n">to_name</span><span class="o">=</span><span class="n">to_name</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_visual_stimuli_df">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_visual_stimuli_df">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_visual_stimuli_df</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This function loads the stimuli and the omitted stimuli into a dataframe.</span>
+<span class="sd">    These stimuli are loaded from the input data, where the set_log and</span>
+<span class="sd">    draw_log contained within are used to calculate the epochs. These epochs</span>
+<span class="sd">    are used as start_frame and end_frame and converted to times by input</span>
+<span class="sd">    stimulus timestamps. The omitted stimuli do not have a end_frame by design</span>
+<span class="sd">    though there duration is always 250ms.</span>
+<span class="sd">    :param data: the behavior data file</span>
+<span class="sd">    :param time: the stimulus timestamps indicating when each stimuli is</span>
+<span class="sd">                 displayed</span>
+<span class="sd">    :return: df: a pandas dataframe containing the stimuli and omitted stimuli</span>
+<span class="sd">                 that were displayed with their frame, end_frame, start_time,</span>
+<span class="sd">                 and duration</span>
+<span class="sd">    """</span>
+
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"stimuli"</span><span class="p">]</span>
+    <span class="n">n_frames</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">visual_stimuli_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">stim_dict</span> <span class="ow">in</span> <span class="n">stimuli</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="n">stim_dict</span><span class="p">[</span><span class="s2">"set_log"</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">orientation</span> <span class="o">=</span> <span class="n">attr_value</span> <span class="k">if</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"ori"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">image_name</span> <span class="o">=</span> <span class="n">attr_value</span> <span class="k">if</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"image"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="n">stimulus_epoch</span> <span class="o">=</span> <span class="n">_get_stimulus_epoch</span><span class="p">(</span>
+                <span class="n">stim_dict</span><span class="p">[</span><span class="s2">"set_log"</span><span class="p">],</span>
+                <span class="n">idx</span><span class="p">,</span>
+                <span class="n">frame</span><span class="p">,</span>
+                <span class="n">n_frames</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">draw_epochs</span> <span class="o">=</span> <span class="n">_get_draw_epochs</span><span class="p">(</span>
+                <span class="n">stim_dict</span><span class="p">[</span><span class="s2">"draw_log"</span><span class="p">],</span> <span class="o">*</span><span class="n">stimulus_epoch</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">epoch_start</span><span class="p">,</span> <span class="n">epoch_end</span> <span class="ow">in</span> <span class="n">draw_epochs</span><span class="p">:</span>
+                <span class="n">visual_stimuli_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">"orientation"</span><span class="p">:</span> <span class="n">orientation</span><span class="p">,</span>
+                        <span class="s2">"image_name"</span><span class="p">:</span> <span class="n">image_name</span><span class="p">,</span>
+                        <span class="s2">"frame"</span><span class="p">:</span> <span class="n">epoch_start</span><span class="p">,</span>
+                        <span class="s2">"end_frame"</span><span class="p">:</span> <span class="n">epoch_end</span><span class="p">,</span>
+                        <span class="s2">"time"</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="n">epoch_start</span><span class="p">],</span>
+                        <span class="s2">"duration"</span><span class="p">:</span> <span class="n">time</span><span class="p">[</span><span class="n">epoch_end</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">epoch_start</span><span class="p">],</span>
+                        <span class="c1"># this will always work because an epoch</span>
+                        <span class="c1"># will never occur near the end of time</span>
+                        <span class="s2">"omitted"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+
+    <span class="n">visual_stimuli_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">visual_stimuli_data</span><span class="p">)</span>
+
+    <span class="c1"># Add omitted flash info:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">omitted_flash_frame_log</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span>
+            <span class="s2">"omitted_flash_frame_log"</span>
+        <span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="c1"># For sessions for which there were no omitted flashes</span>
+        <span class="n">omitted_flash_frame_log</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">omitted_flash_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">omitted_flash_frames</span> <span class="ow">in</span> <span class="n">omitted_flash_frame_log</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">stim_frames</span> <span class="o">=</span> <span class="n">visual_stimuli_df</span><span class="p">[</span><span class="s2">"frame"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">omitted_flash_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">omitted_flash_frames</span><span class="p">)</span>
+
+        <span class="c1"># Test offsets of omitted flash frames</span>
+        <span class="c1"># to see if they are in the stim log</span>
+        <span class="n">offsets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">offset_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+                <span class="n">omitted_flash_frames</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="n">offsets</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">),</span>
+            <span class="n">offsets</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">matched_any_offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">offset_arr</span><span class="p">,</span> <span class="n">stim_frames</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">#  Remove omitted flashes that also exist in the stimulus log</span>
+        <span class="n">was_true_omitted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">matched_any_offset</span><span class="p">)</span>  <span class="c1"># bool</span>
+        <span class="n">omitted_flash_frames_to_keep</span> <span class="o">=</span> <span class="n">omitted_flash_frames</span><span class="p">[</span><span class="n">was_true_omitted</span><span class="p">]</span>
+
+        <span class="c1"># Have to remove frames that are double-counted in omitted log</span>
+        <span class="n">omitted_flash_list</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">omitted_flash_frames_to_keep</span><span class="p">))</span>
+
+    <span class="n">omitted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">omitted_flash_list</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="p">[</span><span class="n">time</span><span class="p">[</span><span class="n">fi</span><span class="p">]</span> <span class="k">for</span> <span class="n">fi</span> <span class="ow">in</span> <span class="n">omitted_flash_list</span><span class="p">]</span>
+    <span class="n">omitted_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">"omitted"</span><span class="p">:</span> <span class="n">omitted</span><span class="p">,</span>
+            <span class="s2">"frame"</span><span class="p">:</span> <span class="n">omitted_flash_list</span><span class="p">,</span>
+            <span class="s2">"time"</span><span class="p">:</span> <span class="n">time</span><span class="p">,</span>
+            <span class="s2">"image_name"</span><span class="p">:</span> <span class="s2">"omitted"</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">((</span><span class="n">visual_stimuli_df</span><span class="p">,</span> <span class="n">omitted_df</span><span class="p">),</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"frame"</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+<div class="viewcode-block" id="get_image_names">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_image_names">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_image_names</span><span class="p">(</span><span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Gets set of image names shown during behavior session"""</span>
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">behavior_stimulus_file</span><span class="o">.</span><span class="n">stimuli</span>
+    <span class="n">image_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">stim_dict</span> <span class="ow">in</span> <span class="n">stimuli</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">stim_dict</span><span class="p">[</span><span class="s2">"set_log"</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"image"</span><span class="p">:</span>
+                <span class="n">image_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">attr_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">image_names</span></div>
+
+
+
+<div class="viewcode-block" id="is_change_event">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.is_change_event">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_change_event</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Returns whether a stimulus is a change stimulus</span>
+<span class="sd">    A change stimulus is defined as the first presentation of a new image_name</span>
+<span class="sd">    Omitted stimuli are ignored</span>
+<span class="sd">    The first stimulus in the session is ignored</span>
+
+<span class="sd">    :param stimulus_presentations</span>
+<span class="sd">        The stimulus presentations table</span>
+
+<span class="sd">    :return: is_change: pd.Series indicating whether a given stimulus is a</span>
+<span class="sd">        change stimulus</span>
+<span class="sd">    """</span>
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span>
+
+    <span class="c1"># exclude omitted stimuli</span>
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">stimuli</span><span class="p">[</span><span class="o">~</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]]</span>
+
+    <span class="n">prev_stimuli</span> <span class="o">=</span> <span class="n">stimuli</span><span class="o">.</span><span class="n">shift</span><span class="p">()</span>
+
+    <span class="c1"># exclude first stimulus</span>
+    <span class="n">stimuli</span> <span class="o">=</span> <span class="n">stimuli</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">prev_stimuli</span> <span class="o">=</span> <span class="n">prev_stimuli</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="n">is_change</span> <span class="o">=</span> <span class="n">stimuli</span> <span class="o">!=</span> <span class="n">prev_stimuli</span>
+
+    <span class="c1"># reset back to original index</span>
+    <span class="n">is_change</span> <span class="o">=</span> <span class="n">is_change</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+        <span class="s2">"is_change"</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Excluded stimuli are not change events</span>
+    <span class="n">is_change</span> <span class="o">=</span> <span class="n">is_change</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">is_change</span></div>
+
+
+
+<div class="viewcode-block" id="get_flashes_since_change">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.get_flashes_since_change">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_flashes_since_change</span><span class="p">(</span>
+    <span class="n">stimulus_presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Calculate the number of times an images is flashed between changes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stimulus_presentations : pandas.DataFrame</span>
+<span class="sd">        Table of presented stimuli with ``is_change`` column already</span>
+<span class="sd">        calculated.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    flashes_since_change : pandas.Series</span>
+<span class="sd">        Number of times the same image is flashed between image changes.</span>
+<span class="sd">    """</span>
+    <span class="n">flashes_since_change</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"flashes_since_change"</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="s2">"int"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">pd_index</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()):</span>
+        <span class="n">omitted</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]):</span>
+            <span class="n">omitted</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"omitted"</span> <span class="ow">or</span> <span class="n">omitted</span><span class="p">:</span>
+            <span class="n">flashes_since_change</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">flashes_since_change</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">"is_change"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">flashes_since_change</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">flashes_since_change</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">flashes_since_change</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="p">)</span>
+    <span class="k">return</span> <span class="n">flashes_since_change</span></div>
+
+
+
+<div class="viewcode-block" id="add_active_flag">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.add_active_flag">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_active_flag</span><span class="p">(</span>
+    <span class="n">stim_pres_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">trials</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Mark the active stimuli by lining up the stimulus times with the</span>
+<span class="sd">    trials times.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim_pres_table : pandas.DataFrame</span>
+<span class="sd">        Stimulus table to add active column to.</span>
+<span class="sd">    trials : pandas.DataFrame</span>
+<span class="sd">        Trials table to align with the stimulus table.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    stimulus_table : pandas.DataFrame</span>
+<span class="sd">        Copy of ``stim_pres_table`` with added acive column.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="s2">"active"</span> <span class="ow">in</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stim_pres_table</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">active</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stim_pres_table</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">stim_mask</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">start_time</span> <span class="o">&gt;</span> <span class="n">trials</span><span class="o">.</span><span class="n">start_time</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">start_time</span> <span class="o">&lt;</span> <span class="n">trials</span><span class="o">.</span><span class="n">stop_time</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">image_name</span><span class="o">.</span><span class="n">isna</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">active</span><span class="p">[</span><span class="n">stim_mask</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Clean up potential stimuli that fall outside in time of the trials</span>
+        <span class="c1"># but are part of the "active" stimulus block.</span>
+        <span class="k">if</span> <span class="s2">"stimulus_block"</span> <span class="ow">in</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">stim_block</span> <span class="ow">in</span> <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+                <span class="n">block_mask</span> <span class="o">=</span> <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span> <span class="o">==</span> <span class="n">stim_block</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">active</span><span class="p">[</span><span class="n">block_mask</span><span class="p">]):</span>
+                    <span class="n">active</span><span class="p">[</span><span class="n">block_mask</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"active"</span><span class="p">]</span> <span class="o">=</span> <span class="n">active</span>
+        <span class="k">return</span> <span class="n">stim_pres_table</span></div>
+
+
+
+<div class="viewcode-block" id="compute_trials_id_for_stimulus">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.compute_trials_id_for_stimulus">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_trials_id_for_stimulus</span><span class="p">(</span>
+    <span class="n">stim_pres_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">trials_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add an id to allow for merging of the stimulus presentations</span>
+<span class="sd">    table with the trials table.</span>
+
+<span class="sd">    If stimulus_block is not available as a column in the input table, return</span>
+<span class="sd">    an empty set of trials_ids.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim_pres_table : pandas.DataFrame</span>
+<span class="sd">        Pandas stimulus table to create trials_id from.</span>
+<span class="sd">    trials_table : pandas.DataFrame</span>
+<span class="sd">        Trials table to create id from using trial start times.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    trials_ids : pd.Series</span>
+<span class="sd">        Unique id to allow merging of the stim table with the trials table.</span>
+<span class="sd">        Null values are represented by -1.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    ``trials_id`` values are copied from active stimulus blocks into</span>
+<span class="sd">    passive stimulus/replay blocks that contain the same image ordering and</span>
+<span class="sd">    length.</span>
+<span class="sd">    """</span>
+    <span class="c1"># Create a placeholder for the trials_id.</span>
+    <span class="n">trials_ids</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stim_pres_table</span><span class="p">),</span> <span class="n">INT_NULL</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"trials_id"</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int"</span><span class="p">)</span>
+
+    <span class="c1"># Find stimulus blocks that start within a trial. Copy the trial_id</span>
+    <span class="c1"># into our new trials_ids series. For some sessions there are gaps in</span>
+    <span class="c1"># between one trial's end and the next's stop time so we account for this</span>
+    <span class="c1"># by only using the max time for all trials as the limit.</span>
+    <span class="n">max_trials_stop</span> <span class="o">=</span> <span class="n">trials_table</span><span class="o">.</span><span class="n">stop_time</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">trial</span> <span class="ow">in</span> <span class="n">trials_table</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">stim_mask</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">start_time</span> <span class="o">&gt;</span> <span class="n">trial</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">start_time</span> <span class="o">&lt;</span> <span class="n">max_trials_stop</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">stim_pres_table</span><span class="o">.</span><span class="n">image_name</span><span class="o">.</span><span class="n">isna</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">trials_ids</span><span class="p">[</span><span class="n">stim_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span>
+
+    <span class="c1"># Return input frame if the stimulus_block or active is not available.</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="s2">"stimulus_block"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">columns</span>
+        <span class="ow">or</span> <span class="s2">"active"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">columns</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">trials_ids</span>
+    <span class="n">active_sorted</span> <span class="o">=</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">active</span>
+
+    <span class="c1"># The code below finds all stimulus blocks that contain images/trials</span>
+    <span class="c1"># and attempts to detect blocks that are identical to copy the associated</span>
+    <span class="c1"># trials_ids into those blocks. In the parlance of the data this is</span>
+    <span class="c1"># copying the active stimulus block data into the passive stimulus block.</span>
+
+    <span class="c1"># Get the block ids for the behavior trial presentations</span>
+    <span class="n">stim_blocks</span> <span class="o">=</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">stimulus_block</span>
+    <span class="n">stim_image_names</span> <span class="o">=</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">image_name</span>
+    <span class="n">active_stim_blocks</span> <span class="o">=</span> <span class="n">stim_blocks</span><span class="p">[</span><span class="n">active_sorted</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="c1"># Find passive blocks that show images for potential copying of the active</span>
+    <span class="c1"># into a passive stimulus block.</span>
+    <span class="n">passive_stim_blocks</span> <span class="o">=</span> <span class="n">stim_blocks</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="o">~</span><span class="n">active_sorted</span><span class="p">,</span> <span class="o">~</span><span class="n">stim_image_names</span><span class="o">.</span><span class="n">isna</span><span class="p">())</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+    <span class="c1"># Copy the trials_id into the passive block if it exists.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">passive_stim_blocks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">active_stim_block</span> <span class="ow">in</span> <span class="n">active_stim_blocks</span><span class="p">:</span>
+            <span class="n">active_block_mask</span> <span class="o">=</span> <span class="n">stim_blocks</span> <span class="o">==</span> <span class="n">active_stim_block</span>
+            <span class="n">active_images</span> <span class="o">=</span> <span class="n">stim_image_names</span><span class="p">[</span><span class="n">active_block_mask</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">for</span> <span class="n">passive_stim_block</span> <span class="ow">in</span> <span class="n">passive_stim_blocks</span><span class="p">:</span>
+                <span class="n">passive_block_mask</span> <span class="o">=</span> <span class="n">stim_blocks</span> <span class="o">==</span> <span class="n">passive_stim_block</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span>
+                    <span class="n">active_images</span><span class="p">,</span> <span class="n">stim_image_names</span><span class="p">[</span><span class="n">passive_block_mask</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="p">):</span>
+                    <span class="n">trials_ids</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">passive_block_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">trials_ids</span><span class="p">[</span>
+                        <span class="n">active_block_mask</span>
+                    <span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">return</span> <span class="n">trials_ids</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="fix_omitted_end_frame">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.fix_omitted_end_frame">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix_omitted_end_frame</span><span class="p">(</span><span class="n">stim_pres_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fill NaN ``end_frame`` values for omitted frames.</span>
+
+<span class="sd">    Additionally, change type of ``end_frame`` to int.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim_pres_table : `pandas.DataFrame`</span>
+<span class="sd">        Input stimulus table to fix/fill omitted ``end_frame`` values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    output : `pandas.DataFrame`</span>
+<span class="sd">        Copy of input DataFrame with filled omitted, ``end_frame`` values and</span>
+<span class="sd">        fixed typing.</span>
+<span class="sd">    """</span>
+    <span class="n">median_stim_frame_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span>
+        <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"end_frame"</span><span class="p">]</span> <span class="o">-</span> <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"start_frame"</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">omitted_end_frames</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">stim_pres_table</span><span class="p">[</span><span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]][</span><span class="s2">"start_frame"</span><span class="p">]</span>
+        <span class="o">+</span> <span class="n">median_stim_frame_duration</span>
+    <span class="p">)</span>
+    <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">stim_pres_table</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">],</span> <span class="s2">"end_frame"</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">omitted_end_frames</span>
+
+    <span class="n">stim_dtypes</span> <span class="o">=</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="n">stim_dtypes</span><span class="p">[</span><span class="s2">"start_frame"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="n">stim_dtypes</span><span class="p">[</span><span class="s2">"end_frame"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span>
+
+    <span class="k">return</span> <span class="n">stim_pres_table</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">stim_dtypes</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="produce_stimulus_block_names">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.produce_stimulus_block_names">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">produce_stimulus_block_names</span><span class="p">(</span>
+    <span class="n">stim_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">session_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">project_code</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add a column stimulus_block_name to explicitly reference the kind</span>
+<span class="sd">    of stimulus block in addition to the numbered blocks.</span>
+
+<span class="sd">    Only implemented currently for the VBO dataset. Will not add the column</span>
+<span class="sd">    if it is not in the defined set of project codes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim_df : pandas.DataFrame</span>
+<span class="sd">        Input stimulus presentations DataFrame with stimulus_block column</span>
+<span class="sd">    session_type : str</span>
+<span class="sd">        Full type name of session.</span>
+<span class="sd">    project_code : str</span>
+<span class="sd">        Full name of the project this session belongs to. As this function</span>
+<span class="sd">        is currently only written for VBO, if a non-VBO project name is</span>
+<span class="sd">        presented, the function will result in a noop.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    modified_df : pandas.DataFrame</span>
+<span class="sd">        Stimulus presentations DataFrame with added stimulus_block_name</span>
+<span class="sd">        column if the session is from a project that makes up the VBO release.</span>
+<span class="sd">        The data frame is return the same as the input if not.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">project_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PROJECT_CODES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stim_df</span>
+
+    <span class="n">vbo_map</span> <span class="o">=</span> <span class="n">VBO_PASSIVE_MAP</span> <span class="k">if</span> <span class="s2">"passive"</span> <span class="ow">in</span> <span class="n">session_type</span> <span class="k">else</span> <span class="n">VBO_ACTIVE_MAP</span>
+
+    <span class="k">for</span> <span class="n">stim_block</span> <span class="ow">in</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">stimulus_block</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="c1"># If we have a single block then this is a training session and we</span>
+        <span class="c1"># add +1 to the block number to reuse the general VBO map and get the</span>
+        <span class="c1"># correct task.</span>
+        <span class="n">block_id</span> <span class="o">=</span> <span class="n">stim_block</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stim_df</span><span class="o">.</span><span class="n">stimulus_block</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">block_id</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">stim_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+            <span class="n">stim_df</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span> <span class="o">==</span> <span class="n">stim_block</span><span class="p">,</span> <span class="s2">"stimulus_block_name"</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="n">vbo_map</span><span class="p">[</span><span class="n">block_id</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">stim_df</span></div>
+
+
+
+<div class="viewcode-block" id="compute_is_sham_change">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.stimulus_processing.html#allensdk.brain_observatory.behavior.stimulus_processing.compute_is_sham_change">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">compute_is_sham_change</span><span class="p">(</span>
+    <span class="n">stim_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">trials</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add is_sham_change to stimulus presentation table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stim_df : pandas.DataFrame</span>
+<span class="sd">        Stimulus presentations table to add is_sham_change to.</span>
+<span class="sd">    trials : pandas.DataFrame</span>
+<span class="sd">        Trials data frame to pull info from to create</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    stimulus_presentations : pandas.DataFrame</span>
+<span class="sd">        Input ``stim_df`` DataFrame with the is_sham_change column added.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="s2">"trials_id"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="ow">or</span> <span class="s2">"active"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="ow">or</span> <span class="s2">"stimulus_block"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">columns</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">stim_df</span>
+    <span class="n">stim_trials</span> <span class="o">=</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+        <span class="n">trials</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s2">"trials_id"</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span>
+    <span class="p">)</span>
+    <span class="n">catch_frames</span> <span class="o">=</span> <span class="n">stim_trials</span><span class="p">[</span><span class="n">stim_trials</span><span class="p">[</span><span class="s2">"catch"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)][</span>
+        <span class="s2">"change_frame"</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+    <span class="n">stim_df</span><span class="p">[</span><span class="s2">"is_sham_change"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">catch_flashes</span> <span class="o">=</span> <span class="n">stim_df</span><span class="p">[</span>
+        <span class="n">stim_df</span><span class="p">[</span><span class="s2">"start_frame"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">catch_frames</span><span class="p">)</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">stim_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">catch_flashes</span><span class="p">,</span> <span class="s2">"is_sham_change"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">stim_blocks</span> <span class="o">=</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">stimulus_block</span>
+    <span class="n">stim_image_names</span> <span class="o">=</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">image_name</span>
+    <span class="n">active_stim_blocks</span> <span class="o">=</span> <span class="n">stim_blocks</span><span class="p">[</span><span class="n">stim_df</span><span class="o">.</span><span class="n">active</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="c1"># Find passive blocks that show images for potential copying of the active</span>
+    <span class="c1"># into a passive stimulus block.</span>
+    <span class="n">passive_stim_blocks</span> <span class="o">=</span> <span class="n">stim_blocks</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="o">~</span><span class="n">stim_df</span><span class="o">.</span><span class="n">active</span><span class="p">,</span> <span class="o">~</span><span class="n">stim_image_names</span><span class="o">.</span><span class="n">isna</span><span class="p">())</span>
+    <span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+    <span class="c1"># Copy the trials_id into the passive block if it exists.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">passive_stim_blocks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">active_stim_block</span> <span class="ow">in</span> <span class="n">active_stim_blocks</span><span class="p">:</span>
+            <span class="n">active_block_mask</span> <span class="o">=</span> <span class="n">stim_blocks</span> <span class="o">==</span> <span class="n">active_stim_block</span>
+            <span class="n">active_images</span> <span class="o">=</span> <span class="n">stim_image_names</span><span class="p">[</span><span class="n">active_block_mask</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">for</span> <span class="n">passive_stim_block</span> <span class="ow">in</span> <span class="n">passive_stim_blocks</span><span class="p">:</span>
+                <span class="n">passive_block_mask</span> <span class="o">=</span> <span class="n">stim_blocks</span> <span class="o">==</span> <span class="n">passive_stim_block</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span>
+                    <span class="n">active_images</span><span class="p">,</span> <span class="n">stim_image_names</span><span class="p">[</span><span class="n">passive_block_mask</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="p">):</span>
+                    <span class="n">stim_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                        <span class="n">passive_block_mask</span><span class="p">,</span> <span class="s2">"is_sham_change"</span>
+                    <span class="p">]</span> <span class="o">=</span> <span class="n">stim_df</span><span class="p">[</span><span class="n">active_block_mask</span><span class="p">][</span><span class="s2">"is_sham_change"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">return</span> <span class="n">stim_df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

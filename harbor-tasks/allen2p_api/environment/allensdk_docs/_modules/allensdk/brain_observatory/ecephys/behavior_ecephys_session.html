@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.behavior_ecephys_session &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.behavior_ecephys_session</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory</span><span class="w"> </span><span class="kn">import</span> <span class="n">sync_utilities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_session</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorSession</span><span class="p">,</span>
+    <span class="n">StimulusFileLookup</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.eye_tracking_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EyeTrackingFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.eye_tracking_metadata_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">EyeTrackingMetadataFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusTimestamps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.eye_tracking.eye_tracking_table</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">EyeTrackingTable</span><span class="p">,</span>
+    <span class="n">get_lost_frames</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.licks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Licks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.rewards</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rewards</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.stimuli</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Stimuli</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.trials.trials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Trials</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys._behavior_ecephys_metadata</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorEcephysMetadata</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.data_objects.trials</span><span class="w"> </span><span class="kn">import</span> <span class="n">VBNTrials</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.optotagging</span><span class="w"> </span><span class="kn">import</span> <span class="n">OptotaggingTable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.probes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Probes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys._probe</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProbeWithLFPMeta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span>
+
+
+<div class="viewcode-block" id="VBNBehaviorSession">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.VBNBehaviorSession">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">VBNBehaviorSession</span><span class="p">(</span><span class="n">BehaviorSession</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class to create the behavior parts of a VBN session,</span>
+<span class="sd">    performing all of the specialized timestamp calculations</span>
+<span class="sd">    that implies.</span>
+<span class="sd">    """</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_monitor_delay</span><span class="p">():</span>
+        <span class="c1"># In a private communication in March 2022,</span>
+        <span class="c1"># Corbett Bennett said that we should use 20 milliseconds</span>
+        <span class="c1"># as the monitor_delay for the NP.0 and NP.1 rigs</span>
+        <span class="c1"># used to collect the ecephys sessions for VBN</span>
+        <span class="k">return</span> <span class="mf">0.02</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trials_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Trials</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">VBNTrials</span>
+
+<div class="viewcode-block" id="VBNBehaviorSession.from_lims">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.VBNBehaviorSession.from_lims">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_of_acquisition</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eye_tracking_z_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+        <span class="n">eye_tracking_dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"VBNBehaviorSession"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"from_lims is not supported for a VBNBehaviorSession"</span>
+        <span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_stimuli</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stimuli</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"VBNBehaviorSessions read their stimulus tables from "</span>
+            <span class="s2">"a precomputed csv file; they should not be computed "</span>
+            <span class="s2">"on the fly by the AllenSDK"</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StimulusTimestamps</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble the StimulusTimestamps by registering behavior_</span>
+<span class="sd">        mapping_ and replay_stimulus blocks to a single sync file</span>
+<span class="sd">        """</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_multiple_stimulus_blocks</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">list_of_stims</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">mapping_stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">replay_stimulus_file</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">stims_of_interest</span><span class="o">=</span><span class="p">[</span>
+                <span class="mi">0</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">timestamps</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_session_timestamps</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StimulusTimestamps</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble the StimulusTimestamps (with monitor delay) that will</span>
+<span class="sd">        be associated with this session</span>
+<span class="sd">        """</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_multiple_stimulus_blocks</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">list_of_stims</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">mapping_stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">replay_stimulus_file</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="n">stims_of_interest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">timestamps</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_licks</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Licks</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Licks data object for this session,</span>
+<span class="sd">        reading the lick times directly from the sync file,</span>
+<span class="sd">        accepting only those licks that occur during the time</span>
+<span class="sd">        of the behavior stimulus block</span>
+<span class="sd">        """</span>
+
+        <span class="k">if</span> <span class="n">sync_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">._read_licks requires a sync_file; "</span>
+                <span class="s2">"you passed in sync_file=None"</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">lick_times</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">sync_file</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"lick_times"</span><span class="p">],</span> <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span>
+        <span class="p">)</span>
+
+        <span class="c1"># get the timestamps of the behavior stimulus presentations</span>
+        <span class="n">beh_stim_times</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">beh_stim_times_no_monitor</span> <span class="o">=</span> <span class="n">beh_stim_times</span><span class="o">.</span><span class="n">subtract_monitor_delay</span><span class="p">()</span>
+
+        <span class="c1"># only accept lick times that are within the temporal bounds of</span>
+        <span class="c1"># the behavior stimulus presentations;</span>
+        <span class="c1"># use the version of beh_stim_times with monitor_delay=0.0 because</span>
+        <span class="c1"># monitor_delay should have no impact on when a particular stimuls</span>
+        <span class="c1"># block begins or ends</span>
+        <span class="n">min_time</span> <span class="o">=</span> <span class="n">beh_stim_times_no_monitor</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">max_time</span> <span class="o">=</span> <span class="n">beh_stim_times_no_monitor</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+            <span class="n">lick_times</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;=</span> <span class="n">min_time</span><span class="p">,</span> <span class="n">lick_times</span><span class="o">.</span><span class="n">value</span> <span class="o">&lt;=</span> <span class="n">max_time</span>
+        <span class="p">)</span>
+
+        <span class="n">lick_times</span> <span class="o">=</span> <span class="n">lick_times</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+
+        <span class="c1"># The 'frames' in the licks dataframe is just a unitless</span>
+        <span class="c1"># measure of time in camstime. It roughly corresponds to</span>
+        <span class="c1"># the rising vsync_stim line. To quote Corbett:</span>
+        <span class="c1"># "camstim flips this right before rendering the frame so this</span>
+        <span class="c1"># is as close as we can get to the time when it reads the nidaq</span>
+        <span class="c1"># buffer"</span>
+
+        <span class="n">lick_frames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span>
+            <span class="n">beh_stim_times_no_monitor</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lick_times</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lick_frames</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lick_times</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lick_frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> lick frames; "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lick_times</span><span class="p">)</span><span class="si">}</span><span class="s2"> lick timestamps "</span>
+                <span class="s2">"in the Sync file. Should be equal"</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"timestamps"</span><span class="p">:</span> <span class="n">lick_times</span><span class="p">,</span> <span class="s2">"frame"</span><span class="p">:</span> <span class="n">lick_frames</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">Licks</span><span class="p">(</span><span class="n">licks</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_eye_tracking_table</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">eye_tracking_file</span><span class="p">:</span> <span class="n">EyeTrackingFile</span><span class="p">,</span>
+        <span class="n">eye_tracking_metadata_file</span><span class="p">:</span> <span class="n">EyeTrackingMetadataFile</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">SyncFile</span><span class="p">,</span>
+        <span class="n">z_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">dilation_frames</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EyeTrackingTable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        more or less copied from</span>
+<span class="sd">        https://github.com/corbennett/NP_pipeline_QC/blob/6a66f195c4cd6b300776f089773577db542fe7eb/probeSync_qc.py  # noqa: E501</span>
+<span class="sd">        """</span>
+
+        <span class="n">eye_metadata</span> <span class="o">=</span> <span class="n">eye_tracking_metadata_file</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">camera_label</span> <span class="o">=</span> <span class="n">eye_metadata</span><span class="p">[</span><span class="s2">"RecordingReport"</span><span class="p">][</span><span class="s2">"CameraLabel"</span><span class="p">]</span>
+        <span class="n">exposure_sync_line_label_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"Eye"</span><span class="p">:</span> <span class="s2">"eye_cam_exposing"</span><span class="p">,</span>
+            <span class="s2">"Face"</span><span class="p">:</span> <span class="s2">"face_cam_exposing"</span><span class="p">,</span>
+            <span class="s2">"Behavior"</span><span class="p">:</span> <span class="s2">"beh_cam_exposing"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">camera_line</span> <span class="o">=</span> <span class="n">exposure_sync_line_label_dict</span><span class="p">[</span><span class="n">camera_label</span><span class="p">]</span>
+
+        <span class="n">lost_frames</span> <span class="o">=</span> <span class="n">get_lost_frames</span><span class="p">(</span>
+            <span class="n">eye_tracking_metadata</span><span class="o">=</span><span class="n">eye_tracking_metadata_file</span>
+        <span class="p">)</span>
+
+        <span class="n">frame_times</span> <span class="o">=</span> <span class="n">sync_utilities</span><span class="o">.</span><span class="n">get_synchronized_frame_times</span><span class="p">(</span>
+            <span class="n">session_sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="o">.</span><span class="n">filepath</span><span class="p">,</span>
+            <span class="n">sync_line_label_keys</span><span class="o">=</span><span class="p">(</span><span class="n">camera_line</span><span class="p">,),</span>
+            <span class="n">drop_frames</span><span class="o">=</span><span class="n">lost_frames</span><span class="p">,</span>
+            <span class="n">trim_after_spike</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">frame_times</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">EyeTrackingTable</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+            <span class="n">data_file</span><span class="o">=</span><span class="n">eye_tracking_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">z_threshold</span><span class="o">=</span><span class="n">z_threshold</span><span class="p">,</span>
+            <span class="n">dilation_frames</span><span class="o">=</span><span class="n">dilation_frames</span><span class="p">,</span>
+            <span class="n">metadata_file</span><span class="o">=</span><span class="n">eye_tracking_metadata_file</span><span class="p">,</span>
+            <span class="n">empty_on_fail</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_trials</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">licks</span><span class="p">:</span> <span class="n">Licks</span><span class="p">,</span>
+        <span class="n">rewards</span><span class="p">:</span> <span class="n">Rewards</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Trials</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Trials data object for this session</span>
+<span class="sd">        """</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">VBNTrials</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BehaviorEcephysSession</span><span class="p">(</span><span class="n">VBNBehaviorSession</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Represents a session with behavior + ecephys</span>
+<span class="sd">    """</span>
+
+<div class="viewcode-block" id="BehaviorEcephysSession.behavior_data_class">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.behavior_data_class">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">behavior_data_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Return the class that is used to store the behavior data</span>
+<span class="sd">        in this BehaviorEcephysSession</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">VBNBehaviorSession</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">behavior_session</span><span class="p">:</span> <span class="n">VBNBehaviorSession</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">BehaviorEcephysMetadata</span><span class="p">,</span>
+        <span class="n">probes</span><span class="p">:</span> <span class="n">Probes</span><span class="p">,</span>
+        <span class="n">optotagging_table</span><span class="p">:</span> <span class="n">OptotaggingTable</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_behavior_session_id</span><span class="p">,</span>
+            <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_date_of_acquisition</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_licks</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="n">raw_running_speed</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_raw_running_speed</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_rewards</span><span class="p">,</span>
+            <span class="n">running_speed</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_running_speed</span><span class="p">,</span>
+            <span class="n">running_acquisition</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_running_acquisition</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_stimuli</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_trials</span><span class="p">,</span>
+            <span class="n">eye_tracking_table</span><span class="o">=</span><span class="n">behavior_session</span><span class="o">.</span><span class="n">_eye_tracking</span><span class="p">,</span>
+            <span class="n">eye_tracking_rig_geometry</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">behavior_session</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span> <span class="o">=</span> <span class="n">probes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optotagging_table</span> <span class="o">=</span> <span class="n">optotagging_table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">probes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A dataframe with columns</span>
+<span class="sd">            - id: probe id</span>
+<span class="sd">            - name: probe name</span>
+<span class="sd">            - location: probe location</span>
+<span class="sd">            - lfp_sampling_rate: LFP sampling rate</span>
+<span class="sd">            - has_lfp_data: Whether this probe has LFP data</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optotagging_table</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A dataframe with columns</span>
+<span class="sd">            - start_time: onset of stimulation</span>
+<span class="sd">            - condition: optical stimulation pattern</span>
+<span class="sd">            - level: intensity (in volts output to the LED) of stimulation</span>
+<span class="sd">            - stop_time: stop time of stimulation</span>
+<span class="sd">            - stimulus_name: stimulus name</span>
+<span class="sd">            - duration: duration of stimulation</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optotagging_table</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">behavior_meta</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_metadata</span><span class="p">(</span><span class="n">behavior_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">)</span>
+        <span class="n">ecephys_meta</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"ecephys_session_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">ecephys_session_id</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">behavior_meta</span><span class="p">,</span> <span class="o">**</span><span class="n">ecephys_meta</span><span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mean_waveforms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dictionary mapping unit id to mean_waveforms for all probes</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">mean_waveforms</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">spike_times</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dictionary mapping unit id to spike_times for all probes</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">spike_times</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">spike_amplitudes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dictionary mapping unit id to spike_amplitudes for all probes</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">spike_amplitudes</span>
+
+<div class="viewcode-block" id="BehaviorEcephysSession.get_probes_obj">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.get_probes_obj">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probes_obj</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Probes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.get_channels">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.get_channels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filter_by_validity: Whether to filter channels based on whether</span>
+<span class="sd">            the channel is marked as "valid_data"</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `pd.DataFrame` of channels</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">probes</span>
+            <span class="p">]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.get_units">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.get_units">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_units</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">filter_out_of_brain_units</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">amplitude_cutoff_maximum</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">presence_ratio_minimum</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">isi_violations_maximum</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Gets a dataframe representing all units detected by all probes</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filter_by_validity</span>
+<span class="sd">            Whether to filter out units in channels with valid_data==False</span>
+<span class="sd">        filter_out_of_brain_units</span>
+<span class="sd">            Whether to filter out units with missing ecephys_structure_acronym</span>
+<span class="sd">        amplitude_cutoff_maximum</span>
+<span class="sd">            Filter units by this upper bound</span>
+<span class="sd">        presence_ratio_minimum</span>
+<span class="sd">            Filter units by this lower bound</span>
+<span class="sd">        isi_violations_maximum</span>
+<span class="sd">            Filter units by this upper bound</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dataframe containing all units detected by probes</span>
+<span class="sd">        Columns:</span>
+<span class="sd">            - properties of `allensdk.ecephys._unit.Unit`</span>
+<span class="sd">            except for 'spike_times', 'spike_amplitudes', 'mean_waveforms'</span>
+<span class="sd">            which are returned separately</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">get_units_table</span><span class="p">(</span>
+            <span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span>
+            <span class="n">filter_out_of_brain_units</span><span class="o">=</span><span class="n">filter_out_of_brain_units</span><span class="p">,</span>
+            <span class="n">amplitude_cutoff_maximum</span><span class="o">=</span><span class="n">amplitude_cutoff_maximum</span><span class="p">,</span>
+            <span class="n">presence_ratio_minimum</span><span class="o">=</span><span class="n">presence_ratio_minimum</span><span class="p">,</span>
+            <span class="n">isi_violations_maximum</span><span class="o">=</span><span class="n">isi_violations_maximum</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.get_lfp">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.get_lfp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_lfp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get LFP data for a single probe given by `probe_id`</span>
+<span class="sd">        """</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_probe</span><span class="p">(</span><span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probe</span><span class="o">.</span><span class="n">lfp</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.get_current_source_density">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.get_current_source_density">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_source_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataArray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Get current source density data for a single probe given by `probe_id`</span>
+<span class="sd">        """</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_probe</span><span class="p">(</span><span class="n">probe_id</span><span class="o">=</span><span class="n">probe_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">probe</span><span class="o">.</span><span class="n">current_source_density</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.from_json">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">session_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_exclude_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">running_speed_load_from_multiple_stimulus_files</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">skip_probes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorEcephysSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_data: Dict of input data necessary to construct a session</span>
+<span class="sd">        stimulus_presentation_exclude_columns:  Optional list of columns to</span>
+<span class="sd">            exclude from stimulus presentations table</span>
+<span class="sd">        running_speed_load_from_multiple_stimulus_files:</span>
+<span class="sd">            Whether to load running speed from multiple stimulus files</span>
+<span class="sd">            If False, will just load from a single behavior stimulus file</span>
+<span class="sd">        skip_probes: Names of probes to exclude (due to known bad data</span>
+<span class="sd">            for example)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Instantiated `BehaviorEcephysSession`</span>
+<span class="sd">        """</span>
+
+        <span class="n">behavior_session</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">behavior_data_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">session_data</span><span class="o">=</span><span class="n">session_data</span><span class="p">,</span>
+            <span class="n">read_stimulus_presentations_table_from_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">stimulus_presentation_exclude_columns</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">stimulus_presentation_exclude_columns</span>
+            <span class="p">),</span>
+            <span class="n">sync_file_permissive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">eye_tracking_drop_frames</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">running_speed_load_from_multiple_stimulus_files</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">running_speed_load_from_multiple_stimulus_files</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">Probes</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">probes</span><span class="o">=</span><span class="n">session_data</span><span class="p">[</span><span class="s2">"probes"</span><span class="p">],</span>
+            <span class="n">skip_probes</span><span class="o">=</span><span class="n">skip_probes</span>
+        <span class="p">)</span>
+        <span class="n">optotagging_table</span> <span class="o">=</span> <span class="n">OptotaggingTable</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">BehaviorEcephysSession</span><span class="p">(</span>
+            <span class="n">behavior_session</span><span class="o">=</span><span class="n">behavior_session</span><span class="p">,</span>
+            <span class="n">probes</span><span class="o">=</span><span class="n">probes</span><span class="p">,</span>
+            <span class="n">optotagging_table</span><span class="o">=</span><span class="n">optotagging_table</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">BehaviorEcephysMetadata</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.to_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NWBFile</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">NWBFile</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Adds behavior ecephys session to NWBFile instance.</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        (session `NWBFile` instance,</span>
+<span class="sd">         mapping from probe name to optional probe `NWBFile` instance. C</span>
+<span class="sd">         Contains LFP and CSD data if it exists)</span>
+<span class="sd">        """</span>
+        <span class="n">nwbfile</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span>
+            <span class="n">add_metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">include_experiment_description</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">stimulus_presentations_stimulus_column_name</span><span class="o">=</span><span class="s2">"stimulus_name"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">probe_nwbfile_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_optotagging_table</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nwbfile</span><span class="p">,</span> <span class="n">probe_nwbfile_map</span></div>
+
+
+<div class="viewcode-block" id="BehaviorEcephysSession.from_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.behavior_ecephys_session.html#allensdk.brain_observatory.ecephys.behavior_ecephys_session.BehaviorEcephysSession.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span>
+        <span class="n">probe_meta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ProbeWithLFPMeta</span><span class="p">]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorEcephysSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwbfile</span>
+<span class="sd">        probe_meta</span>
+<span class="sd">            Maps the probe name to the `ProbeWithLFPMeta`</span>
+<span class="sd">        kwargs: kwargs sent to `BehaviorSession.from_nwb`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        instantiated `BehaviorEcephysSession`</span>
+<span class="sd">        """</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">"add_is_change_to_stimulus_presentations_table"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">behavior_session</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">behavior_data_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">BehaviorEcephysSession</span><span class="p">(</span>
+            <span class="n">behavior_session</span><span class="o">=</span><span class="n">behavior_session</span><span class="p">,</span>
+            <span class="n">probes</span><span class="o">=</span><span class="n">Probes</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">probe_lfp_meta_map</span><span class="o">=</span><span class="n">probe_meta</span>
+            <span class="p">),</span>
+            <span class="n">optotagging_table</span><span class="o">=</span><span class="n">OptotaggingTable</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">),</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">BehaviorEcephysMetadata</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_probe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Gets a probe given by `probe_id`"""</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_probes</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">probe_id</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not find probe with id </span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Multiple probes found with probe_id "</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">probe_id</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="n">probe</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">probe</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Make a Release &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Testing" href="testing/index.html" />
+    <link rel="prev" title="Software Process" href="software_process.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to Make a Release</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-conventions">Documentation conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#make-pre-release-pull-request-on-github-step-by-step">Make pre-release pull request on GitHub: Step-by-step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#publish-release-on-pypi-step-by-step">Publish release on PyPI: Step-by-step</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#publish-release-on-conda-forge-step-by-step">Publish release on conda-forge: Step-by-step</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">How to Make a Release</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/make_a_release.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-make-a-release">
+<h1>How to Make a Release<a class="headerlink" href="#how-to-make-a-release" title="Link to this heading"></a></h1>
+<p>A core developer should use the following steps to create a release <code class="docutils literal notranslate"><span class="pre">X.Y.Z</span></code> of <strong>pynwb</strong>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since the pynwb wheels do not include compiled code, they are considered
+<em>pure</em> and could be generated on any supported platform.</p>
+<p>That said, considering the instructions below have been tested on a Linux system,
+they may have to be adapted to work on macOS or Windows.</p>
+</div>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>All CI tests are passing on <a class="extlink-pynwb reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/actions">GitHub Actions</a>.</p></li>
+<li><p>You have a <a class="reference external" href="https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key">GPG signing key</a>.</p></li>
+<li><p>Release notes have been prepared.</p></li>
+<li><p>An appropriate new version number has been selected.</p></li>
+</ul>
+</section>
+<section id="documentation-conventions">
+<h2>Documentation conventions<a class="headerlink" href="#documentation-conventions" title="Link to this heading"></a></h2>
+<p>The commands reported below should be evaluated in the same terminal session.</p>
+<p>Commands to evaluate starts with a dollar sign. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ echo &quot;Hello&quot;
+Hello
+</pre></div>
+</div>
+<p>means that <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">&quot;Hello&quot;</span></code> should be copied and evaluated in the terminal.</p>
+</section>
+<section id="make-pre-release-pull-request-on-github-step-by-step">
+<h2>Make pre-release pull request on GitHub: Step-by-step<a class="headerlink" href="#make-pre-release-pull-request-on-github-step-by-step" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Create a new branch locally or on GitHub. Update the <code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code> with the release date.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout -b release-X.Y.Z
+</pre></div>
+</div>
+</div></blockquote>
+<p>2. Create a pull request for the new release branch, then append the URL with: “&amp;template=release.md”.
+For example, <code class="docutils literal notranslate"><span class="pre">https://github.com/NeurodataWithoutBorders/pynwb/compare/dev...release-X.Y.Z?quick_pull=1&amp;template=release.md</span></code></p>
+<ol class="arabic simple" start="3">
+<li><p>Follow the checklist in the template. The checklist covers the following steps in more detail:</p></li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li><p>Make sure all PRs to be included in this release have been merged to <code class="docutils literal notranslate"><span class="pre">dev</span></code>.</p></li>
+<li><p>Update the dependency version bounds in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and the pinned versions in
+<code class="docutils literal notranslate"><span class="pre">environment-ros3.yml</span></code> to the latest as needed.</p></li>
+<li><p>Check legal information and copyright dates in <code class="docutils literal notranslate"><span class="pre">Legal.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">license.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">README.rst</span></code>,
+<code class="docutils literal notranslate"><span class="pre">docs/source/conf.py</span></code>.</p></li>
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and <code class="docutils literal notranslate"><span class="pre">README.rst</span></code> as needed.</p></li>
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">src/pynwb/nwb-schema</span></code> submodule as needed. Check the version number manually to make sure
+we are using the latest release.</p></li>
+<li><p>Update documentation to reflect new features and changes in PyNWB functionality.</p></li>
+<li><p>Run tests locally, inspect all warnings and outputs, and try to remove all warnings.</p></li>
+<li><p>Test documentation builds locally and on the <a class="reference external" href="https://app.readthedocs.org/projects/pynwb/builds/">ReadTheDocs project</a> on the “dev” build.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="publish-release-on-pypi-step-by-step">
+<h2>Publish release on PyPI: Step-by-step<a class="headerlink" href="#publish-release-on-pypi-step-by-step" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Make sure that all CI tests are passing on <a class="extlink-pynwb reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/actions">GitHub Actions</a>.</p></li>
+<li><p>List all tags sorted by version.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git tag -l | sort -V
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p>Choose the next release version number and store it in a variable.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ release=X.Y.Z
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>To ensure the packages are uploaded on PyPI, tags must match this regular
+expression: <code class="docutils literal notranslate"><span class="pre">^[0-9]+.[0-9]+.[0-9]+$</span></code>.</p>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p>Download the latest sources.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /tmp &amp;&amp; git clone --recurse-submodules git@github.com:NeurodataWithoutBorders/pynwb &amp;&amp; cd pynwb
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="5">
+<li><p>Tag the release.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git tag --sign -m &quot;pynwb ${release}&quot; ${release} origin/dev
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This step requires a <a class="reference external" href="https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key">GPG signing key</a>.</p>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="6">
+<li><p>Publish the release tag.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git push origin ${release}
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>This will trigger the “Deploy release” GitHub Actions workflow, which uploads the wheel and
+source distribution to the <a class="reference external" href="https://pypi.org/project/pynwb">PyNWB PyPI project page</a> via PyPI trusted publishing and creates
+a new <a class="extlink-pynwb reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/releases">GitHub release</a> as the github-actions bot.</p>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="7">
+<li><p>Check the status of the builds on <a class="extlink-pynwb reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/actions">GitHub Actions</a>.</p></li>
+<li><p>Once the builds are completed, check that the distributions are available on <a class="reference external" href="https://pypi.org/project/pynwb">PyNWB PyPI project page</a> and that
+a new <a class="extlink-pynwb reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/releases">GitHub release</a> was created. The workflow fills the release notes from this version’s
+section of <code class="docutils literal notranslate"><span class="pre">CHANGELOG.md</span></code>, so check that they match. If the section was empty or its heading did not match the
+tag, the workflow falls back to auto-generated notes, which should be replaced by hand.</p></li>
+<li><p>Create a clean testing environment to test the installation.</p></li>
+</ol>
+<blockquote>
+<div><p>On bash/zsh:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python -m venv pynwb-${release}-install-test &amp;&amp; \
+  source pynwb-${release}-install-test/bin/activate
+</pre></div>
+</div>
+<p>On other shells, see the <a class="reference external" href="https://docs.python.org/3/library/venv.html#creating-virtual-environments">Python instructions for creating a virtual environment</a>.</p>
+</div></blockquote>
+<ol class="arabic simple" start="10">
+<li><p>Test the installation:</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install pynwb &amp;&amp; \
+  python -c &quot;import pynwb; print(pynwb.__version__)&quot;
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="11">
+<li><p>Cleanup</p></li>
+</ol>
+<blockquote>
+<div><p>On bash/zsh:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ deactivate &amp;&amp; \
+  rm -rf dist/* &amp;&amp; \
+  rm -rf pynwb-${release}-install-test
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="publish-release-on-conda-forge-step-by-step">
+<h2>Publish release on conda-forge: Step-by-step<a class="headerlink" href="#publish-release-on-conda-forge-step-by-step" title="Link to this heading"></a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Publishing on conda requires you to have the corresponding package version uploaded on
+<a class="reference external" href="https://pypi.org/project/pynwb">PyPI</a>. So you have to do the PyPI and Github release before you do the conda release.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Conda-forge maintains a bot called “regro-cf-autotick-bot” that regularly monitors PyPI for new releases of
+packages that are also on conda-forge. When a new release is detected, usually within 24 hours of publishing
+on PyPI, the bot will create a Pull Request with the correct modifications to the version and sha256 values
+in <code class="docutils literal notranslate"><span class="pre">meta.yaml</span></code>. If the requirements in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> have been changed, then you need to modify the
+requirements/run section in <code class="docutils literal notranslate"><span class="pre">meta.yaml</span></code> manually to reflect these changes. Once tests pass, merge the PR,
+and a new release will be published on Anaconda cloud. This is the easiest way to update the package version
+on conda-forge.</p>
+</div>
+<p>In order to release a new version on conda-forge manually, follow the steps below:</p>
+<ol class="arabic simple">
+<li><p>Store the release version string (this should match the PyPI version that you already published).</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ release=X.Y.Z
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>Fork the <a class="reference external" href="https://github.com/conda-forge/pynwb-feedstock">pynwb-feedstock</a> repository to your GitHub user account.</p></li>
+<li><p>Clone the forked feedstock to your local filesystem.</p>
+<p>Fill the YOURGITHUBUSER part.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /tmp &amp;&amp; git clone https://github.com/YOURGITHUBUSER/pynwb-feedstock.git
+</pre></div>
+</div>
+</li>
+<li><p>Download the corresponding source for the release version.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /tmp &amp;&amp; \
+  wget https://github.com/NeurodataWithoutBorders/pynwb/releases/download/$release/pynwb-$release.tar.gz
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic" start="5">
+<li><p>Create a new branch.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd pynwb-feedstock &amp;&amp; \
+  git checkout -b $release
+</pre></div>
+</div>
+</li>
+<li><p>Modify <code class="docutils literal notranslate"><span class="pre">meta.yaml</span></code>.</p>
+<p>Update the <a class="reference external" href="https://github.com/conda-forge/pynwb-feedstock/blob/main/recipe/meta.yaml">version string (line 2)</a> and
+<a class="reference external" href="https://github.com/conda-forge/pynwb-feedstock/blob/main/recipe/meta.yaml">sha256 (line 3)</a>.</p>
+<p>We have to modify the sha and the version string in the <code class="docutils literal notranslate"><span class="pre">meta.yaml</span></code> file.</p>
+<p>For linux flavors:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sed -i &quot;2s/.*/{% set version = \&quot;$release\&quot; %}/&quot; recipe/meta.yaml
+$ sha=$(openssl sha256 /tmp/pynwb-$release.tar.gz | awk &#39;{print $2}&#39;)
+$ sed -i &quot;3s/.*/{$ set sha256 = \&quot;$sha\&quot; %}/&quot; recipe/meta.yaml
+</pre></div>
+</div>
+<p>For macOS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sed -i -- &quot;2s/.*/{% set version = \&quot;$release\&quot; %}/&quot; recipe/meta.yaml
+$ sha=$(openssl sha256 /tmp/pynwb-$release.tar.gz | awk &#39;{print $2}&#39;)
+$ sed -i -- &quot;3s/.*/{$ set sha256 = \&quot;$sha\&quot; %}/&quot; recipe/meta.yaml
+</pre></div>
+</div>
+</li>
+</ol>
+<blockquote>
+<div><p>If the requirements in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> have been changed, then modify the requirements/run list in
+the <code class="docutils literal notranslate"><span class="pre">meta.yaml</span></code> file to reflect these changes.</p>
+</div></blockquote>
+<ol class="arabic" start="7">
+<li><p>Push the changes to your fork.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git push origin $release
+</pre></div>
+</div>
+</li>
+<li><p>Create a Pull Request.</p>
+<p>Create a pull request against the <a class="reference external" href="https://github.com/conda-forge/pynwb-feedstock/pulls">main feedstock repository</a>.
+After the tests pass, merge the PR, and a new release will be published on Anaconda cloud.</p>
+</li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="software_process.html" class="btn btn-neutral float-left" title="Software Process" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="testing/index.html" class="btn btn-neutral float-right" title="Testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

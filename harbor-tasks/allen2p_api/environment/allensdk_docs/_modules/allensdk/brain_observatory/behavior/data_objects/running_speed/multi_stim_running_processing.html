@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.running_speed.multi_stim_running_processing &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.running_speed.multi_stim_running_processing</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+    <span class="n">MappingStimulusFile</span><span class="p">,</span>
+    <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+    <span class="n">_StimulusFile</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.sync_stim_aligner</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_stim_timestamps_from_stimulus_blocks</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.</span>\
+    <span class="n">running_speed</span><span class="o">.</span><span class="n">running_processing</span> <span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+        <span class="n">get_running_df</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_dx_info</span><span class="p">(</span>
+        <span class="n">frame_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">_StimulusFile</span><span class="p">,</span>
+        <span class="n">zscore_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+        <span class="n">use_lowpass_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Extract all of the running speed data</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    frame_times: numpy.ndarray</span>
+<span class="sd">        list of the vsync times corresponding to this</span>
+<span class="sd">        stimulus block</span>
+<span class="sd">    stimulus_file: _StimulusFile</span>
+<span class="sd">        _StimulusFile object from which to get running data</span>
+<span class="sd">    zscore_threshold: float</span>
+<span class="sd">        The threshold to use for removing outlier</span>
+<span class="sd">        running speeds which might be noise and not true signal</span>
+<span class="sd">    use_lowpass_filter: bool</span>
+<span class="sd">        whther or not to apply a low pass filter to the</span>
+<span class="sd">        running speed results</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    velocities: pd.DataFrame</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    see allensdk.brain_observatory.behavior.data_objects.\</span>
+<span class="sd">        running_speed.running_processing.get_running_df</span>
+
+<span class="sd">    for detailed contents of output dataframe</span>
+<span class="sd">    """</span>
+
+    <span class="n">stim_file</span> <span class="o">=</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">velocities</span> <span class="o">=</span> <span class="n">get_running_df</span><span class="p">(</span>
+                    <span class="n">stim_file</span><span class="p">,</span>
+                    <span class="n">frame_times</span><span class="p">,</span>
+                    <span class="n">use_lowpass_filter</span><span class="p">,</span>
+                    <span class="n">zscore_threshold</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">velocities</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_merge_dx_data</span><span class="p">(</span>
+    <span class="n">mapping_velocities</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">behavior_velocities</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">replay_velocities</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">frame_times</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">behavior_start_frame</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Concatenate all of the running speed data</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mapping_velocities: pandas.core.frame.DataFrame</span>
+<span class="sd">        Velocity data from mapping stimulus</span>
+<span class="sd">    behavior_velocities: pandas.core.frame.DataFrame</span>
+<span class="sd">       Velocity data from behavior stimulus</span>
+<span class="sd">    replay_velocities: pandas.core.frame.DataFrame</span>
+<span class="sd">        Velocity data from replay stimulus</span>
+<span class="sd">    frame_times: numpy.ndarray</span>
+<span class="sd">        list of the vsync times for all three stimulus blocks</span>
+<span class="sd">        together</span>
+<span class="sd">    behavior_start_frame: int</span>
+<span class="sd">        frame on which behavior data starts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[pd.DataFrame, pd.DataFrame]</span>
+<span class="sd">        concatenated velocity data, raw data</span>
+<span class="sd">    """</span>
+
+    <span class="n">speed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">behavior_velocities</span><span class="p">[</span><span class="s1">'speed'</span><span class="p">],</span>
+            <span class="n">mapping_velocities</span><span class="p">[</span><span class="s1">'speed'</span><span class="p">],</span>
+            <span class="n">replay_velocities</span><span class="p">[</span><span class="s1">'speed'</span><span class="p">]),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">behavior_velocities</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">],</span>
+            <span class="n">mapping_velocities</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">],</span>
+            <span class="n">replay_velocities</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span>
+
+    <span class="n">vsig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">behavior_velocities</span><span class="p">[</span><span class="s1">'v_sig'</span><span class="p">],</span>
+            <span class="n">mapping_velocities</span><span class="p">[</span><span class="s1">'v_sig'</span><span class="p">],</span>
+            <span class="n">replay_velocities</span><span class="p">[</span><span class="s1">'v_sig'</span><span class="p">]),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span>
+
+    <span class="n">vin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">behavior_velocities</span><span class="p">[</span><span class="s1">'v_in'</span><span class="p">],</span>
+            <span class="n">mapping_velocities</span><span class="p">[</span><span class="s1">'v_in'</span><span class="p">],</span>
+            <span class="n">replay_velocities</span><span class="p">[</span><span class="s1">'v_in'</span><span class="p">]),</span>
+        <span class="n">axis</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">)</span>
+
+    <span class="n">frame_indexes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="nb">range</span><span class="p">(</span><span class="n">behavior_start_frame</span><span class="p">,</span>
+              <span class="n">behavior_start_frame</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">frame_times</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="n">velocities</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">"velocity"</span><span class="p">:</span> <span class="n">speed</span><span class="p">,</span>
+            <span class="s2">"net_rotation"</span><span class="p">:</span> <span class="n">dx</span><span class="p">,</span>
+            <span class="s2">"frame_indexes"</span><span class="p">:</span> <span class="n">frame_indexes</span><span class="p">,</span>
+            <span class="s2">"frame_time"</span><span class="p">:</span> <span class="n">frame_times</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Warning - the 'isclose' line below needs to be refactored</span>
+    <span class="c1"># is it exists in multiple places</span>
+
+    <span class="c1"># due to an acquisition bug (the buffer of raw orientations</span>
+    <span class="c1"># may be updated more slowly than it is read, leading to</span>
+    <span class="c1"># a 0 value for the change in orientation over an interval)</span>
+    <span class="c1"># there may be exact zeros in the velocity.</span>
+    <span class="n">velocities</span> <span class="o">=</span> <span class="n">velocities</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">velocities</span><span class="p">[</span><span class="s2">"net_rotation"</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">))]</span>
+
+    <span class="n">raw_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">"vsig"</span><span class="p">:</span> <span class="n">vsig</span><span class="p">,</span> <span class="s2">"vin"</span><span class="p">:</span> <span class="n">vin</span><span class="p">,</span> <span class="s2">"frame_time"</span><span class="p">:</span> <span class="n">frame_times</span><span class="p">,</span> <span class="s2">"dx"</span><span class="p">:</span> <span class="n">dx</span><span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">velocities</span><span class="p">,</span> <span class="n">raw_data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="multi_stim_running_df_from_raw_data">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.running_speed.multi_stim_running_processing.html#allensdk.brain_observatory.behavior.data_objects.running_speed.multi_stim_running_processing.multi_stim_running_df_from_raw_data">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">multi_stim_running_df_from_raw_data</span><span class="p">(</span>
+    <span class="n">sync_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+    <span class="n">mapping_stimulus_file</span><span class="p">:</span> <span class="n">MappingStimulusFile</span><span class="p">,</span>
+    <span class="n">replay_stimulus_file</span><span class="p">:</span> <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+    <span class="n">use_lowpass_filter</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">zscore_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">behavior_start_frame</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Derive running speed data frames from sync file and</span>
+<span class="sd">    pickle files</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sync_path: str</span>
+<span class="sd">        The path to the sync file</span>
+<span class="sd">    behavior_stimulus_file: BehaviorStimulusFile</span>
+<span class="sd">        stimulus file for the behavior stimulus block</span>
+<span class="sd">    mapping_stimulus_file: MappingStimulusFile</span>
+<span class="sd">        stimulus file for the mapping stimulus block</span>
+<span class="sd">    replay_stimulus_file: ReplayStimulusFile</span>
+<span class="sd">        stimulus file for the replay stimulus block</span>
+<span class="sd">    use_lowpass_filter: bool</span>
+<span class="sd">        whther or not to apply a low pass filter to the</span>
+<span class="sd">        running speed results</span>
+<span class="sd">    zscore_threshold: float</span>
+<span class="sd">        The threshold to use for removing outlier</span>
+<span class="sd">        running speeds which might be noise and not true signal</span>
+<span class="sd">    behavior_start_frame: int</span>
+<span class="sd">        the frame on which behavior data starts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Tuple[pd.DataFrame, pd.DataFrame]</span>
+<span class="sd">        concatenated velocity data, raw data</span>
+
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    velocities pd.DataFrame:</span>
+<span class="sd">        columns:</span>
+<span class="sd">            "velocity": computed running speed</span>
+<span class="sd">            "net_rotation": dx in radians</span>
+<span class="sd">            "frame_indexes": frame indexes into</span>
+<span class="sd">                the full vsync times list</span>
+
+<span class="sd">    raw data pd.DataFrame:</span>
+<span class="sd">        Dataframe with an index of timestamps and the following</span>
+<span class="sd">        columns:</span>
+<span class="sd">            "vsig": voltage signal from the encoder</span>
+<span class="sd">            "vin": the theoretical maximum voltage that the encoder</span>
+<span class="sd">                will reach prior to "wrapping". This should</span>
+<span class="sd">                theoretically be 5V (after crossing</span>
+<span class="sd">                5V goes to 0V, or vice versa). In</span>
+<span class="sd">                practice the encoder does not always</span>
+<span class="sd">                reach this value before wrapping, which can cause</span>
+<span class="sd">                transient spikes in speed at the voltage "wraps".</span>
+<span class="sd">            "frame_time": list of the vsync times</span>
+<span class="sd">            "dx": angular change, computed during data collection</span>
+<span class="sd">        The raw data are provided so that the user may compute</span>
+<span class="sd">        their own speed from source, if desired.</span>
+<span class="sd">    """</span>
+
+    <span class="n">timestamp_results</span> <span class="o">=</span> <span class="n">get_stim_timestamps_from_stimulus_blocks</span><span class="p">(</span>
+                              <span class="n">stimulus_files</span><span class="o">=</span><span class="p">[</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                                              <span class="n">mapping_stimulus_file</span><span class="p">,</span>
+                                              <span class="n">replay_stimulus_file</span><span class="p">],</span>
+                              <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_path</span><span class="p">,</span>
+                              <span class="n">raw_frame_time_lines</span><span class="o">=</span><span class="p">[</span><span class="s1">'frames'</span><span class="p">,</span>
+                                                    <span class="s1">'stim_vsync'</span><span class="p">,</span>
+                                                    <span class="s1">'vsync_stim'</span><span class="p">],</span>
+                              <span class="n">raw_frame_time_direction</span><span class="o">=</span><span class="s1">'rising'</span><span class="p">,</span>
+                              <span class="n">frame_count_tolerance</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">behavior_timestamps</span> <span class="o">=</span> <span class="n">timestamp_results</span><span class="p">[</span><span class="s2">"timestamps"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapping_timestamps</span> <span class="o">=</span> <span class="n">timestamp_results</span><span class="p">[</span><span class="s2">"timestamps"</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">replay_timestamps</span> <span class="o">=</span> <span class="n">timestamp_results</span><span class="p">[</span><span class="s2">"timestamps"</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">start_frame</span> <span class="o">=</span> <span class="n">timestamp_results</span><span class="p">[</span><span class="s2">"start_frames"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">behavior_velocities</span> <span class="o">=</span> <span class="n">_extract_dx_info</span><span class="p">(</span>
+        <span class="n">frame_times</span><span class="o">=</span><span class="n">behavior_timestamps</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+        <span class="n">zscore_threshold</span><span class="o">=</span><span class="n">zscore_threshold</span><span class="p">,</span>
+        <span class="n">use_lowpass_filter</span><span class="o">=</span><span class="n">use_lowpass_filter</span>
+    <span class="p">)</span>
+
+    <span class="n">mapping_velocities</span> <span class="o">=</span> <span class="n">_extract_dx_info</span><span class="p">(</span>
+        <span class="n">frame_times</span><span class="o">=</span><span class="n">mapping_timestamps</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="o">=</span><span class="n">mapping_stimulus_file</span><span class="p">,</span>
+        <span class="n">zscore_threshold</span><span class="o">=</span><span class="n">zscore_threshold</span><span class="p">,</span>
+        <span class="n">use_lowpass_filter</span><span class="o">=</span><span class="n">use_lowpass_filter</span>
+    <span class="p">)</span>
+
+    <span class="n">replay_velocities</span> <span class="o">=</span> <span class="n">_extract_dx_info</span><span class="p">(</span>
+        <span class="n">frame_times</span><span class="o">=</span><span class="n">replay_timestamps</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="o">=</span><span class="n">replay_stimulus_file</span><span class="p">,</span>
+        <span class="n">zscore_threshold</span><span class="o">=</span><span class="n">zscore_threshold</span><span class="p">,</span>
+        <span class="n">use_lowpass_filter</span><span class="o">=</span><span class="n">use_lowpass_filter</span>
+    <span class="p">)</span>
+
+    <span class="n">all_frame_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">behavior_timestamps</span><span class="p">,</span>
+             <span class="n">mapping_timestamps</span><span class="p">,</span>
+             <span class="n">replay_timestamps</span><span class="p">])</span>
+
+    <span class="n">velocities</span><span class="p">,</span> <span class="n">raw_data</span> <span class="o">=</span> <span class="n">_merge_dx_data</span><span class="p">(</span>
+        <span class="n">mapping_velocities</span><span class="o">=</span><span class="n">mapping_velocities</span><span class="p">,</span>
+        <span class="n">behavior_velocities</span><span class="o">=</span><span class="n">behavior_velocities</span><span class="p">,</span>
+        <span class="n">replay_velocities</span><span class="o">=</span><span class="n">replay_velocities</span><span class="p">,</span>
+        <span class="n">frame_times</span><span class="o">=</span><span class="n">all_frame_times</span><span class="p">,</span>
+        <span class="n">behavior_start_frame</span><span class="o">=</span><span class="n">start_frame</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">velocities</span><span class="p">,</span> <span class="n">raw_data</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_multi_stim_running_df</span><span class="p">(</span>
+        <span class="n">sync_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">behavior_stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+        <span class="n">mapping_stimulus_file</span><span class="p">:</span> <span class="n">MappingStimulusFile</span><span class="p">,</span>
+        <span class="n">replay_stimulus_file</span><span class="p">:</span> <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+        <span class="n">use_lowpass_filter</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">zscore_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sync_path: str</span>
+<span class="sd">        The path to the sync file</span>
+
+<span class="sd">    behavior_stimulus_file: BehaviorStimulusFile</span>
+
+<span class="sd">    mapping_stimulus_file: MappingStimulusFile</span>
+
+<span class="sd">    replay_stimulus_file: ReplayStimulusFile</span>
+
+<span class="sd">    use_lowpass_filter: bool</span>
+<span class="sd">        whther or not to apply a low pass filter to the</span>
+<span class="sd">        running speed results</span>
+
+<span class="sd">    zscore_threshold: float</span>
+<span class="sd">        The threshold to use for removing outlier</span>
+<span class="sd">        running speeds which might be noise and not true signal</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dict containing two data frames.</span>
+<span class="sd">        'running_speed': A dataframe with mapping time to speed</span>
+<span class="sd">        'running_acquisition': A dataframe mapping time to raw data</span>
+<span class="sd">                               coming off the running wheel</span>
+<span class="sd">    """</span>
+    <span class="p">(</span><span class="n">velocity_data</span><span class="p">,</span>
+     <span class="n">acq_data</span><span class="p">)</span> <span class="o">=</span> <span class="n">multi_stim_running_df_from_raw_data</span><span class="p">(</span>
+                    <span class="n">sync_path</span><span class="o">=</span><span class="n">sync_path</span><span class="p">,</span>
+                    <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                    <span class="n">mapping_stimulus_file</span><span class="o">=</span><span class="n">mapping_stimulus_file</span><span class="p">,</span>
+                    <span class="n">replay_stimulus_file</span><span class="o">=</span><span class="n">replay_stimulus_file</span><span class="p">,</span>
+                    <span class="n">use_lowpass_filter</span><span class="o">=</span><span class="n">use_lowpass_filter</span><span class="p">,</span>
+                    <span class="n">zscore_threshold</span><span class="o">=</span><span class="n">zscore_threshold</span><span class="p">,</span>
+                    <span class="n">behavior_start_frame</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">running_speed</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                      <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s1">'timestamps'</span><span class="p">:</span> <span class="n">velocity_data</span><span class="o">.</span><span class="n">frame_time</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                            <span class="s1">'speed'</span><span class="p">:</span> <span class="n">velocity_data</span><span class="o">.</span><span class="n">velocity</span><span class="o">.</span><span class="n">values</span>
+                      <span class="p">})</span>
+
+    <span class="n">running_acq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                     <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+                         <span class="s1">'dx'</span><span class="p">:</span> <span class="n">acq_data</span><span class="o">.</span><span class="n">dx</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                         <span class="s1">'timestamps'</span><span class="p">:</span> <span class="n">acq_data</span><span class="o">.</span><span class="n">frame_time</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                         <span class="s1">'v_in'</span><span class="p">:</span> <span class="n">acq_data</span><span class="o">.</span><span class="n">vin</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                         <span class="s1">'v_sig'</span><span class="p">:</span> <span class="n">acq_data</span><span class="o">.</span><span class="n">vsig</span><span class="o">.</span><span class="n">values</span>
+                     <span class="p">})</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'timestamps'</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s1">'running_speed'</span><span class="p">:</span> <span class="n">running_speed</span><span class="p">,</span>
+            <span class="s1">'running_acquisition'</span><span class="p">:</span> <span class="n">running_acq</span><span class="p">}</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

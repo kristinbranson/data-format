@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.stimuli.templates &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.stimuli.templates</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">imageio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">IndexSeries</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">BehaviorStimulusFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">NwbReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">StimulusFileReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">NwbWritableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.presentations</span> \
+    <span class="kn">import</span><span class="w"> \</span>
+<span class="w">    </span><span class="nn">Presentations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.stimulus_processing</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">get_stimulus_templates</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli</span> \
+    <span class="o">.</span><span class="n">stimulus_templates</span> <span class="kn">import</span><span class="w"> \</span>
+<span class="w">    </span><span class="nn">StimulusTemplate</span><span class="o">,</span><span class="w"> </span><span class="nn">StimulusTemplateFactory</span><span class="o">,</span><span class="w"> </span><span class="nn">StimulusMovieTemplateFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.write_nwb.extensions</span>\
+    <span class="o">.</span><span class="n">stimulus_template</span><span class="o">.</span><span class="n">ndx_stimulus_template</span> <span class="kn">import</span><span class="w"> \</span>
+<span class="w">    </span><span class="nn">StimulusTemplateExtension</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_system_path</span>
+
+
+<div class="viewcode-block" id="Templates">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.templates.html#allensdk.brain_observatory.behavior.data_objects.stimuli.templates.Templates">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Templates</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">StimulusFileReadableInterface</span><span class="p">,</span>
+                <span class="n">NwbReadableInterface</span><span class="p">,</span> <span class="n">NwbWritableInterface</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">templates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StimulusTemplate</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'stimulus_templates'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">templates</span><span class="p">)</span>
+        <span class="c1"># Grab the keys from the input dictionary. The "images" key is assumed</span>
+        <span class="c1"># to be the key in the dictionary that does not have "movie" in its key</span>
+        <span class="c1"># name. For VBO and VBN releases, there should only be at most 2</span>
+        <span class="c1"># keys in the dictionary.</span>
+        <span class="n">image_template_keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">templates</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s1">'movie'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_image_template_key</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">error_message</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_template_keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_image_template_key</span> <span class="o">=</span> <span class="n">image_template_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_template_keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">"Found multiple image StimulusTemplates "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">image_template_keys</span><span class="si">}</span><span class="s2">. "</span><span class="p">)</span>
+
+        <span class="n">movie_template_keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">templates</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s1">'movie'</span> <span class="ow">in</span> <span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fingerprint_movie_template_key</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie_template_keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fingerprint_movie_template_key</span> <span class="o">=</span> <span class="n">movie_template_keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">movie_template_keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">"Found multiple fingerprint movie StimulusTemplates "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">movie_template_keys</span><span class="si">}</span><span class="s2">. "</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">"This is not currently supported. "</span>
+                <span class="s2">"Please limit input to one image template and/or one "</span>
+                <span class="s2">"fingerprint movie template."</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Templates.from_stimulus_file">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.templates.html#allensdk.brain_observatory.behavior.data_objects.stimuli.templates.Templates.from_stimulus_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stimulus_file</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+            <span class="n">limit_to_images</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">load_stimulus_movie</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Templates"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get stimulus templates (movies, scenes) for behavior session."""</span>
+
+        <span class="c1"># TODO: Eventually the `grating_images_dict` should be provided by the</span>
+        <span class="c1">#       BehaviorLimsExtractor/BehaviorJsonExtractor classes.</span>
+        <span class="c1">#       - NJM 2021/2/23</span>
+
+        <span class="n">gratings_dir</span> <span class="o">=</span> <span class="s2">"/allen/programs/braintv/production/visualbehavior"</span>
+        <span class="n">gratings_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gratings_dir</span><span class="p">,</span>
+                                    <span class="s2">"prod5/project_VisualBehavior"</span><span class="p">)</span>
+        <span class="n">grating_images_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"gratings_0.0"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"warped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gratings_dir</span><span class="p">,</span>
+                                                  <span class="s2">"warped_grating_0.png"</span><span class="p">)))),</span>
+                <span class="s2">"unwarped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="n">gratings_dir</span><span class="p">,</span> <span class="s2">"masked_unwarped_grating_0.png"</span><span class="p">))))</span>
+            <span class="p">},</span>
+            <span class="s2">"gratings_90.0"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"warped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gratings_dir</span><span class="p">,</span>
+                                                  <span class="s2">"warped_grating_90.png"</span><span class="p">)))),</span>
+                <span class="s2">"unwarped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="n">gratings_dir</span><span class="p">,</span> <span class="s2">"masked_unwarped_grating_90.png"</span><span class="p">))))</span>
+            <span class="p">},</span>
+            <span class="s2">"gratings_180.0"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"warped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gratings_dir</span><span class="p">,</span>
+                                                  <span class="s2">"warped_grating_180.png"</span><span class="p">)))),</span>
+                <span class="s2">"unwarped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="n">gratings_dir</span><span class="p">,</span> <span class="s2">"masked_unwarped_grating_180.png"</span><span class="p">))))</span>
+            <span class="p">},</span>
+            <span class="s2">"gratings_270.0"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"warped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">gratings_dir</span><span class="p">,</span>
+                                                  <span class="s2">"warped_grating_270.png"</span><span class="p">)))),</span>
+                <span class="s2">"unwarped"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">imageio</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span>
+                    <span class="n">safe_system_path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                        <span class="n">gratings_dir</span><span class="p">,</span> <span class="s2">"masked_unwarped_grating_270.png"</span><span class="p">))))</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="n">pkl</span> <span class="o">=</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">stim_template</span> <span class="o">=</span> <span class="n">get_stimulus_templates</span><span class="p">(</span>
+            <span class="n">pkl</span><span class="o">=</span><span class="n">pkl</span><span class="p">,</span>
+            <span class="n">grating_images_dict</span><span class="o">=</span><span class="n">grating_images_dict</span><span class="p">,</span>
+            <span class="n">limit_to_images</span><span class="o">=</span><span class="n">limit_to_images</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="p">{</span><span class="n">stim_template</span><span class="o">.</span><span class="n">image_set_name</span><span class="p">:</span> <span class="n">stim_template</span><span class="p">}</span>
+
+        <span class="n">has_fingerprint_stimulus</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">"fingerprint"</span> <span class="ow">in</span> <span class="n">pkl</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"items"</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">has_fingerprint_stimulus</span> <span class="ow">and</span> <span class="n">load_stimulus_movie</span><span class="p">:</span>
+            <span class="n">movie_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="n">pkl</span><span class="p">[</span><span class="s1">'items'</span><span class="p">][</span><span class="s1">'behavior'</span><span class="p">][</span><span class="s1">'items'</span><span class="p">][</span>
+                    <span class="s1">'fingerprint'</span><span class="p">][</span><span class="s1">'static_stimulus'</span><span class="p">][</span><span class="s1">'movie_path'</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="n">movie_template</span> <span class="o">=</span> <span class="n">StimulusMovieTemplateFactory</span><span class="o">.</span><span class="n">from_unprocessed</span><span class="p">(</span>
+                <span class="n">movie_name</span><span class="o">=</span><span class="s2">"natural_movie_one"</span><span class="p">,</span>
+                <span class="n">movie_frames</span><span class="o">=</span><span class="n">movie_data</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">t</span><span class="p">[</span><span class="n">movie_template</span><span class="o">.</span><span class="n">image_set_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">movie_template</span>
+
+        <span class="k">return</span> <span class="n">Templates</span><span class="p">(</span><span class="n">templates</span><span class="o">=</span><span class="n">t</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Templates.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.templates.html#allensdk.brain_observatory.behavior.data_objects.stimuli.templates.Templates.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Templates"</span><span class="p">:</span>
+        <span class="n">templates</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">image_set_name</span><span class="p">,</span> <span class="n">image_data</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">stimulus_template</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+            <span class="n">image_attributes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s1">'image_name'</span><span class="p">:</span> <span class="n">image_name</span><span class="p">}</span>
+                <span class="k">for</span> <span class="n">image_name</span> <span class="ow">in</span> <span class="n">image_data</span><span class="o">.</span><span class="n">control_description</span>
+            <span class="p">]</span>
+            <span class="n">templates</span><span class="p">[</span><span class="n">image_set_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">StimulusTemplateFactory</span><span class="o">.</span><span class="n">from_processed</span><span class="p">(</span>
+                <span class="n">image_set_name</span><span class="o">=</span><span class="n">image_set_name</span><span class="p">,</span>
+                <span class="n">image_attributes</span><span class="o">=</span><span class="n">image_attributes</span><span class="p">,</span>
+                <span class="n">warped</span><span class="o">=</span><span class="n">image_data</span><span class="o">.</span><span class="n">data</span><span class="p">[:],</span>
+                <span class="n">unwarped</span><span class="o">=</span><span class="n">image_data</span><span class="o">.</span><span class="n">unwarped</span><span class="p">[:]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Templates</span><span class="p">(</span><span class="n">templates</span><span class="o">=</span><span class="n">templates</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Templates.to_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.templates.html#allensdk.brain_observatory.behavior.data_objects.stimuli.templates.Templates.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span>
+               <span class="n">stimulus_presentations</span><span class="p">:</span> <span class="n">Presentations</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">stimulus_templates</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+            <span class="n">unwarped_images</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">warped_images</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">image_names</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">image_name</span><span class="p">,</span> <span class="n">image_data</span> <span class="ow">in</span> <span class="n">stimulus_templates</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">image_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image_name</span><span class="p">)</span>
+                <span class="n">unwarped_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image_data</span><span class="o">.</span><span class="n">unwarped</span><span class="p">)</span>
+                <span class="n">warped_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">image_data</span><span class="o">.</span><span class="n">warped</span><span class="p">)</span>
+
+            <span class="n">image_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image_names</span><span class="p">))</span>
+            <span class="n">image_index</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="n">visual_stimulus_image_series</span> <span class="o">=</span> \
+                <span class="n">StimulusTemplateExtension</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">stimulus_templates</span><span class="o">.</span><span class="n">image_set_name</span><span class="p">,</span>
+                    <span class="n">data</span><span class="o">=</span><span class="n">warped_images</span><span class="p">,</span>
+                    <span class="n">unwarped</span><span class="o">=</span><span class="n">unwarped_images</span><span class="p">,</span>
+                    <span class="n">control</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">image_names</span><span class="p">))),</span>
+                    <span class="n">control_description</span><span class="o">=</span><span class="n">image_names</span><span class="p">,</span>
+                    <span class="n">unit</span><span class="o">=</span><span class="s1">'NA'</span><span class="p">,</span>
+                    <span class="nb">format</span><span class="o">=</span><span class="s1">'raw'</span><span class="p">,</span>
+                    <span class="n">timestamps</span><span class="o">=</span><span class="n">image_index</span><span class="p">)</span>
+
+            <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_stimulus_template</span><span class="p">(</span><span class="n">visual_stimulus_image_series</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">'image_index'</span> <span class="ow">in</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">value</span> \
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_template_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nwbfile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_image_index_to_nwb</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">presentations</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_image_index_to_nwb</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">presentations</span><span class="p">:</span> <span class="n">Presentations</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Adds the image index and start_time for all stimulus templates</span>
+<span class="sd">        to NWB"""</span>
+        <span class="n">stimulus_templates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_image_template_key</span><span class="p">]</span>
+        <span class="n">presentations</span> <span class="o">=</span> <span class="n">presentations</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">nwb_template</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">stimulus_template</span><span class="p">[</span>
+            <span class="n">stimulus_templates</span><span class="o">.</span><span class="n">image_set_name</span><span class="p">]</span>
+        <span class="n">stimulus_name</span> <span class="o">=</span> <span class="s1">'image_set'</span> \
+            <span class="k">if</span> <span class="s1">'image_set'</span> <span class="ow">in</span> <span class="n">presentations</span> <span class="k">else</span> <span class="s1">'stimulus_name'</span>
+        <span class="n">stimulus_index</span> <span class="o">=</span> <span class="n">presentations</span><span class="p">[</span>
+            <span class="n">presentations</span><span class="p">[</span><span class="n">stimulus_name</span><span class="p">]</span> <span class="o">==</span> <span class="n">nwb_template</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="n">image_index</span> <span class="o">=</span> <span class="n">IndexSeries</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">nwb_template</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">stimulus_index</span><span class="p">[</span><span class="s1">'image_index'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="s1">'N/A'</span><span class="p">,</span>
+            <span class="n">indexed_timeseries</span><span class="o">=</span><span class="n">nwb_template</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">stimulus_index</span><span class="p">[</span><span class="s1">'start_time'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_stimulus</span><span class="p">(</span><span class="n">image_index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nwbfile</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">image_template_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Name of the image template in template dictionary.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_template_key</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fingerprint_movie_template_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Name of the fingerprint movie template in template dictionary.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fingerprint_movie_template_key</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

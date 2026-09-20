@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.biophysical.make_deap_fit_json &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.biophysical.make_deap_fit_json</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.nwb_data_set</span><span class="w"> </span><span class="kn">import</span> <span class="n">NwbDataSet</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ju</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.biophys_sim.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.biophysical</span><span class="w"> </span><span class="kn">import</span> <span class="n">ephys_utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.biophysical.deap_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Utils</span>
+
+<div class="viewcode-block" id="Report">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">:</span>
+    <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">'allensdk.model.biophysical.make_deap_fit_json'</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">top_level_description</span><span class="p">,</span>
+                 <span class="n">fit_type</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span> <span class="o">=</span> <span class="n">top_level_description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">manifest</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">specimen_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'runs'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">'specimen_id'</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">=</span> <span class="n">fit_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'target_path'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_path</span><span class="p">)</span>
+    
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1234</span><span class="p">,</span> <span class="mi">1001</span><span class="p">,</span> <span class="mi">4321</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">2048</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">org_selections</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span> <span class="c1"># Picks thek best, 100th best, etc. organisms as examples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_colors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"#1b9e77"</span><span class="p">,</span> <span class="s2">"#d95f02"</span><span class="p">,</span> <span class="s2">"#7570b3"</span><span class="p">,</span> <span class="s2">"#e7298a"</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'fit_config_json'</span><span class="p">,</span>
+                                                                        <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">)</span>
+        
+        <span class="n">fit_style_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_config</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"biophys"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"model_file"</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_style_info</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fit_style_path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_style_info</span><span class="p">[</span><span class="s2">"features"</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_style_info</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_style_info</span><span class="p">[</span><span class="s2">"addl_params"</span><span class="p">]</span>
+        
+        <span class="n">nwb_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'stimulus_path'</span><span class="p">)</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_set</span> <span class="o">=</span> <span class="n">NwbDataSet</span><span class="p">(</span><span class="n">nwb_path</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">neuronal_model_data</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'neuronal_model_data'</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">specimen_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">neuronal_model_data</span><span class="p">[</span><span class="s1">'specimen'</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_sweeps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">specimen_data</span><span class="p">[</span><span class="s1">'ephys_sweeps'</span><span class="p">]</span>
+        
+    
+    
+<div class="viewcode-block" id="Report.best_fit_value">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.best_fit_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">best_fit_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fit_errors</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sorted_indexes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">org_selections</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span></div>
+
+    
+    
+<div class="viewcode-block" id="Report.generate_fit_file">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.generate_fit_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_fit_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gather_from_seeds</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup_model</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_org_selections_for_noise_block</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">make_fit_json_file</span><span class="p">()</span></div>
+
+    
+    
+<div class="viewcode-block" id="Report.make_fit_json_file">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.make_fit_json_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_fit_json_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">json_data</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c1"># passive</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{}]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"ra"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"ra"</span><span class="p">]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"e_pas"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"e_pas"</span><span class="p">]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"cm"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"cm"</span><span class="p">]:</span>
+            <span class="n">json_data</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"cm"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"section"</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="s2">"cm"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"cm"</span><span class="p">][</span><span class="n">k</span><span class="p">]})</span>
+        
+        <span class="c1"># fitting</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{}]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"sweeps"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"sweeps"</span><span class="p">]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"junction_potential"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"fitting"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"junction_potential"</span><span class="p">]</span>
+        
+        <span class="c1"># conditions</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"conditions"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_style_info</span><span class="p">[</span><span class="s2">"conditions"</span><span class="p">]</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"conditions"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"v_init"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">[</span><span class="s2">"passive"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"e_pas"</span><span class="p">]</span>
+        
+        <span class="c1"># genome</span>
+        <span class="n">json_data</span><span class="p">[</span><span class="s2">"genome"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">genome_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fits</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sorted_indexes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">org_selections</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">:]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_params</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">param_name</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">"parameter"</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"_"</span> <span class="o">+</span> <span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">param_name</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">"parameter"</span><span class="p">]</span>
+            <span class="n">json_data</span><span class="p">[</span><span class="s2">"genome"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"value"</span><span class="p">:</span> <span class="n">genome_vals</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                        <span class="s2">"section"</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s2">"section"</span><span class="p">],</span>
+                                        <span class="s2">"name"</span><span class="p">:</span> <span class="n">param_name</span><span class="p">,</span>
+                                        <span class="s2">"mechanism"</span><span class="p">:</span> <span class="n">p</span><span class="p">[</span><span class="s2">"mechanism"</span><span class="p">]</span>
+                                        <span class="p">})</span>
+        
+        <span class="c1"># write out file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'output_fit_file'</span><span class="p">,</span>
+                                                               <span class="bp">self</span><span class="o">.</span><span class="n">specimen_id</span><span class="p">,</span>
+                                                               <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">),</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+    
+            
+<div class="viewcode-block" id="Report.setup_model">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.setup_model">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">morphology_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'MORPHOLOGY'</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span> <span class="o">=</span> <span class="n">Utils</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_config</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">h</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">generate_morphology</span><span class="p">(</span><span class="n">morphology_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">load_cell_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">insert_iclamp</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_config</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"stimulus"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_iclamp_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"amplitude"</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"delay"</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">])</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">tstop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"delay"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">cvode_active</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">cvode</span><span class="o">.</span><span class="n">atolscale</span><span class="p">(</span><span class="s2">"cai"</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">)</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">cvode</span><span class="o">.</span><span class="n">maxstep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span></div>
+
+    
+    
+<div class="viewcode-block" id="Report.gather_from_seeds">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.gather_from_seeds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gather_from_seeds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">first_created</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">:</span>
+            <span class="n">final_hof_fit_path</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'final_hof_fit'</span><span class="p">,</span>
+                                                             <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">,</span>
+                                                             <span class="n">s</span><span class="p">)</span>
+            <span class="n">final_hof_path</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">top_level_description</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s1">'final_hof'</span><span class="p">,</span>
+                                                             <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span><span class="p">,</span>
+                                                             <span class="n">s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">final_hof_fit_path</span><span class="p">):</span>
+                <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"Could not find output file </span><span class="si">%s</span><span class="s2"> for seed </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">final_hof_fit_path</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+                <span class="k">continue</span>
+            
+            <span class="n">hof_fit_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">final_hof_fit_path</span><span class="p">)</span>
+            <span class="n">hof_fits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">final_hof_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">first_created</span><span class="p">:</span>
+                <span class="n">all_hof_fit_errors</span> <span class="o">=</span> <span class="n">hof_fit_errors</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">all_hof_fits</span> <span class="o">=</span> <span class="n">hof_fits</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">first_created</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">all_hof_fit_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">all_hof_fit_errors</span><span class="p">,</span> <span class="n">hof_fit_errors</span><span class="p">])</span>
+                <span class="n">all_hof_fits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">all_hof_fits</span><span class="p">,</span> <span class="n">hof_fits</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fits</span> <span class="o">=</span> <span class="n">all_hof_fits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fit_errors</span> <span class="o">=</span> <span class="n">all_hof_fit_errors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sorted_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fit_errors</span><span class="p">)</span></div>
+
+
+    
+<div class="viewcode-block" id="Report.check_org_selections_for_noise_block">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.biophysical.make_deap_fit_json.html#allensdk.internal.model.biophysical.make_deap_fit_json.Report.check_org_selections_for_noise_block">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_org_selections_for_noise_block</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">h</span>
+        <span class="n">v_vec</span><span class="p">,</span> <span class="n">i_vec</span><span class="p">,</span> <span class="n">t_vec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">record_values</span><span class="p">()</span>
+
+        <span class="n">depol_block_threshold</span> <span class="o">=</span> <span class="o">-</span><span class="mf">50.0</span> <span class="c1"># mV</span>
+        <span class="n">block_min_duration</span> <span class="o">=</span> <span class="mf">50.0</span> <span class="c1"># ms</span>
+
+        <span class="n">h</span><span class="o">.</span><span class="n">cvode_active</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">noise_i_stim</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sweep_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"C1NSSEED_1"</span><span class="p">,</span> <span class="s2">"C1NSSEED_2"</span><span class="p">]:</span>
+            <span class="n">sweeps</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">,</span> <span class="n">statuses</span> <span class="o">=</span> <span class="n">ephys_utils</span><span class="o">.</span><span class="n">get_sweeps_of_type</span><span class="p">(</span><span class="n">sweep_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_sweeps</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">expt_i</span><span class="p">,</span> <span class="n">expt_t</span> <span class="o">=</span> <span class="n">ephys_utils</span><span class="o">.</span><span class="n">get_sweep_v_i_t_from_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_set</span><span class="p">,</span> <span class="n">sweep_numbers</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">noise_i_stim</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">expt_i</span><span class="p">)</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="p">(</span><span class="n">expt_t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">expt_t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mf">1e3</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">tstop</span> <span class="o">=</span> <span class="n">expt_t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">dur</span> <span class="o">=</span> <span class="mf">1e12</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">org_ind</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sorted_indexes</span><span class="p">):</span>
+            <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Testing org </span><span class="si">%s%s</span><span class="s2">"</span> <span class="o">%</span> <span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">org_ind</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_actual_parameters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_hof_fits</span><span class="p">[</span><span class="n">org_ind</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">depol_okay</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">use_ii</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">for</span> <span class="n">expt_i</span> <span class="ow">in</span> <span class="n">noise_i_stim</span><span class="p">:</span>
+                <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Running some noise"</span><span class="p">)</span>
+                <span class="n">i_stim_vec</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="n">Vector</span><span class="p">(</span><span class="n">expt_i</span> <span class="o">*</span> <span class="mf">1e-3</span><span class="p">)</span>
+                <span class="n">i_stim_vec</span><span class="o">.</span><span class="n">play</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">stim</span><span class="o">.</span><span class="n">_ref_amp</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+                <span class="n">h</span><span class="o">.</span><span class="n">finitialize</span><span class="p">()</span>
+                <span class="n">h</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+                <span class="n">i_stim_vec</span><span class="o">.</span><span class="n">play_remove</span><span class="p">()</span>
+
+                <span class="n">v</span> <span class="o">=</span> <span class="n">v_vec</span><span class="o">.</span><span class="n">as_numpy</span><span class="p">()</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">t_vec</span><span class="o">.</span><span class="n">as_numpy</span><span class="p">()</span>
+                <span class="n">i_vec</span><span class="o">.</span><span class="n">as_numpy</span><span class="p">()</span>
+                <span class="n">stim_end_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">bool_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">v</span> <span class="o">&gt;</span> <span class="n">depol_block_threshold</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+                <span class="n">up_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bool_v</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">down_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bool_v</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_indexes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">down_indexes</span><span class="p">):</span>
+                    <span class="n">down_indexes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">down_indexes</span><span class="p">,</span> <span class="p">[</span><span class="n">stim_end_idx</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">up_indexes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">max_depol_duration</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">t</span><span class="p">[</span><span class="n">down_indexes</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">-</span> <span class="n">t</span><span class="p">[</span><span class="n">up_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">up_idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">up_indexes</span><span class="p">)])</span>
+                    <span class="k">if</span> <span class="n">max_depol_duration</span> <span class="o">&gt;</span> <span class="n">block_min_duration</span><span class="p">:</span>
+                        <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Encountered depolarization block"</span><span class="p">)</span>
+                        <span class="n">depol_okay</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">break</span>
+            <span class="k">if</span> <span class="n">depol_okay</span><span class="p">:</span>
+                <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Did not detect depolarization block on noise traces"</span><span class="p">)</span>
+                <span class="n">use_ii</span> <span class="o">=</span> <span class="n">ii</span>
+                <span class="k">break</span>
+        <span class="n">h</span><span class="o">.</span><span class="n">cvode_active</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_iclamp_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"amplitude"</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"delay"</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">tstop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"delay"</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_params</span><span class="p">[</span><span class="s2">"duration"</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">use_ii</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">Report</span><span class="o">.</span><span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Could not find an organism without depolarization block on noise."</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">org_selections</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="o">+</span> <span class="n">use_ii</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">org_selections</span><span class="p">]</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

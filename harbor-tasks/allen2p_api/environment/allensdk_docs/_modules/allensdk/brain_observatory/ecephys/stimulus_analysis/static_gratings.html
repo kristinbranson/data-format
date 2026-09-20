@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">curve_fit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.stimulus_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusAnalysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.stimulus_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">osi</span><span class="p">,</span> <span class="n">deg2rad</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...circle_plots</span><span class="w"> </span><span class="kn">import</span> <span class="n">FanPlotter</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s1">'ignore'</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="StaticGratings">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.StaticGratings">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StaticGratings</span><span class="p">(</span><span class="n">StimulusAnalysis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A class for computing single-unit metrics from the static gratings stimulus of an ecephys session NWB file.</span>
+
+<span class="sd">    To use, pass in a EcephysSession object::</span>
+<span class="sd">        session = EcephysSession.from_nwb_path('/path/to/my.nwb')</span>
+<span class="sd">        sg_analysis = StaticGratings(session)</span>
+
+<span class="sd">    or, alternatively, pass in the file path::</span>
+<span class="sd">        sg_analysis = StaticGratings('/path/to/my.nwb')</span>
+
+<span class="sd">    You can also pass in a unit filter dictionary which will only select units with certain properties. For example</span>
+<span class="sd">    to get only those units which are on probe C and found in the VISp area::</span>
+<span class="sd">        sg_analysis = StaticGratings(session, filter={'location': 'probeC', 'ecephys_structure_acronym': 'VISp'})</span>
+
+<span class="sd">    To get a table of the individual unit metrics ranked by unit ID::</span>
+<span class="sd">        metrics_table_df = sg_analysis.metrics()</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ecephys_session</span><span class="p">,</span> <span class="n">col_ori</span><span class="o">=</span><span class="s1">'orientation'</span><span class="p">,</span> <span class="n">col_sf</span><span class="o">=</span><span class="s1">'spatial_frequency'</span><span class="p">,</span> <span class="n">col_phase</span><span class="o">=</span><span class="s1">'phase'</span><span class="p">,</span>
+                 <span class="n">trial_duration</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StaticGratings</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ecephys_session</span><span class="p">,</span> <span class="n">trial_duration</span><span class="o">=</span><span class="n">trial_duration</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sfvals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_sf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phasevals</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_phase</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># self._response_events = None</span>
+        <span class="c1"># self._response_trials = None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span> <span class="o">=</span> <span class="n">col_ori</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span> <span class="o">=</span> <span class="n">col_sf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span> <span class="o">=</span> <span class="n">col_phase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trial_duration</span> <span class="o">=</span> <span class="n">trial_duration</span>
+        <span class="c1"># self._module_name = 'Static Gratings'  # TODO: module_name should be a static class variable</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'static_gratings'</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'stimulus_key'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># Overwrites parent value with argvars</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">'Static Gratings'</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">orivals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating orientation conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_ori</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating orientation conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sfvals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating spatial frequency conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sfvals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sfvals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_sf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating orientation conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_sf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_sf</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">phasevals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Array of grating phase conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phasevals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_phasevals</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Number of grating phase conditions """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_phase</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_stim_table_stats</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_phase</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">null_condition</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Stimulus condition ID for null (blank) stimulus """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'null'</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
+    
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">METRICS_COLUMNS</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="s1">'pref_sf_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_sf_multi_sg'</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_ori_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_ori_multi_sg'</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_phase_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'pref_phase_multi_sg'</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'g_osi_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'time_to_peak_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'firing_rate_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'fano_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'lifetime_sparseness_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+                <span class="p">(</span><span class="s1">'run_pval_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'run_mod_sg'</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'Calculating metrics for '</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">unit_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit_ids</span>
+            <span class="n">metrics_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">empty_metrics_table</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_sf_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_sf</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_sf_multi_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_multiple_pref_conditions</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">unit_ids</span>
+                <span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_ori_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_ori</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_ori_multi_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_multiple_pref_conditions</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">unit_ids</span>
+                <span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_phase_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_pref_phase</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'pref_phase_multi_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_check_multiple_pref_conditions</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">phasevals</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit_id</span> <span class="ow">in</span> <span class="n">unit_ids</span>
+                <span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'g_osi_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_osi</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit</span><span class="p">][</span><span class="s1">'pref_sf_sg'</span><span class="p">],</span> <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit</span><span class="p">][</span><span class="s1">'pref_phase_sg'</span><span class="p">])</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'time_to_peak_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_time_to_peak</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'firing_rate_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_overall_firing_rate</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'fano_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_fano_factor</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="p">[</span><span class="s1">'lifetime_sparseness_sg'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_lifetime_sparseness</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+                <span class="n">metrics_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="p">[</span><span class="s1">'run_pval_sg'</span><span class="p">,</span> <span class="s1">'run_mod_sg'</span><span class="p">]]</span> <span class="o">=</span> \
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_running_modulation</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preferred_condition</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unit_ids</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="o">=</span> <span class="n">metrics_df</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span>
+
+<div class="viewcode-block" id="StaticGratings.known_stimulus_keys">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.StaticGratings.known_stimulus_keys">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">known_stimulus_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s1">'static_gratings'</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_stim_table_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Extract orientations, spatial frequencies, and phases from the stimulus table """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_ori</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_orivals</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sfvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_sf</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_sfvals</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_phasevals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">'null'</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_number_phase</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_phasevals</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pref_sf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Calculate the preferred spatial frequency condition for a given unit.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pref_sf : float</span>
+<span class="sd">            spatial frequency driving the maximal response</span>
+
+<span class="sd">        """</span>
+        <span class="c1"># TODO: Most of the _get_pref_*() methods can be combined into one method and shared among the classes</span>
+        <span class="c1"># Combine the stimulus_condition_id values that have the save spatial-frequency</span>
+        <span class="n">similar_conditions_ids</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span> <span class="o">==</span> <span class="n">sf</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                                  <span class="k">for</span> <span class="n">sf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span><span class="p">]</span>
+
+        <span class="c1"># For each spatial frequency average up conditionwise_statistics 'spike_mean' column using the indicies above.</span>
+        <span class="c1"># return the sf with the largest spike_mean.</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">'spike_mean'</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">condition_inds</span> <span class="ow">in</span> <span class="n">similar_conditions_ids</span><span class="p">]}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pref_ori</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate the preferred orientation condition for a given unit</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">             unique ID for the unit of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pref_ori :float</span>
+<span class="sd">            stimulus orientation driving the maximal response</span>
+<span class="sd">        """</span>
+
+        <span class="c1"># Combine the stimulus_condition_id values that have the save orientations</span>
+        <span class="n">similar_conditions</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span> <span class="o">==</span> <span class="n">ori</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                              <span class="k">for</span> <span class="n">ori</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">]</span>
+
+        <span class="c1"># For each orientations average up conditionwise_statistics 'spike_mean' column using the indicies above.</span>
+        <span class="c1"># Return the oris with the largest spike_mean.</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s1">'spike_mean'</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                                 <span class="k">for</span> <span class="n">condition_inds</span> <span class="ow">in</span> <span class="n">similar_conditions</span><span class="p">]}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pref_phase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Calculate the preferred phase condition for a given unit</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pref_phase : float</span>
+<span class="sd">            stimulus phase driving the maximal response</span>
+<span class="sd">        """</span>
+        <span class="n">combined_cond_ids</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span> <span class="o">==</span> <span class="n">phase</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                             <span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phasevals</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">phasevals</span><span class="p">,</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'spike_mean'</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">][</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+                                   <span class="k">for</span> <span class="n">condition_inds</span> <span class="ow">in</span> <span class="n">combined_cond_ids</span><span class="p">]}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">rename_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_osi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">pref_sf</span><span class="p">,</span> <span class="n">pref_phase</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Calculate the orientation selectivity for a given unit</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        unit_id : int</span>
+<span class="sd">            unique ID for the unit of interest</span>
+<span class="sd">        pref_sf : float</span>
+<span class="sd">            preferred spatial frequency for this unit</span>
+<span class="sd">        pref_phase : float</span>
+<span class="sd">            preferred phase for this unit</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        osi : float</span>
+<span class="sd">            orientation selectivity value</span>
+<span class="sd">        """</span>
+        <span class="n">orivals_rad</span> <span class="o">=</span> <span class="n">deg2rad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'complex128'</span><span class="p">)</span>  <span class="c1"># TODO: can we use numpy deg2rad?</span>
+
+        <span class="n">condition_inds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span> <span class="o">==</span> <span class="n">pref_sf</span><span class="p">)</span> <span class="o">&amp;</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span> <span class="o">==</span> <span class="n">pref_phase</span><span class="p">)</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditionwise_statistics</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">unit_id</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">condition_inds</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">ori</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s1">'ori'</span><span class="p">])</span>
+        <span class="n">tuning</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">'spike_mean'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">osi</span><span class="p">(</span><span class="n">orivals_rad</span><span class="p">,</span> <span class="n">tuning</span><span class="p">)</span>
+
+    <span class="c1">## VISUALIZATION ##</span>
+<div class="viewcode-block" id="StaticGratings.plot_raster">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.StaticGratings.plot_raster">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_raster</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stimulus_condition_id</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Plot raster for one condition and one unit """</span>
+
+        <span class="n">idx_sf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">stimulus_condition_id</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_ori</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">stimulus_condition_id</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_sf</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx_ori</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+     
+            <span class="n">presentation_ids</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>\
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>\
+                <span class="p">[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span> <span class="o">==</span> <span class="n">stimulus_condition_id</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+            
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span><span class="s1">'stimulus_presentation_id'</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">presentation_ids</span><span class="p">))</span> <span class="o">&amp;</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_spike_times</span><span class="p">[</span><span class="s1">'unit_id'</span><span class="p">]</span> <span class="o">==</span> <span class="n">unit_id</span><span class="p">)</span> <span class="p">]</span>
+                
+            <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stim_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">stimulus_presentation_id</span><span class="p">]</span><span class="o">.</span><span class="n">start_time</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">stimulus_presentation_id</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+            
+            <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_sf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span><span class="p">,</span> <span class="n">idx_sf</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span> <span class="o">+</span> <span class="n">idx_ori</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">'k'</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="StaticGratings.plot_response_summary">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.StaticGratings.plot_response_summary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_response_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">,</span> <span class="n">bar_thickness</span><span class="o">=</span><span class="mf">0.25</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">""" Plot the spike counts across conditions """</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">null_condition</span><span class="p">)</span>
+    
+        <span class="n">df</span><span class="p">[</span><span class="s1">'sf_index'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'ori_index'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">'phase_index'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phasevals</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="n">cond_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'sf_index'</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">cond_values</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">bar_thickness</span> <span class="o">-</span> <span class="n">bar_thickness</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'phase_index'</span><span class="p">]</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s1">'Blues'</span><span class="p">,</span><span class="n">vmin</span><span class="o">=-</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_sf</span><span class="p">),</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sfvals</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Spatial frequency'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Spikes per trial'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">number_sf</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'ori_index'</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">cond_values</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="n">bar_thickness</span> <span class="o">-</span> <span class="n">bar_thickness</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">cond_values</span><span class="o">.</span><span class="n">values</span><span class="p">][</span><span class="s1">'phase_index'</span><span class="p">]</span>
+        
+        <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">cmap</span><span class="o">=</span><span class="s1">'Spectral'</span><span class="p">)</span>
+        <span class="n">locs</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">number_ori</span><span class="p">),</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orivals</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Orientation'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Spikes per trial'</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StaticGratings.make_fan_plot">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.StaticGratings.make_fan_plot">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_fan_plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unit_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Make a 2P-style Fan Plot based on presentationwise spike counts"""</span>
+
+        <span class="n">angle_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_ori</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">r_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_sf</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">group_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_conditions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'stimulus_condition_id'</span><span class="p">]][</span><span class="bp">self</span><span class="o">.</span><span class="n">_col_phase</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">presentationwise_statistics</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="n">unit_id</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="s1">'spike_counts'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        
+        <span class="n">null_trials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">angle_data</span> <span class="o">==</span> <span class="s1">'null'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">angle_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">angle_data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        <span class="n">r_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">r_data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        <span class="n">group_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">group_data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">null_trials</span><span class="p">)</span>
+        
+        <span class="n">cmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">cmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">fp</span> <span class="o">=</span> <span class="n">FanPlotter</span><span class="o">.</span><span class="n">for_static_gratings</span><span class="p">()</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_data</span> <span class="o">=</span> <span class="n">r_data</span><span class="p">,</span> <span class="n">angle_data</span> <span class="o">=</span> <span class="n">angle_data</span><span class="p">,</span> <span class="n">group_data</span> <span class="o">=</span> <span class="n">group_data</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">clim</span><span class="o">=</span><span class="p">[</span><span class="n">cmin</span><span class="p">,</span> <span class="n">cmax</span><span class="p">])</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">show_axes</span><span class="p">(</span><span class="n">closed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">'off'</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="fit_sf_tuning">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.fit_sf_tuning">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_sf_tuning</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">,</span> <span class="n">sf_values</span><span class="p">,</span> <span class="n">pref_sf_index</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Performs gaussian or exponential fit on the spatial frequency tuning curve at preferred orientation/phase for</span>
+<span class="sd">    a given cell.</span>
+
+<span class="sd">    :param sf_tuning_responses: An array of len N, with each value the (averaged) response of a cell at a given spatial</span>
+<span class="sd">        freq. stimulus.</span>
+<span class="sd">    :param sf_values: An array of len N, with each value the spatial freq. of the stimulus (corresponding to</span>
+<span class="sd">        sf_tuning_response).</span>
+<span class="sd">    :param pref_sf_index: The pre-determined prefered spatial frequency (sf_values index) of the cell.</span>
+<span class="sd">    :return: index for the preferred sf from the curve fit, prefered sf from the curve fit, low cutoff sf from the</span>
+<span class="sd">        curve fit, high cutoff sf from the curve fit</span>
+<span class="sd">    """</span>
+    <span class="n">fit_sf_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">fit_sf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">sf_low_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">sf_high_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">if</span> <span class="n">pref_sf_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sf_values</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># If the prefered spatial freq is an interior case try to fit the tunning curve with a gaussian.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">gauss_function</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sf_values</span><span class="p">)),</span> <span class="n">sf_tuning_responses</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">),</span>
+                                                                                      <span class="n">pref_sf_index</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+            <span class="n">sf_prediction</span> <span class="o">=</span> <span class="n">gauss_function</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="o">*</span><span class="n">popt</span><span class="p">)</span>
+            <span class="n">fit_sf_ind</span> <span class="o">=</span> <span class="n">popt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">fit_sf</span> <span class="o">=</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">popt</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">low_cut_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">-</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">2.</span><span class="p">))[:</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+            <span class="n">high_cut_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">-</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">2.</span><span class="p">))[</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">():]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span> <span class="o">+</span> <span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">low_cut_ind</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">low_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)[</span><span class="n">low_cut_ind</span><span class="p">]</span>
+                <span class="n">sf_low_cutoff</span> <span class="o">=</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">low_cutoff</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">high_cut_ind</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">high_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)[</span><span class="n">high_cut_ind</span><span class="p">]</span>
+                <span class="n">sf_high_cutoff</span> <span class="o">=</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">high_cutoff</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># If the prefered spatial freq is a boundary value try to fit the tunning curve with an exponential</span>
+        <span class="n">fit_sf_ind</span> <span class="o">=</span> <span class="n">pref_sf_index</span>
+        <span class="n">fit_sf</span> <span class="o">=</span> <span class="n">sf_values</span><span class="p">[</span><span class="n">pref_sf_index</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">popt</span><span class="p">,</span> <span class="n">pcov</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">exp_function</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sf_values</span><span class="p">)),</span> <span class="n">sf_tuning_responses</span><span class="p">,</span>
+                                   <span class="n">p0</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">),</span> <span class="mf">2.</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">)],</span> <span class="n">maxfev</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+            <span class="n">sf_prediction</span> <span class="o">=</span> <span class="n">exp_function</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span> <span class="o">*</span><span class="n">popt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pref_sf_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">high_cut_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">-</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">2.</span><span class="p">))[</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">():]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span><span class="o">+</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span>
+                <span class="n">high_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)[</span><span class="n">high_cut_ind</span><span class="p">]</span>
+                <span class="n">sf_high_cutoff</span> <span class="o">=</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">high_cutoff</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">low_cut_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">-</span><span class="p">(</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="mf">2.</span><span class="p">))[:</span><span class="n">sf_prediction</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+                <span class="n">low_cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">4.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)[</span><span class="n">low_cut_ind</span><span class="p">]</span>
+                <span class="n">sf_low_cutoff</span> <span class="o">=</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">low_cutoff</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">fit_sf_ind</span><span class="p">,</span> <span class="n">fit_sf</span><span class="p">,</span> <span class="n">sf_low_cutoff</span><span class="p">,</span> <span class="n">sf_high_cutoff</span></div>
+
+
+
+<div class="viewcode-block" id="get_sfdi">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.get_sfdi">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sfdi</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">,</span> <span class="n">mean_sweeps_trials</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Computes spatial frequency discrimination index for cell</span>
+
+<span class="sd">    :param sf_tuning_responses: sf_tuning_responses: An array of len N, with each value the (averaged) response of a</span>
+<span class="sd">        cell at a given spatial freq. stimulus.</span>
+<span class="sd">    :param mean_sweeps_trials: The set of events (spikes) across all trials of varying</span>
+<span class="sd">    :param bias:</span>
+<span class="sd">    :return: The sfdi value (float)</span>
+<span class="sd">    """</span>
+    <span class="n">trial_mean</span> <span class="o">=</span> <span class="n">mean_sweeps_trials</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">sse_part</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">mean_sweeps_trials</span> <span class="o">-</span> <span class="n">trial_mean</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mean_sweeps_trials</span><span class="p">)</span> <span class="o">-</span> <span class="n">bias</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ptp</span><span class="p">(</span><span class="n">sf_tuning_responses</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sse_part</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="gauss_function">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.gauss_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gauss_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="exp_function">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.ecephys.stimulus_analysis.static_gratings.html#allensdk.brain_observatory.ecephys.stimulus_analysis.exp_function">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exp_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="n">c</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

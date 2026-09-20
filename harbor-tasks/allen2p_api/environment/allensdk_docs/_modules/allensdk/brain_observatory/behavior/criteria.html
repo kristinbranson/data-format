@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.criteria &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.criteria</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Functions for calculating mtrain state transitions.</span>
+<span class="sd">If criteria are met, return true. Otherwise, return false.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrameKeyError</span><span class="p">,</span> <span class="n">DataFrameIndexError</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="two_out_of_three_aint_bad">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.two_out_of_three_aint_bad">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">two_out_of_three_aint_bad</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Returns true if 2 of the last 3 days showed a peak</span>
+<span class="sd">    d-prime above 2.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        session_summary (pd.DataFrame): Pandas dataframe with daily values for 'dprime_peak',</span>
+<span class="sd">        ordered ascending by training day, for at least the past 3 days. If dataframe is not</span>
+<span class="sd">        properly ordered, criterion may not be correctly calculated. This function does not</span>
+<span class="sd">        sort the data to preserve prior behavior (sorting column was not required by mtrain function).</span>
+<span class="sd">        The mtrain implementation created the required columns if they didn't exist, so </span>
+<span class="sd">        a more informative error is raised here to assist end-users in debugging.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameIndexError</span><span class="p">(</span><span class="s2">"Not enough data in session_summary frame. "</span>
+                                  <span class="s2">"Expected &gt;= 3 rows, got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">last_three</span> <span class="o">=</span> <span class="n">session_summary</span><span class="p">[</span><span class="s2">"dprime_peak"</span><span class="p">][</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameKeyError</span><span class="p">(</span><span class="s2">"Failed accessing last three values in colum"</span>
+                               <span class="s2">"'dprime_peak'.</span><span class="se">\n</span><span class="s2"> df length=</span><span class="si">{}</span><span class="s2">, df columns=</span><span class="si">{}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)),</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'dprime_peak over last three days: </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">last_three</span><span class="p">)))</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span>
+        <span class="p">((</span><span class="n">last_three</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># at least two of the last three</span>
+    <span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"'Two out of three ain't bad' criteria met: '</span><span class="si">{}</span><span class="s2">'"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">criteria</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">criteria</span></div>
+
+
+<div class="viewcode-block" id="yesterday_was_good">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.yesterday_was_good">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">yesterday_was_good</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Returns true if the last day showed a peak d-prime above 2</span>
+<span class="sd">    Args:</span>
+<span class="sd">        session_summary (pd.DataFrame): Pandas dataframe with daily values for 'dprime_peak',</span>
+<span class="sd">        ordered ascending by training day, for at least 1 day. If dataframe is not</span>
+<span class="sd">        properly ordered, criterion may not be correctly calculated. This function does not</span>
+<span class="sd">        sort the data to preserve prior behavior (sorting column was not required by mtrain function).</span>
+<span class="sd">        The mtrain implementation created the required columns if they didn't exist, so </span>
+<span class="sd">        a more informative error is raised here to assist end-users in debugging.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameIndexError</span><span class="p">(</span><span class="s2">"Not enough data in session_summary frame. "</span>
+                                  <span class="s2">"Expected &gt;= 1 row(s), got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">last_day</span> <span class="o">=</span> <span class="n">session_summary</span><span class="p">[</span><span class="s1">'dprime_peak'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameKeyError</span><span class="p">(</span><span class="s2">"Failed accessing last three values in colum"</span>
+                               <span class="s2">"'dprime_peak'.</span><span class="se">\n</span><span class="s2"> df length=</span><span class="si">{}</span><span class="s2">, df columns=</span><span class="si">{}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)),</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">last_day</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"'Yesterday was good' criteria met: </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">criteria</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">criteria</span></div>
+
+
+
+<div class="viewcode-block" id="no_response_bias">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.no_response_bias">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">no_response_bias</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""the mouse meets this criterion if their last session exhibited a</span>
+<span class="sd">    response bias between 10% and 90%</span>
+<span class="sd">        Args:</span>
+<span class="sd">        session_summary (pd.DataFrame): Pandas dataframe with daily values for 'response_bias',</span>
+<span class="sd">        ordered ascending by training day, for at least 1 day. If dataframe is not</span>
+<span class="sd">        properly ordered, criterion may not be correctly calculated. This function does not</span>
+<span class="sd">        sort the data to preserve prior behavior (sorting column was not required by mtrain function).</span>
+<span class="sd">        The mtrain implementation created the required columns if they didn't exist, so </span>
+<span class="sd">        a more informative error is raised here to assist end-users in debugging.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameIndexError</span><span class="p">(</span><span class="s2">"Not enough data in session_summary frame. "</span>
+                                  <span class="s2">"Expected &gt;= 1 row(s), got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response_bias</span> <span class="o">=</span> <span class="n">session_summary</span><span class="p">[</span><span class="s1">'response_bias'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameKeyError</span><span class="p">(</span><span class="s2">"Failed accessing last values in colum"</span>
+                               <span class="s2">"'response_bias'.</span><span class="se">\n</span><span class="s2"> df length=</span><span class="si">{}</span><span class="s2">, df columns=</span><span class="si">{}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)),</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="p">(</span><span class="n">response_bias</span> <span class="o">&lt;</span> <span class="mf">0.9</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">response_bias</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"'No response bias' criteria met: </span><span class="si">{}</span><span class="s2"> (response bias=</span><span class="si">{}</span><span class="s2">)"</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">criteria</span><span class="p">,</span> <span class="n">response_bias</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">criteria</span></div>
+
+
+
+<div class="viewcode-block" id="whole_lotta_trials">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.whole_lotta_trials">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">whole_lotta_trials</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Mouse meets this criterion if the last session has more than 300 trials.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        session_summary (pd.DataFrame): Pandas dataframe with daily values for 'num_contingent_trials',</span>
+<span class="sd">        ordered ascending by training day, for at least 1 day. If dataframe is not</span>
+<span class="sd">        properly ordered, criterion may not be correctly calculated. This function does not</span>
+<span class="sd">        sort the data to preserve prior behavior (sorting column was not required by mtrain function).</span>
+<span class="sd">        The mtrain implementation created the required columns if they didn't exist, so </span>
+<span class="sd">        a more informative error is raised here to assist end-users in debugging.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameIndexError</span><span class="p">(</span><span class="s2">"Not enough data in session_summary frame. "</span>
+                                  <span class="s2">"Expected &gt;= 1 row(s), got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">num_trials</span> <span class="o">=</span> <span class="n">session_summary</span><span class="p">[</span><span class="s1">'num_contingent_trials'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameKeyError</span><span class="p">(</span><span class="s2">"Failed accessing last values in colum"</span>
+                               <span class="s2">"'num_contingent_trials'.</span><span class="se">\n</span><span class="s2"> df length=</span><span class="si">{}</span><span class="s2">, df columns=</span><span class="si">{}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)),</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="n">num_trials</span> <span class="o">&gt;</span> <span class="mi">300</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"'Trials &gt; 300' criteria met: </span><span class="si">{}</span><span class="s2"> (n trials=</span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">criteria</span><span class="p">,</span> <span class="n">num_trials</span><span class="p">))</span> 
+    <span class="k">return</span> <span class="n">criteria</span></div>
+
+
+
+<div class="viewcode-block" id="mostly_useful">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.mostly_useful">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mostly_useful</span><span class="p">(</span><span class="n">trials</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Returns True if fewer than half the trial time on the last day were</span>
+<span class="sd">    aborted trials.</span>
+<span class="sd">        Args:</span>
+<span class="sd">        trials (pd.DataFrame): Pandas dataframe with columns 'training_day', 'trial_type',</span>
+<span class="sd">        and 'trial_length'.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">trials</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>   <span class="c1"># empty df would return true, but shouldn't</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">last_day</span> <span class="o">=</span> <span class="n">trials</span><span class="p">[</span><span class="s1">'training_day'</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="n">group</span> <span class="o">=</span> <span class="n">trials</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'training_day'</span><span class="p">)</span><span class="o">.</span><span class="n">get_group</span><span class="p">(</span><span class="n">last_day</span><span class="p">)</span>
+    <span class="n">trial_fractions</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'trial_type'</span><span class="p">)[</span><span class="s1">'trial_length'</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> \
+        <span class="o">/</span> <span class="n">group</span><span class="p">[</span><span class="s1">'trial_length'</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">aborted</span> <span class="o">=</span> <span class="n">trial_fractions</span><span class="p">[</span><span class="s1">'aborted'</span><span class="p">]</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="n">aborted</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Fewer than half the trials were aborted on the last training day: </span><span class="si">{}</span><span class="s2"> "</span>
+                 <span class="s2">"(</span><span class="si">% a</span><span class="s2">borted trials=</span><span class="si">{}</span><span class="s2">)"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">criteria</span><span class="p">,</span> <span class="n">aborted</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">criteria</span></div>
+
+
+
+<div class="viewcode-block" id="consistency_is_key">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.consistency_is_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">consistency_is_key</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''need some way to judge consistency of various parameters</span>
+
+<span class="sd">    - dprime</span>
+<span class="sd">    - num trials</span>
+<span class="sd">    - hit rate</span>
+<span class="sd">    - fa rate</span>
+<span class="sd">    - lick timing</span>
+<span class="sd">    '''</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+
+<div class="viewcode-block" id="consistent_behavior_within_session">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.consistent_behavior_within_session">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">consistent_behavior_within_session</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''need some way to measure consistent performance within a session</span>
+
+<span class="sd">    - compare peak to overall dprime?</span>
+<span class="sd">    - variance in rolling window dprime?</span>
+<span class="sd">    '''</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+
+<div class="viewcode-block" id="n_complete">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.n_complete">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">n_complete</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    For compatibility with original API. If count &gt;= threshold, return True.</span>
+<span class="sd">    Otherwise return False.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        threshold (numeric): Threshold for the count to meet.</span>
+<span class="sd">        count (numeric): The count to compare to the threshold.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        True if count &gt;= threshold, otherwise False.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="n">threshold</span></div>
+
+
+
+<div class="viewcode-block" id="meets_engagement_criteria">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.meets_engagement_criteria">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">meets_engagement_criteria</span><span class="p">(</span><span class="n">session_summary</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Returns true if engagement criteria were met for the past 3 days, else false.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        session_summary (pd.DataFrame): Pandas dataframe with daily values for 'dprime_peak' and 'num_engaged_trials',</span>
+<span class="sd">        ordered ascending by training day, for at least 3 days. If dataframe is not</span>
+<span class="sd">        properly ordered, criterion may not be correctly calculated. This function does not</span>
+<span class="sd">        sort the data to preserve prior behavior (sorting column was not required by mtrain function)</span>
+<span class="sd">        The mtrain implementation created the required columns if they didn't exist, so </span>
+<span class="sd">        a more informative error is raised here to assist end-users in debugging.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if criterion is met, False otherwise</span>
+<span class="sd">    """</span>
+    <span class="n">criteria</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameIndexError</span><span class="p">(</span><span class="s2">"Not enough data in session_summary frame. "</span>
+                                  <span class="s2">"Expected &gt;= 3 rows, got </span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">session_summary</span><span class="p">[</span><span class="s1">'engagement_criteria'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">session_summary</span><span class="p">[</span><span class="s1">'dprime_peak'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">session_summary</span><span class="p">[</span><span class="s1">'num_engaged_trials'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">engaged_days</span> <span class="o">=</span> <span class="n">session_summary</span><span class="p">[</span><span class="s1">'engagement_criteria'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DataFrameKeyError</span><span class="p">(</span><span class="s2">"Failed accessing columns 'dprime_peak' and/or "</span>
+                               <span class="s2">"'num_engaged_trials' for 3 days.</span><span class="se">\n</span><span class="s2"> df length=</span><span class="si">{}</span><span class="s2">, df columns=</span><span class="si">{}</span><span class="se">\n</span><span class="s2">"</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session_summary</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">session_summary</span><span class="p">)),</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">engaged_days</span> <span class="o">==</span> <span class="n">criteria</span></div>
+
+
+
+<div class="viewcode-block" id="summer_over">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.criteria.html#allensdk.brain_observatory.behavior.criteria.summer_over">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">summer_over</span><span class="p">(</span><span class="n">trials</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Returns true if the maximum value of 'training_day' in the trials dataframe is &gt;= 40,</span>
+<span class="sd">    else false.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">trials</span><span class="p">[</span><span class="s1">'training_day'</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">40</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

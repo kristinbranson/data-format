@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.vbn_2022.metadata_writer.dataframe_manipulations &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.vbn_2022.metadata_writer.dataframe_manipulations</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This module contains utility methods for extending</span>
+<span class="c1"># the VBN 2022 metadata dataframes as they are directly queried</span>
+<span class="c1"># from LIMS.</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.behavior_project_cache.tables.util.prior_exposure_processing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">__get_prior_exposure_count</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.date_of_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">DateOfAcquisition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">strip_substructure_acronym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api.queries.behavior_lims_queries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">stimulus_pickle_paths_from_behavior_session_ids</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_session_number</span><span class="p">(</span>
+    <span class="n">sessions_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">index_col</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    For each mouse: order sessions by date_of_acquisition. Add a session_number</span>
+<span class="sd">    column corresponding to where that session falls in the mouse's history.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        sessions_df: pd.DataFrame</span>
+
+<span class="sd">        index_col: str</span>
+<span class="sd">            The column denoting the unique ID of each</span>
+<span class="sd">            session. Should be either "ecephys_session_id"</span>
+<span class="sd">            or "behavior_session_id"</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sessions_df: pd.DataFrame</span>
+<span class="sd">        The input dataframe with a session_number column added</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    session_number will be 1-indexed</span>
+<span class="sd">    """</span>
+
+    <span class="n">date_col</span> <span class="o">=</span> <span class="s2">"date_of_acquisition"</span>
+    <span class="n">mouse_col</span> <span class="o">=</span> <span class="s2">"mouse_id"</span>
+
+    <span class="n">mouse_id_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">sessions_df</span><span class="p">[</span><span class="n">mouse_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">new_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mouse_id</span> <span class="ow">in</span> <span class="n">mouse_id_values</span><span class="p">:</span>
+        <span class="n">sub_df</span> <span class="o">=</span> <span class="n">sessions_df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mouse_col</span><span class="si">}</span><span class="s2">=='</span><span class="si">{</span><span class="n">mouse_id</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
+        <span class="n">sub_df</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">sub_df</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">"index"</span><span class="p">))</span>
+        <span class="n">session_arr</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">date_arr</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">index_val</span> <span class="ow">in</span> <span class="n">sub_df</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">session_arr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_df</span><span class="p">[</span><span class="n">index_val</span><span class="p">][</span><span class="n">index_col</span><span class="p">])</span>
+            <span class="n">date_arr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_df</span><span class="p">[</span><span class="n">index_val</span><span class="p">][</span><span class="n">date_col</span><span class="p">])</span>
+        <span class="n">session_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">session_arr</span><span class="p">)</span>
+        <span class="n">date_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">date_arr</span><span class="p">)</span>
+        <span class="n">sorted_dex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">date_arr</span><span class="p">)</span>
+        <span class="n">session_arr</span> <span class="o">=</span> <span class="n">session_arr</span><span class="p">[</span><span class="n">sorted_dex</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">session_number</span><span class="p">,</span> <span class="n">session_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">session_arr</span><span class="p">):</span>
+            <span class="n">element</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">index_col</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+                <span class="s2">"session_number"</span><span class="p">:</span> <span class="n">session_number</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">new_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+    <span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">new_data</span><span class="p">)</span>
+
+    <span class="n">sessions_df</span> <span class="o">=</span> <span class="n">sessions_df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">new_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_col</span><span class="p">),</span> <span class="n">on</span><span class="o">=</span><span class="n">index_col</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">sessions_df</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_prior_omissions</span><span class="p">(</span>
+    <span class="n">behavior_sessions_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">ecephys_sessions_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Add the 'prior_exposures_to_omissions' column assuming that</span>
+<span class="sd">    only sessions with 'EPHYS' in the session_type included</span>
+<span class="sd">    omissions in them.</span>
+
+<span class="sd">    Because each mouse's history could be split up between</span>
+<span class="sd">    the behavior sessions table and the ecephys sessions table,</span>
+<span class="sd">    we need to combine the two data frames into a single history</span>
+<span class="sd">    for each mouse, determine what each mouse has seen, and then</span>
+<span class="sd">    set the prior_exposures_to_omissions in each dataframe</span>
+<span class="sd">    in such a way that the ecephys sessions table knows about</span>
+<span class="sd">    what the mouse saw in the behavior sessions table.</span>
+
+<span class="sd">    This should be one of the last processing steps, as it</span>
+<span class="sd">    depends on session_type being properly set in the</span>
+<span class="sd">    dataframes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    behavior_sessions_df: pd.DataFrame</span>
+<span class="sd">        the table of behavior sessions</span>
+
+<span class="sd">    ecephys_sessions_df: pd.DataFrame</span>
+<span class="sd">        the table of ecephys sessions (may or may not be</span>
+<span class="sd">        a superset of behavior sessions)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    updated_tables: Dict[str, pd.DataFrame]</span>
+<span class="sd">        {'behavior': behavior_session_df with added column</span>
+<span class="sd">         'ecephys': ecephys_sessions_df with added column}</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="s2">"behavior_session_id"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"Cannot properly merge behavior_sessions_df and "</span>
+            <span class="s2">"ecephys_sessions_df; ecephys_sessions_df does not have "</span>
+            <span class="s2">"a behavior_session_id column"</span>
+        <span class="p">)</span>
+
+    <span class="c1"># get all of the behavior sessions</span>
+    <span class="n">beh_history_lookup</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">mouse_id</span><span class="p">,</span> <span class="n">beh_id</span><span class="p">,</span> <span class="n">date_acq</span><span class="p">,</span> <span class="n">session_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">behavior_sessions_df</span><span class="o">.</span><span class="n">mouse_id</span><span class="p">,</span>
+        <span class="n">behavior_sessions_df</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="p">,</span>
+        <span class="n">behavior_sessions_df</span><span class="o">.</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+        <span class="n">behavior_sessions_df</span><span class="o">.</span><span class="n">session_type</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"mouse_id"</span><span class="p">:</span> <span class="n">mouse_id</span><span class="p">,</span>
+            <span class="s2">"behavior_session_id"</span><span class="p">:</span> <span class="n">beh_id</span><span class="p">,</span>
+            <span class="s2">"date_of_acquisition"</span><span class="p">:</span> <span class="n">date_acq</span><span class="p">,</span>
+            <span class="s2">"ecephys_session_id"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"session_type"</span><span class="p">:</span> <span class="n">session_type</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">beh_history_lookup</span><span class="p">[</span><span class="n">beh_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">element</span>
+
+    <span class="c1"># get any ecephys sessions that did not occur in the</span>
+    <span class="c1"># behavior sessions table</span>
+    <span class="n">full_history</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">mouse_id</span><span class="p">,</span> <span class="n">beh_id</span><span class="p">,</span> <span class="n">ece_id</span><span class="p">,</span> <span class="n">date_acq</span><span class="p">,</span> <span class="n">session_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">mouse_id</span><span class="p">,</span>
+        <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="p">,</span>
+        <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="p">,</span>
+        <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+        <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">session_type</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">beh_id</span><span class="p">):</span>
+            <span class="n">int_beh_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">beh_id</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">int_beh_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">999</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">beh_id</span><span class="p">)</span> <span class="ow">and</span> <span class="n">int_beh_id</span> <span class="ow">in</span> <span class="n">beh_history_lookup</span><span class="p">:</span>
+            <span class="n">element</span> <span class="o">=</span> <span class="n">beh_history_lookup</span><span class="p">[</span><span class="n">beh_id</span><span class="p">]</span>
+
+            <span class="c1"># This test *should* give an error; however, there are</span>
+            <span class="c1"># sessions in LIMS in which ecephys_sessions has a</span>
+            <span class="c1"># date_of_acquisition and behavior_sessions does not.</span>
+            <span class="c1"># When we patch the behavior_sessions_table from the pickle</span>
+            <span class="c1"># file, we get a different date of acquisition than is</span>
+            <span class="c1"># listed in the ecephys_sessions table. Until we know how</span>
+            <span class="c1"># our stakeholders want to deal with this problem,</span>
+            <span class="c1"># I'm going make this a warning.</span>
+
+            <span class="k">if</span> <span class="n">date_acq</span> <span class="o">!=</span> <span class="n">element</span><span class="p">[</span><span class="s2">"date_of_acquisition"</span><span class="p">]:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">"behavior_sessions_df and ecephys_sessions_df "</span>
+                    <span class="s2">"disagree on the date of behavior session "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">beh_id</span><span class="si">}</span><span class="s2"> (ecephys_session_id </span><span class="si">{</span><span class="n">ece_id</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"behavior says: </span><span class="si">{</span><span class="n">element</span><span class="p">[</span><span class="s1">'date_of_acquisition'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"ecephys says: </span><span class="si">{</span><span class="n">date_acq</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">session_type</span> <span class="o">!=</span> <span class="n">element</span><span class="p">[</span><span class="s2">"session_type"</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">"behavior_sessions_df and ecephys_session_df "</span>
+                    <span class="s2">"disagree on the session type of behavior session "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">beh_id</span><span class="si">}</span><span class="s2"> (ecephys_session_id </span><span class="si">{</span><span class="n">ece_id</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"behavior says: </span><span class="si">{</span><span class="n">element</span><span class="p">[</span><span class="s1">'session_type'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+                    <span class="sa">f</span><span class="s2">"ecephys says: </span><span class="si">{</span><span class="n">session_type</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+            <span class="n">element</span><span class="p">[</span><span class="s2">"ecephys_session_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ece_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">element</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"mouse_id"</span><span class="p">:</span> <span class="n">mouse_id</span><span class="p">,</span>
+                <span class="s2">"behavior_session_id"</span><span class="p">:</span> <span class="n">beh_id</span><span class="p">,</span>
+                <span class="s2">"ecephys_session_id"</span><span class="p">:</span> <span class="n">ece_id</span><span class="p">,</span>
+                <span class="s2">"date_of_acquisition"</span><span class="p">:</span> <span class="n">date_acq</span><span class="p">,</span>
+                <span class="s2">"session_type"</span><span class="p">:</span> <span class="n">session_type</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">full_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+
+    <span class="c1"># create a dataframe containing the full history (behavior and</span>
+    <span class="c1"># ecephys sessions) of each mouse</span>
+    <span class="k">for</span> <span class="n">beh_id</span> <span class="ow">in</span> <span class="n">beh_history_lookup</span><span class="p">:</span>
+        <span class="n">full_history</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">beh_history_lookup</span><span class="p">[</span><span class="n">beh_id</span><span class="p">])</span>
+
+    <span class="n">full_history_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">full_history</span><span class="p">)</span>
+
+    <span class="c1"># add prior_exposures_to_omissions to the full history data frame</span>
+    <span class="n">contains_omissions</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">full_history_df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">contains_omissions</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="p">(</span><span class="n">full_history_df</span><span class="o">.</span><span class="n">session_type</span><span class="o">.</span><span class="n">notnull</span><span class="p">())</span>
+        <span class="o">&amp;</span> <span class="p">(</span><span class="n">full_history_df</span><span class="o">.</span><span class="n">session_type</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">"ephys"</span><span class="p">))</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">full_history_df</span><span class="p">[</span>
+        <span class="s2">"prior_exposures_to_omissions"</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">__get_prior_exposure_count</span><span class="p">(</span>
+        <span class="n">df</span><span class="o">=</span><span class="n">full_history_df</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="n">contains_omissions</span><span class="p">,</span> <span class="n">agg_method</span><span class="o">=</span><span class="s2">"cumsum"</span>
+    <span class="p">)</span>
+
+    <span class="c1"># merge behavior_sessions_df and ecephys_sessions_df with the</span>
+    <span class="c1"># appropriate subsets of the full_history_df</span>
+
+    <span class="n">beh_history_df</span> <span class="o">=</span> <span class="n">full_history_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">full_history_df</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">notnull</span><span class="p">(),</span>
+        <span class="p">(</span><span class="s2">"behavior_session_id"</span><span class="p">,</span> <span class="s2">"prior_exposures_to_omissions"</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">behavior_sessions_df</span> <span class="o">=</span> <span class="n">behavior_sessions_df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">beh_history_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"behavior_session_id"</span><span class="p">),</span>
+        <span class="n">on</span><span class="o">=</span><span class="s2">"behavior_session_id"</span><span class="p">,</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ece_history_df</span> <span class="o">=</span> <span class="n">full_history_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">full_history_df</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="o">.</span><span class="n">notnull</span><span class="p">(),</span>
+        <span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"prior_exposures_to_omissions"</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">ecephys_sessions_df</span> <span class="o">=</span> <span class="n">ecephys_sessions_df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="n">ece_history_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">),</span>
+        <span class="n">on</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"behavior"</span><span class="p">:</span> <span class="n">behavior_sessions_df</span><span class="p">,</span> <span class="s2">"ecephys"</span><span class="p">:</span> <span class="n">ecephys_sessions_df</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_patch_date_and_stage_from_pickle_file</span><span class="p">(</span>
+    <span class="n">lims_connection</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+    <span class="n">behavior_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">flag_columns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">columns_to_patch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Fill in missing date_of_acquisition and session_type</span>
+<span class="sd">    directly from the stimulus pickle file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lims_connection: PostgresQueryMixin</span>
+
+<span class="sd">    behavior_df: pd.DataFrame</span>
+<span class="sd">        The dataframe to be patched</span>
+
+<span class="sd">    flag_columns: Lis[str]</span>
+<span class="sd">        List of the column names which, if NULL, mark</span>
+<span class="sd">        a row for patching from the pickle file</span>
+
+<span class="sd">    columns_to_patch: Optional[List[str]]</span>
+<span class="sd">        List of columns to patch from the pickle file.</span>
+<span class="sd">        Currently only supports 'date_of_acquisition' and</span>
+<span class="sd">        'session_type'. If None, patch both.</span>
+
+<span class="sd">    logger: Optional[logging.Logger]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    behavior_df: pd.DataFrame</span>
+<span class="sd">        Identical to behavior_df, except any rows with NULL</span>
+<span class="sd">        date_of_acquisition or foraging_id will have their</span>
+<span class="sd">        date_of_acquisition and session_type overwritten with</span>
+<span class="sd">        values from the stimulus pickle file.</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Raises ValueError if one of the columns specified in</span>
+<span class="sd">    flag_columns is not in the dataframe</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="n">columns_to_patch</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">columns_to_patch</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"date_of_acquisition"</span><span class="p">,</span> <span class="s2">"session_type"</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns_to_patch</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"date_of_acquisition"</span><span class="p">,</span> <span class="s2">"session_type"</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="s2">"can only patch 'date_of_acquisition' "</span>
+                <span class="s2">"and 'session_type'; you asked for '</span><span class="si">{col}</span><span class="s2">'</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="c1"># assemble a list that is n_rows long that is</span>
+    <span class="c1"># True whereever the dataframe needs to be patched</span>
+    <span class="n">invalid_rows</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">flag_columns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">behavior_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"dataframe does not contain column "</span> <span class="s2">"</span><span class="si">{col_name}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">invalid_rows</span><span class="p">[</span><span class="n">behavior_df</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">invalid_beh</span> <span class="o">=</span> <span class="n">behavior_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">invalid_rows</span><span class="p">]</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">invalid_beh</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">pickle_path_df</span> <span class="o">=</span> <span class="n">stimulus_pickle_paths_from_behavior_session_ids</span><span class="p">(</span>
+            <span class="n">lims_connection</span><span class="o">=</span><span class="n">lims_connection</span><span class="p">,</span>
+            <span class="n">behavior_session_id_list</span><span class="o">=</span><span class="n">invalid_beh</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+        <span class="n">n_to_patch</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pickle_path_df</span><span class="p">)</span>
+        <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">n_to_log</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_to_patch</span> <span class="o">//</span> <span class="mi">10</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">beh_ct</span><span class="p">,</span> <span class="p">(</span><span class="n">beh_id</span><span class="p">,</span> <span class="n">pkl_path</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">pickle_path_df</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="p">,</span> <span class="n">pickle_path_df</span><span class="o">.</span><span class="n">pkl_path</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">stim_file</span> <span class="o">=</span> <span class="n">BehaviorStimulusFile</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="n">pkl_path</span><span class="p">)</span>
+            <span class="n">new_date</span> <span class="o">=</span> <span class="n">DateOfAcquisition</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stim_file</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">new_session_type</span> <span class="o">=</span> <span class="n">stim_file</span><span class="o">.</span><span class="n">session_type</span>
+
+            <span class="n">new_vals</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"date_of_acquisition"</span><span class="p">:</span> <span class="n">new_date</span><span class="p">,</span>
+                <span class="s2">"session_type"</span><span class="p">:</span> <span class="n">new_session_type</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="n">new_row</span> <span class="o">=</span> <span class="p">[</span><span class="n">new_vals</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">columns_to_patch</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_row</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">new_row</span> <span class="o">=</span> <span class="n">new_row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">behavior_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">behavior_df</span><span class="o">.</span><span class="n">behavior_session_id</span> <span class="o">==</span> <span class="n">beh_id</span><span class="p">,</span> <span class="n">columns_to_patch</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">new_row</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">beh_ct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">n_to_log</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+                <span class="n">per</span> <span class="o">=</span> <span class="n">duration</span> <span class="o">/</span> <span class="p">(</span><span class="n">beh_ct</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="n">n_to_patch</span> <span class="o">*</span> <span class="n">per</span>
+                <span class="n">remaining</span> <span class="o">=</span> <span class="n">pred</span> <span class="o">-</span> <span class="n">duration</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Patched </span><span class="si">{</span><span class="n">beh_ct</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">n_to_patch</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2"> seconds; "</span>
+                    <span class="sa">f</span><span class="s2">"predict </span><span class="si">{</span><span class="n">remaining</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2"> seconds more"</span>
+                <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Done patching from pickle file"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">behavior_df</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_age_in_days</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">index_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Add an 'age_in_days' column to a dataframe by subtracting</span>
+<span class="sd">    'date_of_birth' from 'date_of_acquisition'. Return the</span>
+<span class="sd">    dataframe with the new column added.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df: pd.DataFrame</span>
+
+<span class="sd">    index_column: str</span>
+<span class="sd">        The column to use as an index when adding age_in_days</span>
+<span class="sd">        (usually "behavior_session_id" or "ecephys_session_id")</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    df: pd.DataFrame</span>
+<span class="sd">        Same as input, but with age_in_days added</span>
+<span class="sd">    """</span>
+    <span class="n">age_in_days</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">"date_of_acquisition"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="s2">"date_of_birth"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span>
+    <span class="p">)</span>
+    <span class="n">age_in_days</span> <span class="o">=</span> <span class="n">age_in_days</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">days</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">"age_in_days"</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_in_days</span>
+    <span class="k">return</span> <span class="n">df</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_add_images_from_behavior</span><span class="p">(</span>
+    <span class="n">ecephys_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">behavior_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Use the behavior sessions table to add image_set and</span>
+<span class="sd">    prior_exposures_to_image_set to ecephys table.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ecephys_table: pd.DataFrame</span>
+<span class="sd">        A dataframe of ecephys_sessions</span>
+
+<span class="sd">    behavior_table: pd.DataFrame</span>
+<span class="sd">        A dataframe of behavior_sessions</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ecephys_sessions:</span>
+<span class="sd">        Same as input, except that image_set and</span>
+<span class="sd">        prior_exposures_to_image_set have been copied</span>
+<span class="sd">        from behavior_table where appropriate</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Because images are more appropriately associated with</span>
+<span class="sd">    behavior sessions, it is easiest to just assemble</span>
+<span class="sd">    a table of behavior sessions and then join this to</span>
+<span class="sd">    the ecephys_sessions using behavior_sessions.ecephys_session_id,</span>
+<span class="sd">    which is effectively what this method does.</span>
+<span class="sd">    """</span>
+    <span class="c1"># add prior exposure to image_set to session_table</span>
+
+    <span class="n">sub_df</span> <span class="o">=</span> <span class="n">behavior_table</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">behavior_table</span><span class="o">.</span><span class="n">ecephys_session_id</span><span class="o">.</span><span class="n">isna</span><span class="p">()),</span>
+        <span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"image_set"</span><span class="p">,</span> <span class="s2">"prior_exposures_to_image_set"</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">ecephys_table</span> <span class="o">=</span> <span class="n">ecephys_table</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+        <span class="n">sub_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"ecephys_session_id"</span><span class="p">),</span>
+        <span class="n">on</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span>
+        <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ecephys_table</span>
+
+
+<div class="viewcode-block" id="strip_substructure_acronym_df">
+<a class="viewcode-back" href="../../../../../allensdk.brain_observatory.vbn_2022.metadata_writer.dataframe_manipulations.html#allensdk.brain_observatory.vbn_2022.metadata_writer.dataframe_manipulations.strip_substructure_acronym_df">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">strip_substructure_acronym_df</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">col_name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Take the structure_acronym(s) column of a dataframe</span>
+<span class="sd">    and remove the substructure (i.e. convert DG-mo to DG).</span>
+
+<span class="sd">    Return the altered dataframe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df: pd.DataFrame</span>
+
+<span class="sd">    col_name: str</span>
+<span class="sd">        The name of the structure_acronym column.</span>
+<span class="sd">        Note: if the column is a list of strings (as in the</span>
+<span class="sd">        probes.csv table) every element in the list will be</span>
+<span class="sd">        sanitized.</span>
+
+<span class="sd">    Return</span>
+<span class="sd">    ------</span>
+<span class="sd">    df: pd.DataFrame</span>
+<span class="sd">        Same as input with the amended column</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Alters df in place</span>
+<span class="sd">    """</span>
+    <span class="n">new_col</span> <span class="o">=</span> <span class="p">[</span><span class="n">strip_substructure_acronym</span><span class="p">(</span><span class="n">acronym</span><span class="p">)</span> <span class="k">for</span> <span class="n">acronym</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="n">col_name</span><span class="p">]]</span>
+    <span class="n">df</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_col</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

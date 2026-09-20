@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.api.mtrain_api &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.api.mtrain_api</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">db_connection_creator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.trials_processing</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDF_COLUMNS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">MTRAIN_DB_CREDENTIAL_MAP</span><span class="p">,</span> \
+    <span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.authentication</span><span class="w"> </span><span class="kn">import</span> <span class="n">credential_injector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span> \
+    <span class="kn">import</span><span class="w"> </span><span class="nn">BehaviorSessionId</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.</span>\
+    <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">behavior_metadata</span> <span class="kn">import</span><span class="w"> </span><span class="nn">BehaviorMetadata</span>
+
+
+<div class="viewcode-block" id="MtrainApi">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MtrainApi</span><span class="p">:</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">api_base</span><span class="o">=</span><span class="s1">'http://mtrain:5000'</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_base</span> <span class="o">=</span> <span class="n">api_base</span>
+
+<div class="viewcode-block" id="MtrainApi.get_page">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_page">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">get_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">get_obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">get_obj</span> <span class="o">=</span> <span class="n">requests</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'total_pages'</span><span class="p">:</span> <span class="s1">'--'</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+            <span class="n">uri</span> <span class="o">=</span> <span class="s1">'/'</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span>
+                            <span class="s2">"api/v1/</span><span class="si">%s</span><span class="s2">?page=</span><span class="si">%i</span><span class="s2">&amp;q={</span><span class="se">\"</span><span class="s2">filters</span><span class="se">\"</span><span class="s2">:</span><span class="si">%s</span><span class="s2">}"</span> <span class="o">%</span> <span class="p">(</span>
+                                <span class="n">table_name</span><span class="p">,</span> <span class="n">ii</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">filters</span><span class="p">))])</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">get_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">json</span>
+            <span class="k">if</span> <span class="s1">'message'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"objects"</span><span class="p">])</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="k">yield</span> <span class="n">df</span>
+
+            <span class="k">if</span> <span class="s1">'total_pages'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s1">'total_pages'</span><span class="p">]</span> <span class="o">==</span> <span class="n">ii</span><span class="p">:</span>
+                <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="MtrainApi.get_df">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_df">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table_name</span><span class="p">,</span> <span class="n">get_obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span> <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">get_page</span><span class="p">(</span><span class="n">table_name</span><span class="p">,</span> <span class="n">get_obj</span><span class="o">=</span><span class="n">get_obj</span><span class="p">,</span>
+                                        <span class="o">**</span><span class="n">kwargs</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MtrainApi.get_subjects">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_subjects">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_subjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'subjects'</span><span class="p">)</span><span class="o">.</span><span class="n">LabTracks_ID</span><span class="o">.</span><span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="MtrainApi.get_session">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">behavior_session_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">behavior_session_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="n">behavior_session_uuid</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="p">]),</span> <span class="s1">'must enter either a '</span> \
+                                   <span class="s1">'behavior_session_uuid or a '</span> \
+                                   <span class="s1">'behavior_session_id'</span>
+        <span class="k">if</span> <span class="n">behavior_session_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">_get_behavior_metadata</span><span class="p">():</span>
+                <span class="n">lims_db</span> <span class="o">=</span> <span class="n">db_connection_creator</span><span class="p">(</span>
+                    <span class="n">fallback_credentials</span><span class="o">=</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+                <span class="p">)</span>
+                <span class="n">behavior_session_id_</span> <span class="o">=</span> <span class="n">BehaviorSessionId</span><span class="p">(</span>
+                    <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">)</span>
+                <span class="n">bm</span> <span class="o">=</span> <span class="n">BehaviorMetadata</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                    <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id_</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">bm</span>
+            <span class="n">bm</span> <span class="o">=</span> <span class="n">_get_behavior_metadata</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">behavior_session_uuid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># if both a behavior session uuid and a lims id are entered,</span>
+                <span class="c1"># ensure that they match</span>
+                <span class="k">assert</span> <span class="n">behavior_session_uuid</span> <span class="o">==</span> \
+                       <span class="nb">str</span><span class="p">(</span><span class="n">bm</span><span class="o">.</span><span class="n">behavior_session_uuid</span><span class="p">),</span> \
+                       <span class="s1">'behavior_session </span><span class="si">{}</span><span class="s1"> does not match '</span> \
+                       <span class="s1">'behavior_session_id </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">behavior_session_uuid</span><span class="p">,</span> <span class="n">bm</span><span class="o">.</span><span class="n">behavior_session_uuid</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># get a behavior session uuid if a lims ID was entered</span>
+                <span class="n">behavior_session_uuid</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bm</span><span class="o">.</span><span class="n">behavior_session_uuid</span><span class="p">)</span>
+
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"id"</span><span class="p">,</span> <span class="s2">"op"</span><span class="p">:</span> <span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"val"</span><span class="p">:</span> <span class="n">behavior_session_uuid</span><span class="p">}]</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'behavior_sessions'</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'behavior_session_uuid'</span><span class="p">})</span>
+        <span class="n">state_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'states'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'state_id'</span><span class="p">})</span>
+        <span class="n">regimen_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'regimens'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'regimen_id'</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">:</span> <span class="s1">'regimen_name'</span><span class="p">})</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">'states'</span><span class="p">,</span> <span class="s1">'active'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">stage_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'stages'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'stage_id'</span><span class="p">})</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">'states'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">state_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'state_id'</span><span class="p">)</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">stage_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'stage_id'</span><span class="p">)</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">regimen_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'regimen_id'</span><span class="p">)</span>
+        <span class="n">behavior_df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">'state_id'</span><span class="p">,</span> <span class="s1">'stage_id'</span><span class="p">,</span> <span class="s1">'regimen_id'</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                         <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Session not found </span><span class="si">%s</span><span class="s2">:"</span> <span class="o">%</span> <span class="n">behavior_session_uuid</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">session_dict</span> <span class="o">=</span> <span class="n">behavior_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"behavior_session_uuid"</span><span class="p">,</span> <span class="s2">"op"</span><span class="p">:</span> <span class="s2">"eq"</span><span class="p">,</span>
+                    <span class="s2">"val"</span><span class="p">:</span> <span class="n">behavior_session_uuid</span><span class="p">}]</span>
+        <span class="n">trials_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'trials'</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span>
+            <span class="s1">'index'</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">'id'</span><span class="p">,</span> <span class="s1">'behavior_session'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span>
+            <span class="s1">'index'</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">trials_df</span><span class="p">[</span><span class="s1">'behavior_session_uuid'</span><span class="p">]</span> <span class="o">=</span> <span class="n">trials_df</span><span class="p">[</span>
+            <span class="s1">'behavior_session_uuid'</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">)</span>
+        <span class="n">trials_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">session_dict</span><span class="p">[</span><span class="s1">'trials'</span><span class="p">]</span> <span class="o">=</span> <span class="n">trials_df</span><span class="p">[</span><span class="n">EDF_COLUMNS</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">session_dict</span></div>
+
+
+<div class="viewcode-block" id="MtrainApi.get_behavior_training_df">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_behavior_training_df">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_training_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">LabTracks_ID</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">LabTracks_ID</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"LabTracks_ID"</span><span class="p">,</span> <span class="s2">"op"</span><span class="p">:</span> <span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"val"</span><span class="p">:</span> <span class="n">LabTracks_ID</span><span class="p">}]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'behavior_sessions'</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'behavior_session_uuid'</span><span class="p">})</span>
+
+        <span class="n">state_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'states'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'state_id'</span><span class="p">})</span>
+        <span class="n">regimen_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'regimens'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'regimen_id'</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">:</span> <span class="s1">'regimen_name'</span><span class="p">})</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">'states'</span><span class="p">,</span> <span class="s1">'active'</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">stage_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_df</span><span class="p">(</span><span class="s1">'stages'</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="s1">'stage_id'</span><span class="p">,</span> <span class="s1">'name'</span><span class="p">:</span> <span class="s1">'stage_name'</span><span class="p">})</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">'states'</span><span class="p">],</span>
+                                                                   <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">state_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'state_id'</span><span class="p">)</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">stage_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'stage_id'</span><span class="p">)</span>
+        <span class="n">behavior_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">behavior_df</span><span class="p">,</span> <span class="n">regimen_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">,</span>
+                               <span class="n">on</span><span class="o">=</span><span class="s1">'regimen_id'</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">behavior_df</span></div>
+
+
+<div class="viewcode-block" id="MtrainApi.get_current_stage">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainApi.get_current_stage">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_current_stage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">LabTracks_ID</span><span class="p">):</span>
+        <span class="n">sess</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+
+        <span class="n">state_response</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api_base</span><span class="p">,</span> <span class="s1">'get_script/'</span><span class="p">),</span>
+                                  <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+                                      <span class="s1">'LabTracks_ID'</span><span class="p">:</span> <span class="n">LabTracks_ID</span><span class="p">}))</span>  <span class="c1">#</span>
+        <span class="c1"># .json()#['objects']).keys()</span>
+        <span class="k">return</span> <span class="n">state_response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">'data'</span><span class="p">][</span><span class="s1">'parameters'</span><span class="p">][</span><span class="s1">'stage'</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MtrainSqlApi">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainSqlApi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MtrainSqlApi</span><span class="p">:</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dbname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">port</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="n">dbname</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">port</span><span class="p">])):</span>
+            <span class="c1"># Currying is equivalent to decorator syntactic sugar</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mtrain_db</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">credential_injector</span><span class="p">(</span><span class="n">MTRAIN_DB_CREDENTIAL_MAP</span><span class="p">)</span>
+                <span class="p">(</span><span class="n">PostgresQueryMixin</span><span class="p">)())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mtrain_db</span> <span class="o">=</span> <span class="n">PostgresQueryMixin</span><span class="p">(</span>
+                <span class="n">dbname</span><span class="o">=</span><span class="n">dbname</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
+                <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MtrainSqlApi.get_subjects">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainSqlApi.get_subjects">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_subjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s1">'SELECT "LabTracks_ID" FROM subjects'</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mtrain_db</span><span class="o">.</span><span class="n">fetchall</span><span class="p">(</span><span class="n">query</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MtrainSqlApi.get_behavior_training_df">
+<a class="viewcode-back" href="../../../../allensdk.internal.api.mtrain_api.html#allensdk.internal.api.mtrain_api.MtrainSqlApi.get_behavior_training_df">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_behavior_training_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">LabTracks_ID</span><span class="p">):</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mtrain_db</span><span class="o">.</span><span class="n">get_connection</span><span class="p">()</span>
+        <span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">'''SELECT stages.name as stage_name, regimens.name as</span>
+<span class="sd">            regimen_name, bs.date, bs.id as behavior_session_id</span>
+<span class="sd">               FROM behavior_sessions bs</span>
+<span class="sd">               LEFT JOIN states ON states.id = bs.state_id</span>
+<span class="sd">               LEFT JOIN regimens ON regimens.id = states.regimen_id</span>
+<span class="sd">               LEFT JOIN stages ON stages.id = states.stage_id</span>
+<span class="sd">               WHERE "LabTracks_ID"={}</span>
+<span class="sd">            '''</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">LabTracks_ID</span><span class="p">),</span> <span class="n">connection</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s1">'date'</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

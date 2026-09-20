@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Organization of a Visual Behavior NWB file &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="organization-of-a-visual-behavior-nwb-file">
+<h1>Organization of a Visual Behavior NWB file<a class="headerlink" href="#organization-of-a-visual-behavior-nwb-file" title="Link to this heading">¶</a></h1>
+<p>The Allen Institute’s Brain Observatory data sets include data from 2-photon microscope recordings including image segmentation, motion correction and fluorescence traces.
+These data are separated into two different types of files - files with just data about specimen behavior and files which include this _and_ optical physiology data.
+It also includes information about the visual stimuli presented during the recording. This information is packaged in the <a class="reference external" href="http://www.nwb.org">NWB format</a>.
+Here is a brief description how the data is stored in the NWB file.</p>
+<section id="browsing-the-file">
+<h2>Browsing the file<a class="headerlink" href="#browsing-the-file" title="Link to this heading">¶</a></h2>
+<p>The NWB format is a self-documenting file format that is designed to store a wide range of neurophysiology data.
+Structurally, NWB is nothing more than an HDF5 file that has data organized in a particular way.
+For example, the format has a dedicated location for storing all data that is acquired during an experiment, and another place to store stimulus data that was presented.
+Data is usually stored in a time series, and each time series has information to document the type of data that it stores.
+Importantly, all HDF5 tools and libraries are able to read the NWB file.</p>
+<p>When using NWB files, the most important tool to become familiar with is HDFView.
+HDFView is an open-source tool that is published by the HDF Group.
+It allows you to browse the contents of an HDF5 (and NWB) file in an intuitive way, and also to view some of the data stored within it.
+HDFView can be downloaded at <a class="reference external" href="http://www.hdfgroup.org/products/java/hdfview/">www.hdfgroup.org</a>.
+It is <em>highly</em> recommended that anyone using an NWB file download and install this tool.</p>
+</section>
+<section id="nwb-file-organization">
+<h2>NWB file organization<a class="headerlink" href="#nwb-file-organization" title="Link to this heading">¶</a></h2>
+<p>Each NWB file is organized into seven sections. These sections store acquired data (‘acquisition’), stimulus data (‘stimulus’), general metadata about the experiment (‘general’), experiment organization (‘intervals’), processed data (‘processing’), metadata about data types found in the NWB (‘specifications’), and a free-form area for storing analysis data (‘analysis’).</p>
+<figure class="align-default" id="id1">
+<img alt="_static/behavior_ophys_nwb_fig-1.png" src="_static/behavior_ophys_nwb_fig-1.png" />
+<figcaption>
+<p><span class="caption-text"><strong>Figure 1. An NWB file, viewed in HDFView</strong></span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>At the left of HDFView shows the organization of data in an NWB file.
+It is most useful to imagine an HDF5 file as a container that stores many files and folders within it.
+Because of this structure, you can browse an HDF5 file, and an NWB file, in the same way that you browse the files and folders on your computer.
+Folders can be opened by double-clicking on the folder icon.
+The contents of a ‘file’ within HDF5, which called a dataset, can be seen by double-clicking it.
+An NWB file has seven top-level folders and five top-level datasets.
+In Figure 1, the contents of the ‘session_description’ dataset is displayed.
+An NWB file is designed to store data from a single experimental session on a single animal.
+The <cite>session_description</cite> dataset provides a quick summary of the information available in the file.
+The NWB specification, describing the format and how data is stored, can be downloaded <a class="reference external" href="https://nwb-schema.readthedocs.io/en/latest/index.html">here</a>.</p>
+</section>
+<section id="stimulus-data">
+<h2>Stimulus data<a class="headerlink" href="#stimulus-data" title="Link to this heading">¶</a></h2>
+<p>Within an NWB file, stimulus data is organized into ‘templates’, which are stimulus descriptions that can be used one or more times, and ‘presentation’, which stores the time-series data about what was presented and when.</p>
+<figure class="align-default" id="id2">
+<img alt="_static/behavior_ophys_nwb_fig-2.png" src="_static/behavior_ophys_nwb_fig-2.png" />
+<figcaption>
+<p><span class="caption-text"><strong>Figure 2. Stimuli presented during the experiment</strong></span><a class="headerlink" href="#id2" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>In this experiment shown in Figure 2, there was only one stimulus presented - a set of natural images.
+When browsing the file, note the panel to the right.
+Clicking on a folder or dataset will cause information about that object to be displayed there.
+This will display a table of information related to that dataset, including comments, descriptions, and other relevant metadata.
+Double clicking one of these will further reveal the value stored inside.</p>
+</section>
+<section id="processing">
+<h2>Processing<a class="headerlink" href="#processing" title="Link to this heading">¶</a></h2>
+<p>In the NWB file, the processing folder is designed to store the contents of the different levels of intermediate processing of data that are necessary to convert raw data into something that can be used for scientific analysis, as well as information about the behavior of the specimen during data collection.
+In the Allen Institute’s NWB file, these levels of processing include motion correction of the acquired 2-photon movie frames, image segmentation into regions of interest, the fluorescence signal for each of these regions, and the dF/F signal that is useful for correlating cell activity with presented stimuli.</p>
+<p>This is also where you will find the main difference between the two types on NWB files produced for the Allen Institute Brain Observatory dataset.
+In the processing directory, you will notice behavior data information like licking, running, rewards, etc.
+If this is an NWB strictly containing behavior data, then that will be all. If the NWB file is one that includes optical physiology data as well then there wil also be a directory in processing called <cite>ophys</cite>, where you will find the intermediate processing data.</p>
+<figure class="align-default" id="id3">
+<img alt="_static/behavior_ophys_nwb_fig-3.png" src="_static/behavior_ophys_nwb_fig-3.png" />
+<figcaption>
+<p><span class="caption-text"><strong>Figure 3. Location of dF/F data</strong></span><a class="headerlink" href="#id3" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>HDFView provides a very efficient way to browse the contents of an NWB file.</p>
+<p>Below is a brief description and location for several types of data in the NWB file.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>Data Description</p></th>
+<th class="head"><p>NWB Location</p></th>
+<th class="head"><p>SDK Method(s), Property, or Properties</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td rowspan="6"><p>Acquired/Processed Data</p></td>
+<td><p>Frame by frame ellipse fits of subject corneal reflection</p></td>
+<td><p>/acquisition/EyeTracking/corneal_reflection_tracking</p></td>
+<td rowspan="4"><p>BehaviorOphysExperiment().eye_tracking</p></td>
+</tr>
+<tr class="row-odd"><td><p>Frame by frame ellipse fits of subject eye</p></td>
+<td><p>/acquisition/EyeTracking/eye_tracking</p></td>
+</tr>
+<tr class="row-even"><td><p>Frame by frame ellipse fits of subject pupil</p></td>
+<td><p>/acquisition/EyeTracking/pupil_tracking</p></td>
+</tr>
+<tr class="row-odd"><td><p>Video frames containing likely blinks</p></td>
+<td><p>/acquisition/EyeTracking/likely_blink</p></td>
+</tr>
+<tr class="row-even"><td><p>Running wheel reference voltage</p></td>
+<td><p>/acquisition/v_in</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Running wheel reference signal</p></td>
+<td><p>/acquisition/v_sig</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td rowspan="6"><p>Metadata (Subject)</p></td>
+<td><p>Subject age</p></td>
+<td><p>/general/subject/age</p></td>
+<td rowspan="17"><div class="line-block">
+<div class="line">BehaviorOphysExperiment().metadata</div>
+<div class="line">BehaviorSession().metadata</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>Subject description</p></td>
+<td><p>/general/subject/description</p></td>
+</tr>
+<tr class="row-even"><td><p>Subject genotype</p></td>
+<td><p>/general/subject/genotype</p></td>
+</tr>
+<tr class="row-odd"><td><p>Subject sex</p></td>
+<td><p>/general/subject/sex</p></td>
+</tr>
+<tr class="row-even"><td><p>Subject species</p></td>
+<td><p>/general/subject/species</p></td>
+</tr>
+<tr class="row-odd"><td><p>Subject identifier</p></td>
+<td><p>/general/subject/subject_id</p></td>
+</tr>
+<tr class="row-even"><td rowspan="10"><p>Metadata (General)</p></td>
+<td><p>Date of NWB file creation</p></td>
+<td><p>/file_create_date</p></td>
+</tr>
+<tr class="row-odd"><td><p>Equipment identifier</p></td>
+<td><p>/general/devices</p></td>
+</tr>
+<tr class="row-even"><td><p>A description of the behavior task that the subject is performing</p></td>
+<td><p>/general/experiment_description</p></td>
+</tr>
+<tr class="row-odd"><td><p>Institution</p></td>
+<td><p>/general/institution</p></td>
+</tr>
+<tr class="row-even"><td><p>Dataset keywords</p></td>
+<td><p>/general/keywords</p></td>
+</tr>
+<tr class="row-odd"><td><p>Allen project_code</p></td>
+<td><p>/general/project_code</p></td>
+</tr>
+<tr class="row-even"><td><p>Additional metadata</p>
+<p>May include (depending on if NWB file
+also contains optical physiology data):</p>
+<ul class="simple">
+<li><p>field_of_view_width</p></li>
+<li><p>field_of_width_height</p></li>
+<li><p>imaging_depth</p></li>
+<li><p>stimulus_frame_rate</p></li>
+</ul>
+</td>
+<td><p>/general/metadata</p></td>
+</tr>
+<tr class="row-odd"><td><p>Description of session ‘stage’</p></td>
+<td><p>/session_description</p></td>
+</tr>
+<tr class="row-even"><td><p>Date of session acquisition</p></td>
+<td><p>/session_start_time</p></td>
+</tr>
+<tr class="row-odd"><td><p>Behavior Session or Behavior Ophys Experiment identifier</p></td>
+<td><p>/identifier</p></td>
+</tr>
+<tr class="row-even"><td><p>Metadata
+(Optical Physiology)</p></td>
+<td><p>Optical physiology imaging parameters</p></td>
+<td><p>/general/optophysiology</p></td>
+</tr>
+<tr class="row-odd"><td rowspan="8"><p>Behavior Data</p></td>
+<td><p>Parameters pertaining to the behavior task</p></td>
+<td><p>/general/task_parameters</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().task_parameters</div>
+<div class="line">BehaviorSession().task_parameters</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>Stimuli presentation information and timings for behavior task</p></td>
+<td><div class="line-block">
+<div class="line">/intervals</div>
+<div class="line">/stimulus/presentation</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().stimulus_presentations</div>
+<div class="line">BehaviorSession().stimulus_presentations</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>Stimulus templates</p></td>
+<td><p>/stimulus/templates</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().stimulus_templates</div>
+<div class="line">BehaviorSession().stimulus_templates</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>Synchronized timestamps of stimuli</p></td>
+<td><p>/processing/stimulus/timestamps</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().stimulus_timestamps</div>
+<div class="line">BehaviorSession().stimulus_timestamps</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>Trial data for behavior task</p></td>
+<td><p>/intervals/trials</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().trials</div>
+<div class="line">BehaviorSession().trials</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>Data about subject licking during behavior task</p></td>
+<td><p>/processing/licking/licks</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().licks</div>
+<div class="line">BehaviorSession().licks</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>Information about water rewards during behavior task</p></td>
+<td><p>/processing/rewards</p></td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().rewards</div>
+<div class="line">BehaviorSession().rewards</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>Running data during behavior task containing:</p>
+<ul class="simple">
+<li><p>Change in distance</p></li>
+<li><p>Speed</p></li>
+<li><p>Unfiltered speed</p></li>
+</ul>
+</td>
+<td><div class="line-block">
+<div class="line">/processing/running/dx</div>
+<div class="line">/processing/running/speed</div>
+<div class="line">/processing/running/speed_unfiltered</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line">BehaviorOphysExperiment().running_speed</div>
+<div class="line">BehaviorSession().running_speed</div>
+</div>
+<div class="line-block">
+<div class="line">BehaviorOphysExperiment().raw_running_speed</div>
+<div class="line">BehaviorSession().raw_running_speed</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td rowspan="9"><p>Optical physiology Data</p></td>
+<td><p>Corrected fluorescence traces</p></td>
+<td><p>/processing/ophys/corrected_fluorescence</p></td>
+<td><p>BehaviorOphysExperiment().corrected_fluorescence_traces</p></td>
+</tr>
+<tr class="row-even"><td><p>dF/F values</p></td>
+<td><p>/processing/ophys/dff</p></td>
+<td><p>BehaviorOphysExperiment().dff_traces</p></td>
+</tr>
+<tr class="row-odd"><td><p>Detected events</p></td>
+<td><p>/processing/ophys/event_detection</p></td>
+<td><p>BehaviorOphysExperiment().events</p></td>
+</tr>
+<tr class="row-even"><td><p>Table of segmented regions of interest (ROI)</p></td>
+<td><p>/processing/ophys/image_segmentation/cell_specimen_table</p></td>
+<td><p>BehaviorOphysExperiment().cell_specimen_table</p></td>
+</tr>
+<tr class="row-odd"><td><p>Average projection image of optical physiology imaging plane over time</p></td>
+<td><p>/processing/ophys/images/average_image</p></td>
+<td><p>BehaviorOphysExperiment().average_projection</p></td>
+</tr>
+<tr class="row-even"><td><p>Maximum projection image of optical physiology imaging plane over time</p></td>
+<td><p>/processing/ophys/images/max_projection</p></td>
+<td><p>BehaviorOphysExperiment().max_projection</p></td>
+</tr>
+<tr class="row-odd"><td><p>Segmented ROI image</p></td>
+<td><p>/processing/ophys/images/segmentation_mask_image</p></td>
+<td><p>BehaviorOphysExperiment().segmentation_mask_image</p></td>
+</tr>
+<tr class="row-even"><td><p>Imaging motion correction in x dimension</p></td>
+<td><p>/processing/ophys/ophys_motion_correction_x</p></td>
+<td><p>BehaviorOphysExperiment().motion_correction</p></td>
+</tr>
+<tr class="row-odd"><td><p>Imaging motion correction in y dimension</p></td>
+<td><p>/processing/ophys/ophys_motion_correction_y</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>NWB Information</p></td>
+<td><p>NWB schema and extension information</p></td>
+<td><p>/specifications</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

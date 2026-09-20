@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.behavior_session &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.behavior_session</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pynwb</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneResultExpectedError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory</span><span class="w"> </span><span class="kn">import</span> <span class="n">sync_utilities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+    <span class="n">MappingStimulusFile</span><span class="p">,</span>
+    <span class="n">ReplayStimulusFile</span><span class="p">,</span>
+    <span class="n">SyncFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.eye_tracking_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EyeTrackingFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.eye_tracking_metadata_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">EyeTrackingMetadataFile</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.eye_tracking_video</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EyeTrackingVideo</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">StimulusFileLookup</span><span class="p">,</span>
+    <span class="n">stimulus_lookup_from_json</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BehaviorSessionId</span><span class="p">,</span>
+    <span class="n">RunningAcquisition</span><span class="p">,</span>
+    <span class="n">RunningSpeed</span><span class="p">,</span>
+    <span class="n">StimulusTimestamps</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.eye_tracking.eye_tracking_table</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">EyeTrackingTable</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">RigGeometry</span> <span class="k">as</span> <span class="n">EyeTrackingRigGeometry</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.licks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Licks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.behavior_metadata</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">BehaviorMetadata</span><span class="p">,</span>
+    <span class="n">get_expt_description</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.date_of_acquisition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">DateOfAcquisition</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.project_code</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">ProjectCode</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.rewards</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rewards</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.presentations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">Presentations</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.stimuli</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Stimuli</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.templates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">Templates</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.task_parameters</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TaskParameters</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.trials.trials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Trials</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.sync_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span> <span class="k">as</span> <span class="n">SyncDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">LimsReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.auth_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span> <span class="n">db_connection_creator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+
+
+<div class="viewcode-block" id="BehaviorSession">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BehaviorSession</span><span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">LimsReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">JsonReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Represents data from a single Visual Behavior behavior session.</span>
+<span class="sd">    Initialize by using class methods `from_lims` or `from_nwb_path`.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="n">BehaviorSessionId</span><span class="p">,</span>
+        <span class="n">stimulus_timestamps</span><span class="p">:</span> <span class="n">StimulusTimestamps</span><span class="p">,</span>
+        <span class="n">running_acquisition</span><span class="p">:</span> <span class="n">RunningAcquisition</span><span class="p">,</span>
+        <span class="n">raw_running_speed</span><span class="p">:</span> <span class="n">RunningSpeed</span><span class="p">,</span>
+        <span class="n">running_speed</span><span class="p">:</span> <span class="n">RunningSpeed</span><span class="p">,</span>
+        <span class="n">licks</span><span class="p">:</span> <span class="n">Licks</span><span class="p">,</span>
+        <span class="n">rewards</span><span class="p">:</span> <span class="n">Rewards</span><span class="p">,</span>
+        <span class="n">stimuli</span><span class="p">:</span> <span class="n">Stimuli</span><span class="p">,</span>
+        <span class="n">task_parameters</span><span class="p">:</span> <span class="n">TaskParameters</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">:</span> <span class="n">Trials</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="p">:</span> <span class="n">BehaviorMetadata</span><span class="p">,</span>
+        <span class="n">date_of_acquisition</span><span class="p">:</span> <span class="n">DateOfAcquisition</span><span class="p">,</span>
+        <span class="n">eye_tracking_table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EyeTrackingTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eye_tracking_rig_geometry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EyeTrackingRigGeometry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"behavior_session"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_value_self</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_behavior_session_id</span> <span class="o">=</span> <span class="n">behavior_session_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_licks</span> <span class="o">=</span> <span class="n">licks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rewards</span> <span class="o">=</span> <span class="n">rewards</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_acquisition</span> <span class="o">=</span> <span class="n">running_acquisition</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_speed</span> <span class="o">=</span> <span class="n">running_speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raw_running_speed</span> <span class="o">=</span> <span class="n">raw_running_speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span> <span class="o">=</span> <span class="n">stimuli</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span> <span class="o">=</span> <span class="n">stimulus_timestamps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_parameters</span> <span class="o">=</span> <span class="n">task_parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span> <span class="o">=</span> <span class="n">trials</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_date_of_acquisition</span> <span class="o">=</span> <span class="n">date_of_acquisition</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking</span> <span class="o">=</span> <span class="n">eye_tracking_table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="n">eye_tracking_rig_geometry</span>
+
+    <span class="c1"># ==================== class and utility methods ======================</span>
+
+<div class="viewcode-block" id="BehaviorSession.from_json">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">session_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">read_stimulus_presentations_table_from_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_exclude_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eye_tracking_z_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+        <span class="n">eye_tracking_dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">eye_tracking_drop_frames</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">sync_file_permissive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">running_speed_load_from_multiple_stimulus_files</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_data</span>
+<span class="sd">            Dict of input data necessary to construct a session</span>
+<span class="sd">        read_stimulus_presentations_table_from_file</span>
+<span class="sd">            Whether to read the stimulus table from a file rather than</span>
+<span class="sd">            construct it here</span>
+<span class="sd">        stimulus_presentation_columns</span>
+<span class="sd">            Columns to include in the stimulus presentation table. This also</span>
+<span class="sd">            specifies the order of the columns.</span>
+<span class="sd">        stimulus_presentation_exclude_columns</span>
+<span class="sd">            Optional list of columns to exclude from stimulus presentations</span>
+<span class="sd">            table</span>
+<span class="sd">        eye_tracking_z_threshold</span>
+<span class="sd">            See `BehaviorSession.from_nwb`</span>
+<span class="sd">        eye_tracking_dilation_frames</span>
+<span class="sd">            See `BehaviorSession.from_nwb`</span>
+<span class="sd">        eye_tracking_drop_frames</span>
+<span class="sd">            See `drop_frames` arg in `allensdk.brain_observatory.behavior.</span>
+<span class="sd">            data_objects.eye_tracking.eye_tracking_table.EyeTrackingTable.</span>
+<span class="sd">            from_data_file`</span>
+<span class="sd">        sync_file_permissive</span>
+<span class="sd">            See `permissive` arg in `SyncFile` constructor</span>
+<span class="sd">        running_speed_load_from_multiple_stimulus_files</span>
+<span class="sd">            Whether to load running speed from multiple stimulus files</span>
+<span class="sd">            If False, will just load from a single behavior stimulus file</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `BehaviorSession` instance</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="s2">"monitor_delay"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session_data</span><span class="p">:</span>
+            <span class="n">monitor_delay</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_monitor_delay</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">monitor_delay</span> <span class="o">=</span> <span class="n">session_data</span><span class="p">[</span><span class="s2">"monitor_delay"</span><span class="p">]</span>
+
+        <span class="n">behavior_session_id</span> <span class="o">=</span> <span class="n">BehaviorSessionId</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+        <span class="p">)</span>
+
+        <span class="n">stimulus_file_lookup</span> <span class="o">=</span> <span class="n">stimulus_lookup_from_json</span><span class="p">(</span>
+            <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">"sync_file"</span> <span class="ow">in</span> <span class="n">session_data</span><span class="p">:</span>
+            <span class="n">sync_file</span> <span class="o">=</span> <span class="n">SyncFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">,</span> <span class="n">permissive</span><span class="o">=</span><span class="n">sync_file_permissive</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sync_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">running_speed_load_from_multiple_stimulus_files</span><span class="p">:</span>
+            <span class="n">running_acquisition</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">RunningAcquisition</span><span class="o">.</span><span class="n">from_multiple_stimulus_files</span><span class="p">(</span>
+                    <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">)</span>
+                    <span class="p">),</span>
+                    <span class="n">mapping_stimulus_file</span><span class="o">=</span><span class="n">MappingStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                        <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                    <span class="p">),</span>
+                    <span class="n">replay_stimulus_file</span><span class="o">=</span><span class="n">ReplayStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                        <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                    <span class="p">),</span>
+                    <span class="n">sync_file</span><span class="o">=</span><span class="n">SyncFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">raw_running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_multiple_stimulus_files</span><span class="p">(</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">mapping_stimulus_file</span><span class="o">=</span><span class="n">MappingStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                    <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                <span class="p">),</span>
+                <span class="n">replay_stimulus_file</span><span class="o">=</span><span class="n">ReplayStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                    <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                <span class="p">),</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">SyncFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">),</span>
+                <span class="n">filtered</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_multiple_stimulus_files</span><span class="p">(</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">mapping_stimulus_file</span><span class="o">=</span><span class="n">MappingStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                    <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                <span class="p">),</span>
+                <span class="n">replay_stimulus_file</span><span class="o">=</span><span class="n">ReplayStimulusFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                    <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                <span class="p">),</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">SyncFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">),</span>
+                <span class="n">filtered</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">behavior_stimulus_file</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span>
+            <span class="p">)</span>
+
+            <span class="n">running_acquisition</span> <span class="o">=</span> <span class="n">RunningAcquisition</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">raw_running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                <span class="n">filtered</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">BehaviorMetadata</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span><span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_data_from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="n">include_stimuli</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">read_stimulus_presentations_table_from_file</span><span class="p">),</span>
+            <span class="n">stimulus_presentation_columns</span><span class="o">=</span><span class="n">stimulus_presentation_columns</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">read_stimulus_presentations_table_from_file</span><span class="p">:</span>
+            <span class="n">stimuli</span> <span class="o">=</span> <span class="n">Stimuli</span><span class="p">(</span>
+                <span class="n">presentations</span><span class="o">=</span><span class="n">Presentations</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span>
+                    <span class="n">path</span><span class="o">=</span><span class="n">session_data</span><span class="p">[</span><span class="s2">"stim_table_file"</span><span class="p">],</span>
+                    <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">session_data</span><span class="p">[</span><span class="s2">"behavior_session_id"</span><span class="p">],</span>
+                    <span class="n">exclude_columns</span><span class="o">=</span><span class="n">stimulus_presentation_exclude_columns</span><span class="p">,</span>
+                    <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">templates</span><span class="o">=</span><span class="n">Templates</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                    <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="n">date_of_acquisition</span> <span class="o">=</span> <span class="n">DateOfAcquisition</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+            <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">eye_tracking_file</span> <span class="o">=</span> <span class="n">EyeTrackingFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">eye_tracking_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">eye_tracking_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Return empty data to match what is returned by from_nwb.</span>
+            <span class="n">eye_tracking_table</span> <span class="o">=</span> <span class="n">EyeTrackingTable</span><span class="p">(</span>
+                <span class="n">eye_tracking</span><span class="o">=</span><span class="n">EyeTrackingTable</span><span class="o">.</span><span class="n">_get_empty_df</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">eye_tracking_metadata_file</span> <span class="o">=</span> <span class="n">EyeTrackingMetadataFile</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                    <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">eye_tracking_metadata_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">eye_tracking_table</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_eye_tracking_table</span><span class="p">(</span>
+                <span class="n">eye_tracking_file</span><span class="o">=</span><span class="n">eye_tracking_file</span><span class="p">,</span>
+                <span class="n">eye_tracking_metadata_file</span><span class="o">=</span><span class="n">eye_tracking_metadata_file</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                <span class="n">z_threshold</span><span class="o">=</span><span class="n">eye_tracking_z_threshold</span><span class="p">,</span>
+                <span class="n">dilation_frames</span><span class="o">=</span><span class="n">eye_tracking_dilation_frames</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="n">EyeTrackingRigGeometry</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span>
+                <span class="n">dict_repr</span><span class="o">=</span><span class="n">session_data</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">running_acquisition</span><span class="o">=</span><span class="n">running_acquisition</span><span class="p">,</span>
+            <span class="n">raw_running_speed</span><span class="o">=</span><span class="n">raw_running_speed</span><span class="p">,</span>
+            <span class="n">running_speed</span><span class="o">=</span><span class="n">running_speed</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="o">=</span><span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="o">=</span><span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+            <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+            <span class="n">eye_tracking_table</span><span class="o">=</span><span class="n">eye_tracking_table</span><span class="p">,</span>
+            <span class="n">eye_tracking_rig_geometry</span><span class="o">=</span><span class="n">eye_tracking_rig_geometry</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.from_lims">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lims_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PostgresQueryMixin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">date_of_acquisition</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DateOfAcquisition</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eye_tracking_z_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+        <span class="n">eye_tracking_dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        behavior_session_id : int</span>
+<span class="sd">            Behavior session id</span>
+<span class="sd">        lims_db : PostgresQueryMixin, Optional</span>
+<span class="sd">            Database connection. If not provided will create a new one.</span>
+<span class="sd">        sync_file : SyncFile, Optional</span>
+<span class="sd">            If provided, will be used to compute the stimulus timestamps</span>
+<span class="sd">            associated with this session. Otherwise, the stimulus timestamps</span>
+<span class="sd">            will be computed from the stimulus file.</span>
+<span class="sd">        monitor_delay : float, Optional</span>
+<span class="sd">            Monitor delay. If not provided, will use an estimate.</span>
+<span class="sd">            To provide this value, see for example</span>
+<span class="sd">            allensdk.brain_observatory.behavior.data_objects.stimuli.util.</span>
+<span class="sd">            calculate_monitor_delay</span>
+<span class="sd">        date_of_acquisition : DateOfAcquisition, Optional</span>
+<span class="sd">            Date of acquisition. If not provided, will read from</span>
+<span class="sd">            behavior_sessions table.</span>
+<span class="sd">        eye_tracking_z_threshold : float</span>
+<span class="sd">            See `BehaviorSession.from_nwb`, default 3.0</span>
+<span class="sd">        eye_tracking_dilation_frames : int</span>
+<span class="sd">            See `BehaviorSession.from_nwb`, default 2</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `BehaviorSession` instance</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">lims_db</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lims_db</span> <span class="o">=</span> <span class="n">db_connection_creator</span><span class="p">(</span>
+                <span class="n">fallback_credentials</span><span class="o">=</span><span class="n">LIMS_DB_CREDENTIAL_MAP</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">monitor_delay</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">monitor_delay</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_monitor_delay</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">sync_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">sync_file</span> <span class="o">=</span> <span class="n">SyncFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                    <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">OneResultExpectedError</span><span class="p">:</span>
+                <span class="n">sync_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">behavior_session_id</span> <span class="o">=</span> <span class="n">BehaviorSessionId</span><span class="p">(</span><span class="n">behavior_session_id</span><span class="p">)</span>
+
+        <span class="n">stimulus_file_lookup</span> <span class="o">=</span> <span class="n">StimulusFileLookup</span><span class="p">()</span>
+
+        <span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">BehaviorStimulusFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">running_acquisition</span> <span class="o">=</span> <span class="n">RunningAcquisition</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">raw_running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">filtered</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">behavior_stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">filtered</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">behavior_metadata</span> <span class="o">=</span> <span class="n">BehaviorMetadata</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span>
+        <span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_data_from_stimulus_file</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="n">project_code</span><span class="o">=</span><span class="n">ProjectCode</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">date_of_acquisition</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">date_of_acquisition</span> <span class="o">=</span> <span class="n">DateOfAcquisition</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+        <span class="n">date_of_acquisition</span> <span class="o">=</span> <span class="n">date_of_acquisition</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">eye_tracking_file</span> <span class="o">=</span> <span class="n">EyeTrackingFile</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+            <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">eye_tracking_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Return empty data to match what is returned by from_nwb.</span>
+            <span class="n">eye_tracking_table</span> <span class="o">=</span> <span class="n">EyeTrackingTable</span><span class="p">(</span>
+                <span class="n">eye_tracking</span><span class="o">=</span><span class="n">EyeTrackingTable</span><span class="o">.</span><span class="n">_get_empty_df</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">eye_tracking_video</span> <span class="o">=</span> <span class="n">EyeTrackingVideo</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">db</span><span class="o">=</span><span class="n">lims_db</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span>
+            <span class="p">)</span>
+
+            <span class="n">eye_tracking_metadata_file</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">eye_tracking_table</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_eye_tracking_table</span><span class="p">(</span>
+                <span class="n">eye_tracking_file</span><span class="o">=</span><span class="n">eye_tracking_file</span><span class="p">,</span>
+                <span class="n">eye_tracking_metadata_file</span><span class="o">=</span><span class="n">eye_tracking_metadata_file</span><span class="p">,</span>
+                <span class="n">eye_tracking_video</span><span class="o">=</span><span class="n">eye_tracking_video</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                <span class="n">z_threshold</span><span class="o">=</span><span class="n">eye_tracking_z_threshold</span><span class="p">,</span>
+                <span class="n">dilation_frames</span><span class="o">=</span><span class="n">eye_tracking_dilation_frames</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="n">EyeTrackingRigGeometry</span><span class="o">.</span><span class="n">from_lims</span><span class="p">(</span>
+                <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">=</span><span class="n">lims_db</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">BehaviorSession</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">running_acquisition</span><span class="o">=</span><span class="n">running_acquisition</span><span class="p">,</span>
+            <span class="n">raw_running_speed</span><span class="o">=</span><span class="n">raw_running_speed</span><span class="p">,</span>
+            <span class="n">running_speed</span><span class="o">=</span><span class="n">running_speed</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">behavior_metadata</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="o">=</span><span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="o">=</span><span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+            <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+            <span class="n">eye_tracking_table</span><span class="o">=</span><span class="n">eye_tracking_table</span><span class="p">,</span>
+            <span class="n">eye_tracking_rig_geometry</span><span class="o">=</span><span class="n">eye_tracking_rig_geometry</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.from_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span>
+        <span class="n">add_is_change_to_stimulus_presentations_table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">eye_tracking_z_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+        <span class="n">eye_tracking_dilation_frames</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwbfile</span>
+<span class="sd">        add_is_change_to_stimulus_presentations_table: Whether to add a column</span>
+<span class="sd">            denoting whether the stimulus presentation represented a change</span>
+<span class="sd">            event. May not be needed in case this column is precomputed</span>
+<span class="sd">        eye_tracking_z_threshold : float, optional</span>
+<span class="sd">            The z-threshold when determining which frames likely contain</span>
+<span class="sd">            outliers for eye or pupil areas. Influences which frames</span>
+<span class="sd">            are considered 'likely blinks'. By default 3.0</span>
+<span class="sd">        eye_tracking_dilation_frames : int, optional</span>
+<span class="sd">            Determines the number of adjacent frames that will be marked</span>
+<span class="sd">            as 'likely_blink' when performing blink detection for</span>
+<span class="sd">            `eye_tracking` data, by default 2</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        """</span>
+        <span class="n">behavior_session_id</span> <span class="o">=</span> <span class="n">BehaviorSessionId</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">running_acquisition</span> <span class="o">=</span> <span class="n">RunningAcquisition</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">raw_running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">filtered</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">running_speed</span> <span class="o">=</span> <span class="n">RunningSpeed</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">BehaviorMetadata</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">licks</span> <span class="o">=</span> <span class="n">Licks</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">rewards</span> <span class="o">=</span> <span class="n">Rewards</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">stimuli</span> <span class="o">=</span> <span class="n">Stimuli</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span>
+            <span class="n">add_is_change_to_presentations_table</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">add_is_change_to_stimulus_presentations_table</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">task_parameters</span> <span class="o">=</span> <span class="n">TaskParameters</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">trials</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trials_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="n">date_of_acquisition</span> <span class="o">=</span> <span class="n">DateOfAcquisition</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s2">"This nwb file with identifier "</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">eye_tracking_rig_geometry</span> <span class="o">=</span> <span class="n">EyeTrackingRigGeometry</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span>
+            <span class="p">)</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+                <span class="n">action</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s2">"This nwb file with identifier "</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">eye_tracking_table</span> <span class="o">=</span> <span class="n">EyeTrackingTable</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span>
+                <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span>
+                <span class="n">z_threshold</span><span class="o">=</span><span class="n">eye_tracking_z_threshold</span><span class="p">,</span>
+                <span class="n">dilation_frames</span><span class="o">=</span><span class="n">eye_tracking_dilation_frames</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">running_acquisition</span><span class="o">=</span><span class="n">running_acquisition</span><span class="p">,</span>
+            <span class="n">raw_running_speed</span><span class="o">=</span><span class="n">raw_running_speed</span><span class="p">,</span>
+            <span class="n">running_speed</span><span class="o">=</span><span class="n">running_speed</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="o">=</span><span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="o">=</span><span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+            <span class="n">date_of_acquisition</span><span class="o">=</span><span class="n">date_of_acquisition</span><span class="p">,</span>
+            <span class="n">eye_tracking_table</span><span class="o">=</span><span class="n">eye_tracking_table</span><span class="p">,</span>
+            <span class="n">eye_tracking_rig_geometry</span><span class="o">=</span><span class="n">eye_tracking_rig_geometry</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.from_nwb_path">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.from_nwb_path">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nwb_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"BehaviorSession"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwb_path</span>
+<span class="sd">            Path to nwb file</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            Kwargs to be passed to `from_nwb`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An instantiation of a `BehaviorSession`</span>
+<span class="sd">        """</span>
+        <span class="n">nwb_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">nwb_path</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">NWBHDF5IO</span><span class="p">(</span><span class="n">nwb_path</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">load_namespaces</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+            <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.to_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">add_metadata</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">include_experiment_description</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">stimulus_presentations_stimulus_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"stimulus_name"</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        add_metadata</span>
+<span class="sd">            Set this to False to prevent adding metadata to the nwb</span>
+<span class="sd">            instance.</span>
+<span class="sd">        include_experiment_description: Whether to include a description of the</span>
+<span class="sd">            experiment in the nwbfile</span>
+<span class="sd">        stimulus_presentations_stimulus_column_name: Name of the column</span>
+<span class="sd">            denoting the stimulus name in the presentations table</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">include_experiment_description</span><span class="p">:</span>
+            <span class="n">experiment_description</span> <span class="o">=</span> <span class="n">get_expt_description</span><span class="p">(</span>
+                <span class="n">session_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_session_type</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">experiment_description</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+            <span class="n">session_description</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_session_type</span><span class="p">(),</span>
+            <span class="n">identifier</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_identifier</span><span class="p">(),</span>
+            <span class="n">session_start_time</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_date_of_acquisition</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">file_create_date</span><span class="o">=</span><span class="n">pytz</span><span class="o">.</span><span class="n">utc</span><span class="o">.</span><span class="n">localize</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()),</span>
+            <span class="n">institution</span><span class="o">=</span><span class="s2">"Allen Institute for Brain Science"</span><span class="p">,</span>
+            <span class="n">keywords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_keywords</span><span class="p">(),</span>
+            <span class="n">experiment_description</span><span class="o">=</span><span class="n">experiment_description</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_acquisition</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raw_running_speed</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_speed</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">add_metadata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_licks</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rewards</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span>
+            <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span>
+            <span class="n">presentations_stimulus_column_name</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">stimulus_presentations_stimulus_column_name</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_task_parameters</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span><span class="o">.</span><span class="n">to_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.list_data_attributes_and_methods">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.list_data_attributes_and_methods">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_data_attributes_and_methods</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Convenience method for end-users to list attributes and methods</span>
+<span class="sd">        that can be called to access data for a BehaviorSession.</span>
+
+<span class="sd">        NOTE: Because BehaviorOphysExperiment inherits from BehaviorSession,</span>
+<span class="sd">        this method will also be available there.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[str]</span>
+<span class="sd">            A list of attributes and methods that end-users can access or call</span>
+<span class="sd">            to get data.</span>
+<span class="sd">        """</span>
+        <span class="n">attrs_and_methods_to_ignore</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"from_json"</span><span class="p">,</span>
+            <span class="s2">"from_lims"</span><span class="p">,</span>
+            <span class="s2">"from_nwb_path"</span><span class="p">,</span>
+            <span class="s2">"list_data_attributes_and_methods"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">attrs_and_methods_to_ignore</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="n">NwbReadableInterface</span><span class="p">))</span>
+        <span class="n">attrs_and_methods_to_ignore</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="n">NwbWritableInterface</span><span class="p">))</span>
+        <span class="n">attrs_and_methods_to_ignore</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="n">DataObject</span><span class="p">))</span>
+        <span class="n">class_dir</span> <span class="o">=</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">attrs_and_methods</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">r</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">class_dir</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">r</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs_and_methods_to_ignore</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"_"</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">attrs_and_methods</span></div>
+
+
+    <span class="c1"># ========================= 'get' methods ==========================</span>
+
+<div class="viewcode-block" id="BehaviorSession.get_reward_rate">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.get_reward_rate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reward_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get the reward rate of the subject for the task calculated over a</span>
+<span class="sd">        25 trial rolling window and provides a measure of the rewards</span>
+<span class="sd">        earned per unit time (in units of rewards/minute).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            The reward rate (rewards/minute) of the subject for the</span>
+<span class="sd">            task calculated over a 25 trial rolling window.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">calculate_reward_rate</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.get_rolling_performance_df">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.get_rolling_performance_df">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_rolling_performance_df</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Return a DataFrame containing trial by trial behavior response</span>
+<span class="sd">        performance metrics.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            A pandas DataFrame containing:</span>
+<span class="sd">                trials_id [index]: (int)</span>
+<span class="sd">                    Index of the trial. All trials, including aborted trials,</span>
+<span class="sd">                    are assigned an index starting at 0 for the first trial.</span>
+<span class="sd">                reward_rate: (float)</span>
+<span class="sd">                    Rewards earned in the previous 25 trials, normalized by</span>
+<span class="sd">                    the elapsed time of the same 25 trials. Units are</span>
+<span class="sd">                    rewards/minute.</span>
+<span class="sd">                hit_rate_raw: (float)</span>
+<span class="sd">                    Fraction of go trials where the mouse licked in the</span>
+<span class="sd">                    response window, calculated over the previous 100</span>
+<span class="sd">                    non-aborted trials. Without trial count correction applied.</span>
+<span class="sd">                hit_rate: (float)</span>
+<span class="sd">                    Fraction of go trials where the mouse licked in the</span>
+<span class="sd">                    response window, calculated over the previous 100</span>
+<span class="sd">                    non-aborted trials. With trial count correction applied.</span>
+<span class="sd">                false_alarm_rate_raw: (float)</span>
+<span class="sd">                    Fraction of catch trials where the mouse licked in the</span>
+<span class="sd">                    response window, calculated over the previous 100</span>
+<span class="sd">                    non-aborted trials. Without trial count correction applied.</span>
+<span class="sd">                false_alarm_rate: (float)</span>
+<span class="sd">                    Fraction of catch trials where the mouse licked in</span>
+<span class="sd">                    the response window, calculated over the previous 100</span>
+<span class="sd">                    non-aborted trials. Without trial count correction applied.</span>
+<span class="sd">                rolling_dprime: (float)</span>
+<span class="sd">                    d prime calculated using the rolling hit_rate and</span>
+<span class="sd">                    rolling false_alarm _rate.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">rolling_performance</span></div>
+
+
+<div class="viewcode-block" id="BehaviorSession.get_performance_metrics">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.behavior.behavior_session.html#allensdk.brain_observatory.behavior.behavior_session.BehaviorSession.get_performance_metrics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_performance_metrics</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">engaged_trial_reward_rate_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get a dictionary containing a subject's behavior response</span>
+<span class="sd">        summary data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        engaged_trial_reward_rate_threshold : float, optional</span>
+<span class="sd">            The number of rewards per minute that needs to be attained</span>
+<span class="sd">            before a subject is considered 'engaged', by default 2.0</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Returns a dict of performance metrics with the following fields:</span>
+<span class="sd">                trial_count: (int)</span>
+<span class="sd">                    The length of the trial dataframe</span>
+<span class="sd">                    (including all 'go', 'catch', and 'aborted' trials)</span>
+<span class="sd">                go_trial_count: (int)</span>
+<span class="sd">                    Number of 'go' trials in a behavior session</span>
+<span class="sd">                catch_trial_count: (int)</span>
+<span class="sd">                    Number of 'catch' trial types during a behavior session</span>
+<span class="sd">                hit_trial_count: (int)</span>
+<span class="sd">                    Number of trials with a hit behavior response</span>
+<span class="sd">                    type in a behavior session</span>
+<span class="sd">                miss_trial_count: (int)</span>
+<span class="sd">                    Number of trials with a miss behavior response</span>
+<span class="sd">                    type in a behavior session</span>
+<span class="sd">                false_alarm_trial_count: (int)</span>
+<span class="sd">                    Number of trials where the mouse had a false alarm</span>
+<span class="sd">                    behavior response</span>
+<span class="sd">                correct_reject_trial_count: (int)</span>
+<span class="sd">                    Number of trials with a correct reject behavior</span>
+<span class="sd">                    response during a behavior session</span>
+<span class="sd">                auto_reward_count:</span>
+<span class="sd">                    Number of trials where the mouse received an auto</span>
+<span class="sd">                    reward of water.</span>
+<span class="sd">                earned_reward_count:</span>
+<span class="sd">                    Number of trials where the mouse was eligible to receive a</span>
+<span class="sd">                    water reward ('go' trials) and did receive an earned</span>
+<span class="sd">                    water reward</span>
+<span class="sd">                total_reward_count:</span>
+<span class="sd">                    Number of trials where the mouse received a</span>
+<span class="sd">                    water reward (earned or auto rewarded)</span>
+<span class="sd">                total_reward_volume: (float)</span>
+<span class="sd">                    Volume of all water rewards received during a</span>
+<span class="sd">                    behavior session (earned and auto rewarded)</span>
+<span class="sd">                maximum_reward_rate: (float)</span>
+<span class="sd">                    The peak of the rolling reward rate (rewards/minute)</span>
+<span class="sd">                engaged_trial_count: (int)</span>
+<span class="sd">                    Number of trials where the mouse is engaged</span>
+<span class="sd">                    (reward rate &gt; 2 rewards/minute)</span>
+<span class="sd">                mean_hit_rate: (float)</span>
+<span class="sd">                    The mean of the rolling hit_rate</span>
+<span class="sd">                mean_hit_rate_uncorrected:</span>
+<span class="sd">                    The mean of the rolling hit_rate_raw</span>
+<span class="sd">                mean_hit_rate_engaged: (float)</span>
+<span class="sd">                    The mean of the rolling hit_rate, excluding epochs</span>
+<span class="sd">                    when the rolling reward rate was below 2 rewards/minute</span>
+<span class="sd">                mean_false_alarm_rate: (float)</span>
+<span class="sd">                    The mean of the rolling false_alarm_rate, excluding</span>
+<span class="sd">                    epochs when the rolling reward rate was below 2</span>
+<span class="sd">                    rewards/minute</span>
+<span class="sd">                mean_false_alarm_rate_uncorrected: (float)</span>
+<span class="sd">                    The mean of the rolling false_alarm_rate_raw</span>
+<span class="sd">                mean_false_alarm_rate_engaged: (float)</span>
+<span class="sd">                    The mean of the rolling false_alarm_rate,</span>
+<span class="sd">                    excluding epochs when the rolling reward rate</span>
+<span class="sd">                    was below 2 rewards/minute</span>
+<span class="sd">                mean_dprime: (float)</span>
+<span class="sd">                    The mean of the rolling d_prime</span>
+<span class="sd">                mean_dprime_engaged: (float)</span>
+<span class="sd">                    The mean of the rolling d_prime, excluding</span>
+<span class="sd">                    epochs when the rolling reward rate was</span>
+<span class="sd">                    below 2 rewards/minute</span>
+<span class="sd">                max_dprime: (float)</span>
+<span class="sd">                    The peak of the rolling d_prime</span>
+<span class="sd">                max_dprime_engaged: (float)</span>
+<span class="sd">                    The peak of the rolling d_prime, excluding epochs</span>
+<span class="sd">                    when the rolling reward rate was below 2 rewards/minute</span>
+<span class="sd">        """</span>
+        <span class="n">performance_metrics</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">trial_count</span><span class="p">,</span>
+            <span class="s2">"go_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">go_trial_count</span><span class="p">,</span>
+            <span class="s2">"catch_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">catch_trial_count</span><span class="p">,</span>
+            <span class="s2">"hit_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">hit_trial_count</span><span class="p">,</span>
+            <span class="s2">"miss_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">miss_trial_count</span><span class="p">,</span>
+            <span class="s2">"false_alarm_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">false_alarm_trial_count</span><span class="p">,</span>
+            <span class="s2">"correct_reject_trial_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">correct_reject_trial_count</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+            <span class="s2">"auto_reward_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">auto_rewarded</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+            <span class="s2">"earned_reward_count"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">hit</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+            <span class="s2">"total_reward_count"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rewards</span><span class="p">),</span>
+            <span class="s2">"total_reward_volume"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rewards</span><span class="o">.</span><span class="n">volume</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span>
+        <span class="p">}</span>
+        <span class="c1"># Although 'earned_reward_count' will currently have the same value as</span>
+        <span class="c1"># 'hit_trial_count', in the future there may be variants of the</span>
+        <span class="c1"># task where rewards are withheld. In that case the</span>
+        <span class="c1"># 'earned_reward_count' will be smaller than (and different from)</span>
+        <span class="c1"># the 'hit_trial_count'.</span>
+
+        <span class="n">rpdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rolling_performance_df</span><span class="p">()</span>
+        <span class="n">engaged_trial_mask</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">rpdf</span><span class="p">[</span><span class="s2">"reward_rate"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">engaged_trial_reward_rate_threshold</span>
+        <span class="p">)</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"maximum_reward_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span>
+            <span class="n">rpdf</span><span class="p">[</span><span class="s2">"reward_rate"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span>
+        <span class="n">performance_metrics</span><span class="p">[</span>
+            <span class="s2">"engaged_trial_count"</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">get_engaged_trial_count</span><span class="p">(</span>
+            <span class="n">engaged_trial_reward_rate_threshold</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">engaged_trial_reward_rate_threshold</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_hit_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"hit_rate"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_hit_rate_uncorrected"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span>
+            <span class="s2">"hit_rate_raw"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_hit_rate_engaged"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"hit_rate"</span><span class="p">][</span>
+            <span class="n">engaged_trial_mask</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_false_alarm_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span>
+            <span class="s2">"false_alarm_rate"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_false_alarm_rate_uncorrected"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span>
+            <span class="s2">"false_alarm_rate_raw"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_false_alarm_rate_engaged"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span>
+            <span class="s2">"false_alarm_rate"</span>
+        <span class="p">][</span><span class="n">engaged_trial_mask</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_dprime"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"rolling_dprime"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"mean_dprime_engaged"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"rolling_dprime"</span><span class="p">][</span>
+            <span class="n">engaged_trial_mask</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"max_dprime"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"rolling_dprime"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">performance_metrics</span><span class="p">[</span><span class="s2">"max_dprime_engaged"</span><span class="p">]</span> <span class="o">=</span> <span class="n">rpdf</span><span class="p">[</span><span class="s2">"rolling_dprime"</span><span class="p">][</span>
+            <span class="n">engaged_trial_mask</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">performance_metrics</span></div>
+
+
+    <span class="c1"># ====================== properties ========================</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">behavior_session_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Unique identifier for a behavioral session.</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_behavior_session_id</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eye_tracking</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""A dataframe containing ellipse fit parameters for the eye, pupil</span>
+<span class="sd">        and corneal reflection (cr). Fits are derived from tracking points</span>
+<span class="sd">        from a DeepLabCut model applied to video frames of a subject's</span>
+<span class="sd">        right eye. Raw tracking points and raw video frames are not exposed</span>
+<span class="sd">        by the SDK.</span>
+
+<span class="sd">        Notes:</span>
+<span class="sd">        - All columns starting with 'pupil_' represent ellipse fit parameters</span>
+<span class="sd">          relating to the pupil.</span>
+<span class="sd">        - All columns starting with 'eye_' represent ellipse fit parameters</span>
+<span class="sd">          relating to the eyelid.</span>
+<span class="sd">        - All columns starting with 'cr_' represent ellipse fit parameters</span>
+<span class="sd">          relating to the corneal reflection, which is caused by an infrared</span>
+<span class="sd">          LED positioned near the eye tracking camera.</span>
+<span class="sd">        - All positions are in units of pixels.</span>
+<span class="sd">        - All areas are in units of pixels^2</span>
+<span class="sd">        - All values are in the coordinate space of the eye tracking camera,</span>
+<span class="sd">          NOT the coordinate space of the stimulus display (i.e. this is not</span>
+<span class="sd">          gaze location), with (0, 0) being the upper-left corner of the</span>
+<span class="sd">          eye-tracking image.</span>
+<span class="sd">        - The 'likely_blink' column is True for any row (frame) where the pupil</span>
+<span class="sd">          fit failed OR eye fit failed OR an outlier fit was identified on the</span>
+<span class="sd">          pupil or eye fit.</span>
+<span class="sd">        - The pupil_area, cr_area, eye_area, and pupil/eye_width, height, phi</span>
+<span class="sd">          columns are set to NaN wherever 'likely_blink' == True.</span>
+<span class="sd">        - The pupil_area_raw, cr_area_raw, eye_area_raw columns contains all</span>
+<span class="sd">          pupil fit values (including where 'likely_blink' == True).</span>
+<span class="sd">        - All ellipse fits are derived from tracking points that were output by</span>
+<span class="sd">          a DeepLabCut model that was trained on hand-annotated data from a</span>
+<span class="sd">          subset of imaging sessions on optical physiology rigs.</span>
+<span class="sd">        - Raw DeepLabCut tracking points are not publicly available.</span>
+
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eye_tracking_rig_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""the eye tracking equipment geometry associated with a</span>
+<span class="sd">        given behavior session.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            dictionary with the following keys:</span>
+<span class="sd">                camera_eye_position_mm (array of float)</span>
+<span class="sd">                camera_rotation_deg (array of float)</span>
+<span class="sd">                equipment (string)</span>
+<span class="sd">                led_position (array of float)</span>
+<span class="sd">                monitor_position_mm (array of float)</span>
+<span class="sd">                monitor_rotation_deg (array of float)</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eye_tracking_rig_geometry</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span><span class="s2">"rig_geometry"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">licks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A dataframe containing lick timestmaps and frames, sampled</span>
+<span class="sd">        at 60 Hz.</span>
+
+<span class="sd">        NOTE: For BehaviorSessions, returned timestamps are not</span>
+<span class="sd">        aligned to external 'synchronization' reference timestamps.</span>
+<span class="sd">        Synchronized timestamps are only available for</span>
+<span class="sd">        BehaviorOphysExperiments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            A dataframe containing lick timestamps.</span>
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                timestamps: (float)</span>
+<span class="sd">                    time of lick, in seconds</span>
+<span class="sd">                frame: (int)</span>
+<span class="sd">                    frame of lick</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_licks</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rewards</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Retrieves rewards from data file saved at the end of the</span>
+<span class="sd">        behavior session.</span>
+
+<span class="sd">        NOTE: For BehaviorSessions, returned timestamps are not</span>
+<span class="sd">        aligned to external 'synchronization' reference timestamps.</span>
+<span class="sd">        Synchronized timestamps are only available for</span>
+<span class="sd">        BehaviorOphysExperiments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            A dataframe containing timestamps of delivered rewards.</span>
+<span class="sd">            Timestamps are sampled at 60Hz.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                volume: (float)</span>
+<span class="sd">                    volume of individual water reward in ml.</span>
+<span class="sd">                    0.007 if earned reward, 0.005 if auto reward.</span>
+<span class="sd">                timestamps: (float)</span>
+<span class="sd">                    time in seconds</span>
+<span class="sd">                auto_rewarded: (bool)</span>
+<span class="sd">                    True if free reward was delivered for that trial.</span>
+<span class="sd">                    Occurs during the first 5 trials of a session and</span>
+<span class="sd">                    throughout as needed</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rewards</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">running_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Running speed and timestamps, sampled at 60Hz. By default</span>
+<span class="sd">        applies a 10Hz low pass filter to the data. To get the</span>
+<span class="sd">        running speed without the filter, use `raw_running_speed`.</span>
+
+<span class="sd">        NOTE: For BehaviorSessions, returned timestamps are not</span>
+<span class="sd">        aligned to external 'synchronization' reference timestamps.</span>
+<span class="sd">        Synchronized timestamps are only available for</span>
+<span class="sd">        BehaviorOphysExperiments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Dataframe containing running speed and timestamps</span>
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                timestamps: (float)</span>
+<span class="sd">                    time in seconds</span>
+<span class="sd">                speed: (float)</span>
+<span class="sd">                    speed in cm/sec</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running_speed</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">raw_running_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get unfiltered running speed data. Sampled at 60Hz.</span>
+
+<span class="sd">        NOTE: For BehaviorSessions, returned timestamps are not</span>
+<span class="sd">        aligned to external 'synchronization' reference timestamps.</span>
+<span class="sd">        Synchronized timestamps are only available for</span>
+<span class="sd">        BehaviorOphysExperiments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Dataframe containing unfiltered running speed and timestamps</span>
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                timestamps: (float)</span>
+<span class="sd">                    time in seconds</span>
+<span class="sd">                speed: (float)</span>
+<span class="sd">                    speed in cm/sec</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raw_running_speed</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_presentations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Table whose rows are stimulus presentations (e.g. a given image,</span>
+<span class="sd">        for a given duration, typically 250 ms) and whose columns are</span>
+<span class="sd">        presentation characteristics.</span>
+
+<span class="sd">        For VBO, the stimulus presentations tables now contain data from all</span>
+<span class="sd">        stimuli not just the active/passive image stimulus. These new stimuli</span>
+<span class="sd">        are delineated by stimulus_block and stimulus_block_name. The</span>
+<span class="sd">        previously released image behavior stimulus is accessible as the block</span>
+<span class="sd">        with a name containing "change_detection". Use the following example</span>
+<span class="sd">        code snippet to retrieve the original stimulus block from the pandas</span>
+<span class="sd">        table:</span>
+<span class="sd">            `stimulus_presentations[</span>
+<span class="sd">                stimulus_presentations.stimulus_block_name.str.contains(</span>
+<span class="sd">                    'change_detection'</span>
+<span class="sd">                )</span>
+<span class="sd">            ]`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            Table whose rows are stimulus presentations</span>
+<span class="sd">            (e.g. a given image, for a given duration, typically 250 ms)</span>
+<span class="sd">            and whose columns are presentation characteristics.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                stimulus_presentations_id [index]: (int)</span>
+<span class="sd">                    identifier for a stimulus presentation</span>
+<span class="sd">                    (presentation of an image)</span>
+<span class="sd">                stimulus_block: (int)</span>
+<span class="sd">                    Index of the different stimuli presented to the mouse</span>
+<span class="sd">                    in order.</span>
+<span class="sd">                stimulus_block_name [VBO only]: (int)</span>
+<span class="sd">                    Name of the individual stimulus blocks describing briefly</span>
+<span class="sd">                    what was shown to the mouse.</span>
+<span class="sd">                image_index [VBO only]: (int)</span>
+<span class="sd">                    image index (0-7) for a given session,</span>
+<span class="sd">                    corresponding to each image name</span>
+<span class="sd">                image_name: (string)</span>
+<span class="sd">                    Name of the image presented to the mouse if applicable.</span>
+<span class="sd">                    This indexes in to the stimulus_templates object.</span>
+<span class="sd">                movie_frame_index [VBO only]: (int)</span>
+<span class="sd">                    Index into the natural movie presented. use with the</span>
+<span class="sd">                    method get_raw_natural_movie or if you need the movie</span>
+<span class="sd">                    frames stretched and warped to the monitor use</span>
+<span class="sd">                    get_natural_movie_template. (Warning this is a very compute</span>
+<span class="sd">                    intensive process).</span>
+<span class="sd">                duration: (float)</span>
+<span class="sd">                    duration of an image presentation (flash)</span>
+<span class="sd">                    in seconds (stop_time - start_time). NaN if omitted</span>
+<span class="sd">                start_time: (float)</span>
+<span class="sd">                    image presentation start time in seconds</span>
+<span class="sd">                end_time: (float)</span>
+<span class="sd">                    image presentation end time in seconds</span>
+<span class="sd">                start_frame: (int)</span>
+<span class="sd">                    image presentation start frame</span>
+<span class="sd">                end_frame: (int)</span>
+<span class="sd">                    image presentation end frame</span>
+<span class="sd">                is_change: (bool)</span>
+<span class="sd">                    True if the image stimulus has changed. &lt;NA&gt; if not</span>
+<span class="sd">                    an image stimulus block.</span>
+<span class="sd">                is_image_novel: (bool)</span>
+<span class="sd">                    True if the image stimulus is novel. &lt;NA&gt; if not</span>
+<span class="sd">                    an image stimulus block.</span>
+<span class="sd">                omitted: (bool)</span>
+<span class="sd">                    True if no image was shown for this stimulus</span>
+<span class="sd">                    presentation. &lt;NA&gt; if not an image stimulus block.</span>
+<span class="sd">                movie_repeat [VBO only]: (int)</span>
+<span class="sd">                    Number of times the movie has been repeated during the</span>
+<span class="sd">                    natural movie block. -99 if not a movie block.</span>
+<span class="sd">                flashes_since_change: (bool)</span>
+<span class="sd">                    Number of times the image has been flashed in between when</span>
+<span class="sd">                    it has changed.</span>
+<span class="sd">                trials_id: (int)</span>
+<span class="sd">                    Id to match to the table Index of the trials table.</span>
+<span class="sd">                active: (bool)</span>
+<span class="sd">                    Stimulus block overlaps with the trials.</span>
+<span class="sd">                is_sham_change: (bool)</span>
+<span class="sd">                    True if the stimulus overlaps with a catch trial.</span>
+<span class="sd">                stimulus_index [VBN only]: (int)</span>
+<span class="sd">                    0 for gabor_20_deg_250ms, 1 for flash_250ms. -99 otherwise</span>
+<span class="sd">                position_x [VBN only]: (float)</span>
+<span class="sd">                    X position of gabor grating when shown. NaN if not</span>
+<span class="sd">                    applicable.</span>
+<span class="sd">                position_y [VBN only]: (float)</span>
+<span class="sd">                    Y position of gabor grating when shown. NaN if not</span>
+<span class="sd">                    applicable.</span>
+<span class="sd">                color [VBN only]: (float)</span>
+<span class="sd">                    Value of the color int flash_250ms stimulus. Either -1 or</span>
+<span class="sd">                    1. NaN if not applicable.</span>
+<span class="sd">                rewarded [VBN only]: (bool)</span>
+<span class="sd">                    Merge of trials data. True if the mouse was rewarded during</span>
+<span class="sd">                    the stimulus. &lt;NA&gt; if not applicable to stimulus block.</span>
+<span class="sd">                orientation [VBN only]: (float)</span>
+<span class="sd">                    Orientation of the gabor grating in degrees.</span>
+<span class="sd">                temporal_frequency [VBN only]: (float)</span>
+<span class="sd">                    Temporal frequency of the gabor grating. NaN if not</span>
+<span class="sd">                    applicable.</span>
+<span class="sd">                spatial_frequency [VBN only]: (float)</span>
+<span class="sd">                    Spatial frequency of the gabor grating. NaN if not</span>
+<span class="sd">                    applicable.</span>
+<span class="sd">                contrast [VBN only]: float</span>
+<span class="sd">                    Contrast value of the gabor grating. NaN if not applicable.</span>
+<span class="sd">        """</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span><span class="o">.</span><span class="n">presentations</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"image_set"</span><span class="p">,</span> <span class="s2">"index"</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"stop_time"</span><span class="p">:</span> <span class="s2">"end_time"</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_templates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Get stimulus templates (scenes) for behavior session.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            A pandas DataFrame object containing the stimulus images for the</span>
+<span class="sd">            experiment.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                image_name [index]: (string)</span>
+<span class="sd">                    name of image presented, if 'omitted'</span>
+<span class="sd">                    then no image was presented</span>
+<span class="sd">                unwarped: (array of int)</span>
+<span class="sd">                    image array of unwarped stimulus image</span>
+<span class="sd">                warped: (array of int)</span>
+<span class="sd">                    image array of warped stimulus image</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">image_template_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">value</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_stimuli</span><span class="o">.</span><span class="n">templates</span><span class="o">.</span><span class="n">image_template_key</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stimulus_timestamps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Timestamps associated with the stimulus presetntation on</span>
+<span class="sd">        the monitor retrieveddata file saved at the end of the</span>
+<span class="sd">        behavior session. Sampled at 60Hz.</span>
+
+<span class="sd">        NOTE: For BehaviorSessions, returned timestamps are not</span>
+<span class="sd">        aligned to external 'synchronization' reference timestamps.</span>
+<span class="sd">        Synchronized timestamps are only available for</span>
+<span class="sd">        BehaviorOphysExperiments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            Timestamps associated with stimulus presentations on the monitor</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stimulus_timestamps</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">task_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get task parameters from data file saved at the end of</span>
+<span class="sd">        the behavior session file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            A dictionary containing parameters used to define the task runtime</span>
+<span class="sd">            behavior.</span>
+<span class="sd">                auto_reward_volume: (float)</span>
+<span class="sd">                    Volume of auto rewards in ml.</span>
+<span class="sd">                blank_duration_sec : (list of floats)</span>
+<span class="sd">                    Duration in seconds of inter stimulus interval.</span>
+<span class="sd">                    Inter-stimulus interval chosen as a uniform random value.</span>
+<span class="sd">                    between the range defined by the two values.</span>
+<span class="sd">                    Values are ignored if `stimulus_duration_sec` is null.</span>
+<span class="sd">                response_window_sec: (list of floats)</span>
+<span class="sd">                    Range of period following an image change, in seconds,</span>
+<span class="sd">                    where mouse response influences trial outcome.</span>
+<span class="sd">                    First value represents response window start.</span>
+<span class="sd">                    Second value represents response window end.</span>
+<span class="sd">                    Values represent time before display lag is</span>
+<span class="sd">                    accounted for and applied.</span>
+<span class="sd">                n_stimulus_frames: (int)</span>
+<span class="sd">                    Total number of visual stimulus frames presented during</span>
+<span class="sd">                    a behavior session.</span>
+<span class="sd">                task: (string)</span>
+<span class="sd">                    Type of visual stimulus task.</span>
+<span class="sd">                session_type: (string)</span>
+<span class="sd">                    Visual stimulus type run during behavior session.</span>
+<span class="sd">                omitted_flash_fraction: (float)</span>
+<span class="sd">                    Probability that a stimulus image presentations is omitted.</span>
+<span class="sd">                    Change stimuli, and the stimulus immediately preceding the</span>
+<span class="sd">                    change, are never omitted.</span>
+<span class="sd">                stimulus_distribution: (string)</span>
+<span class="sd">                    Distribution for drawing change times.</span>
+<span class="sd">                    Either 'exponential' or 'geometric'.</span>
+<span class="sd">                stimulus_duration_sec: (float)</span>
+<span class="sd">                    Duration in seconds of each stimulus image presentation</span>
+<span class="sd">                reward_volume: (float)</span>
+<span class="sd">                    Volume of earned water reward in ml.</span>
+<span class="sd">                stimulus: (string)</span>
+<span class="sd">                    Stimulus type ('gratings' or 'images').</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_parameters</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span><span class="s2">"task_parameters"</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get trials from data file saved at the end of the</span>
+<span class="sd">        behavior session.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            A dataframe containing trial and behavioral response data.</span>
+
+<span class="sd">            dataframe columns:</span>
+<span class="sd">                trials_id [index]: (int)</span>
+<span class="sd">                    trial identifier</span>
+<span class="sd">                lick_times: (array of float)</span>
+<span class="sd">                    array of lick times in seconds during that trial.</span>
+<span class="sd">                    Empty array if no licks occured during the trial.</span>
+<span class="sd">                reward_time: (NaN or float)</span>
+<span class="sd">                    Time the reward is delivered following a correct</span>
+<span class="sd">                    response or on auto rewarded trials.</span>
+<span class="sd">                reward_volume: (float)</span>
+<span class="sd">                    volume of reward in ml. 0.005 for auto reward</span>
+<span class="sd">                    0.007 for earned reward</span>
+<span class="sd">                hit: (bool)</span>
+<span class="sd">                    Behavior response type. On catch trial mouse licks</span>
+<span class="sd">                    within reward window.</span>
+<span class="sd">                false_alarm: (bool)</span>
+<span class="sd">                    Behavior response type. On catch trial mouse licks</span>
+<span class="sd">                    within reward window.</span>
+<span class="sd">                miss: (bool)</span>
+<span class="sd">                    Behavior response type. On a go trial, mouse either</span>
+<span class="sd">                    does not lick at all, or licks after reward window</span>
+<span class="sd">                is_change: (bool)</span>
+<span class="sd">                    True if an image change occurs during the trial</span>
+<span class="sd">                    (if the trial was both a 'go' trial and the trial</span>
+<span class="sd">                    was not aborted)</span>
+<span class="sd">                aborted: (bool)</span>
+<span class="sd">                    Behavior response type. True if the mouse licks</span>
+<span class="sd">                    before the scheduled change time.</span>
+<span class="sd">                go: (bool)</span>
+<span class="sd">                    Trial type. True if there was a change in stimulus</span>
+<span class="sd">                    image identity on this trial</span>
+<span class="sd">                catch: (bool)</span>
+<span class="sd">                    Trial type. True if there was not a change in stimulus</span>
+<span class="sd">                    identity on this trial</span>
+<span class="sd">                auto_rewarded: (bool)</span>
+<span class="sd">                    True if free reward was delivered for that trial.</span>
+<span class="sd">                    Occurs during the first 5 trials of a session and</span>
+<span class="sd">                    throughout as needed.</span>
+<span class="sd">                correct_reject: (bool)</span>
+<span class="sd">                    Behavior response type. On a catch trial, mouse</span>
+<span class="sd">                    either does not lick at all or licks after reward</span>
+<span class="sd">                    window</span>
+<span class="sd">                start_time: (float)</span>
+<span class="sd">                    start time of the trial in seconds</span>
+<span class="sd">                stop_time: (float)</span>
+<span class="sd">                    end time of the trial in seconds</span>
+<span class="sd">                trial_length: (float)</span>
+<span class="sd">                    duration of trial in seconds (stop_time -start_time)</span>
+<span class="sd">                response_time: (float)</span>
+<span class="sd">                    time of first lick in trial in seconds and NaN if</span>
+<span class="sd">                    trial aborted</span>
+<span class="sd">                initial_image_name: (string)</span>
+<span class="sd">                    name of image presented at start of trial</span>
+<span class="sd">                change_image_name: (string)</span>
+<span class="sd">                    name of image that is changed to at the change time,</span>
+<span class="sd">                    on go trials</span>
+<span class="sd">                change_time: (float)</span>
+<span class="sd">                    Time in the session at which the change occurred.</span>
+<span class="sd">                response_latency [VBO only]: (float)</span>
+<span class="sd">                    Delay between change and first lick in seconds. NaN if</span>
+<span class="sd">                    no change occurred.</span>
+<span class="sd">                change_frame: (int)</span>
+<span class="sd">                    Frame in the session at which the change occurred. -99 if</span>
+<span class="sd">                    no change.</span>
+<span class="sd">                change_time_no_display_delay [VBN only]: (float)</span>
+<span class="sd">                    Time of the change in seconds, before the display lag is</span>
+<span class="sd">                    accounted for and applied.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trials</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""metadata for a given session</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dict</span>
+<span class="sd">            A dictionary containing behavior session specific metadata</span>
+<span class="sd">            dictionary keys:</span>
+<span class="sd">                age_in_days: (int)</span>
+<span class="sd">                    age of mouse in days</span>
+<span class="sd">                behavior_session_uuid: (int)</span>
+<span class="sd">                    unique identifier for a behavior session</span>
+<span class="sd">                behavior_session_id: (int)</span>
+<span class="sd">                    unique identifier for a behavior session</span>
+<span class="sd">                cre_line: (string)</span>
+<span class="sd">                    cre driver line for a transgenic mouse</span>
+<span class="sd">                date_of_acquisition: (date time object)</span>
+<span class="sd">                    date and time of experiment acquisition,</span>
+<span class="sd">                    yyyy-mm-dd hh:mm:ss</span>
+<span class="sd">                driver_line: (list of string)</span>
+<span class="sd">                    all driver lines for a transgenic mouse</span>
+<span class="sd">                equipment_name: (string)</span>
+<span class="sd">                    identifier for equipment data was collected on</span>
+<span class="sd">                full_genotype: (string)</span>
+<span class="sd">                    full genotype of transgenic mouse</span>
+<span class="sd">                mouse_id: (int)</span>
+<span class="sd">                    unique identifier for a mouse</span>
+<span class="sd">                project_code: (string)</span>
+<span class="sd">                    String of project session is associated with.</span>
+<span class="sd">                reporter_line: (string)</span>
+<span class="sd">                    reporter line for a transgenic mouse</span>
+<span class="sd">                session_type: (string)</span>
+<span class="sd">                    visual stimulus type displayed during behavior</span>
+<span class="sd">                    session</span>
+<span class="sd">                sex: (string)</span>
+<span class="sd">                    sex of the mouse</span>
+<span class="sd">                stimulus_frame_rate: (float)</span>
+<span class="sd">                    frame rate (Hz) at which the visual stimulus is</span>
+<span class="sd">                    displayed</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_metadata</span><span class="p">(</span><span class="n">behavior_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_licks</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Licks</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Licks data object for this session</span>
+
+<span class="sd">        Note: monitor_delay is a part of the call signature so that</span>
+<span class="sd">        it can be used in sub-class implementations of this method.</span>
+<span class="sd">        """</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Licks</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_rewards</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Rewards</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Rewards data object for this session</span>
+<span class="sd">        """</span>
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Rewards</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">subtract_monitor_delay</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_stimuli</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">:</span> <span class="n">Trials</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">project_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProjectCode</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Stimuli</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Stimuli data object for this session</span>
+<span class="sd">        """</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Stimuli</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">presentation_columns</span><span class="o">=</span><span class="n">stimulus_presentation_columns</span><span class="p">,</span>
+            <span class="n">project_code</span><span class="o">=</span><span class="n">project_code</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_trials</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">licks</span><span class="p">:</span> <span class="n">Licks</span><span class="p">,</span>
+        <span class="n">rewards</span><span class="p">:</span> <span class="n">Rewards</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Trials</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct the Trials data object for this session</span>
+<span class="sd">        """</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_trials_class</span><span class="p">()</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StimulusTimestamps</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble the StimulusTimestamps from the SyncFile.</span>
+<span class="sd">        If a SyncFile is not available, use the</span>
+<span class="sd">        behavior_stimulus_file</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">sync_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_sync_file</span><span class="p">(</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span> <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span><span class="p">,</span>
+                <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">stimulus_timestamps</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_session_timestamps</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StimulusTimestamps</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Assemble the StimulusTimestamps (with monitor delay) that will</span>
+<span class="sd">        be associated with this session</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_behavior_stimulus_timestamps</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_data_from_stimulus_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file_lookup</span><span class="p">:</span> <span class="n">StimulusFileLookup</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SyncFile</span><span class="p">],</span>
+        <span class="n">monitor_delay</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">include_stimuli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">stimulus_presentation_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">project_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProjectCode</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Helper method to read data from stimulus file"""</span>
+
+        <span class="n">licks</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_licks</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">rewards</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_rewards</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span> <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span>
+        <span class="p">)</span>
+
+        <span class="n">session_stimulus_timestamps</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_session_timestamps</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">trials</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_trials</span><span class="p">(</span>
+            <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+            <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+            <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+            <span class="n">licks</span><span class="o">=</span><span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="o">=</span><span class="n">rewards</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_stimuli</span><span class="p">:</span>
+            <span class="n">stimuli</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_read_stimuli</span><span class="p">(</span>
+                <span class="n">stimulus_file_lookup</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="p">,</span>
+                <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+                <span class="n">sync_file</span><span class="o">=</span><span class="n">sync_file</span><span class="p">,</span>
+                <span class="n">monitor_delay</span><span class="o">=</span><span class="n">monitor_delay</span><span class="p">,</span>
+                <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+                <span class="n">stimulus_presentation_columns</span><span class="o">=</span><span class="n">stimulus_presentation_columns</span><span class="p">,</span>
+                <span class="n">project_code</span><span class="o">=</span><span class="n">project_code</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stimuli</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">task_parameters</span> <span class="o">=</span> <span class="n">TaskParameters</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+            <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file_lookup</span><span class="o">.</span><span class="n">behavior_stimulus_file</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">session_stimulus_timestamps</span><span class="o">.</span><span class="n">subtract_monitor_delay</span><span class="p">(),</span>
+            <span class="n">licks</span><span class="p">,</span>
+            <span class="n">rewards</span><span class="p">,</span>
+            <span class="n">stimuli</span><span class="p">,</span>
+            <span class="n">task_parameters</span><span class="p">,</span>
+            <span class="n">trials</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_eye_tracking_table</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">eye_tracking_file</span><span class="p">:</span> <span class="n">EyeTrackingFile</span><span class="p">,</span>
+        <span class="n">sync_file</span><span class="p">:</span> <span class="n">SyncFile</span><span class="p">,</span>
+        <span class="n">z_threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">dilation_frames</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">eye_tracking_metadata_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EyeTrackingMetadataFile</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">eye_tracking_video</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EyeTrackingVideo</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EyeTrackingTable</span><span class="p">:</span>
+        <span class="c1"># this is possible if instantiating from_lims</span>
+        <span class="k">if</span> <span class="n">sync_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">"sync_file is None for this session; "</span>
+                <span class="s2">"do not know how to create an eye tracking "</span>
+                <span class="s2">"table without a sync_file"</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">sync_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">sync_file</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span>
+
+        <span class="n">frame_times</span> <span class="o">=</span> <span class="n">sync_utilities</span><span class="o">.</span><span class="n">get_synchronized_frame_times</span><span class="p">(</span>
+            <span class="n">session_sync_file</span><span class="o">=</span><span class="n">sync_path</span><span class="p">,</span>
+            <span class="n">sync_line_label_keys</span><span class="o">=</span><span class="n">SyncDataset</span><span class="o">.</span><span class="n">EYE_TRACKING_KEYS</span><span class="p">,</span>
+            <span class="n">drop_frames</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">trim_after_spike</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">stimulus_timestamps</span> <span class="o">=</span> <span class="n">StimulusTimestamps</span><span class="p">(</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="n">frame_times</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">monitor_delay</span><span class="o">=</span><span class="mf">0.0</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">EyeTrackingTable</span><span class="o">.</span><span class="n">from_data_file</span><span class="p">(</span>
+            <span class="n">data_file</span><span class="o">=</span><span class="n">eye_tracking_file</span><span class="p">,</span>
+            <span class="n">metadata_file</span><span class="o">=</span><span class="n">eye_tracking_metadata_file</span><span class="p">,</span>
+            <span class="n">video</span><span class="o">=</span><span class="n">eye_tracking_video</span><span class="p">,</span>
+            <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="n">z_threshold</span><span class="o">=</span><span class="n">z_threshold</span><span class="p">,</span>
+            <span class="n">dilation_frames</span><span class="o">=</span><span class="n">dilation_frames</span><span class="p">,</span>
+            <span class="n">empty_on_fail</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">behavior_metadata</span><span class="p">:</span> <span class="n">BehaviorMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Returns dict of metadata"""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"equipment_name"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">equipment</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">"sex"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">sex</span><span class="p">,</span>
+            <span class="s2">"age_in_days"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">age_in_days</span><span class="p">,</span>
+            <span class="s2">"stimulus_frame_rate"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">stimulus_frame_rate</span><span class="p">,</span>
+            <span class="s2">"session_type"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">session_type</span><span class="p">,</span>
+            <span class="s2">"date_of_acquisition"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_date_of_acquisition</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s2">"reporter_line"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">reporter_line</span><span class="p">,</span>
+            <span class="s2">"cre_line"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">cre_line</span><span class="p">,</span>
+            <span class="s2">"behavior_session_uuid"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">behavior_session_uuid</span><span class="p">,</span>
+            <span class="s2">"driver_line"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">driver_line</span><span class="p">,</span>
+            <span class="s2">"mouse_id"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">mouse_id</span><span class="p">,</span>
+            <span class="s2">"project_code"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">project_code</span><span class="p">,</span>
+            <span class="s2">"full_genotype"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">subject_metadata</span><span class="o">.</span><span class="n">full_genotype</span><span class="p">,</span>
+            <span class="s2">"behavior_session_id"</span><span class="p">:</span> <span class="n">behavior_metadata</span><span class="o">.</span><span class="n">behavior_session_id</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_behavior_session_id</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_session_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">session_type</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_keywords</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">"""Keywords for NWB file"""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">"visual"</span><span class="p">,</span> <span class="s2">"behavior"</span><span class="p">,</span> <span class="s2">"task"</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_monitor_delay</span><span class="p">():</span>
+        <span class="c1"># This is the median estimate across all rigs</span>
+        <span class="c1"># as discussed in</span>
+        <span class="c1"># https://github.com/AllenInstitute/AllenSDK/issues/1318</span>
+        <span class="k">return</span> <span class="mf">0.02115</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_trials_class</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Trials</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">Trials</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

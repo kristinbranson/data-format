@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.preprocess_neuron &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.preprocess_neuron</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">fmin</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ju</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_sweeps</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.data_access</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_sweeps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.MLIN</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLIN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.ASGLM</span><span class="w"> </span><span class="kn">import</span> <span class="n">ASGLM_pairwise</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.rc</span><span class="w"> </span><span class="kn">import</span> <span class="n">least_squares_RCEl_calc_tested</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.threshold_adaptation</span><span class="w"> </span><span class="kn">import</span> <span class="n">calc_spike_component_of_threshold_from_multiblip</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.spike_cutting</span><span class="w"> </span><span class="kn">import</span> <span class="n">calc_spike_cut_and_v_reset_via_expvar_residuals</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_spikes</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_spikes_list</span><span class="p">,</span> <span class="n">find_spikes_ssq_list</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.threshold_adaptation</span><span class="w"> </span><span class="kn">import</span> <span class="n">fit_avoltage_bvoltage_th</span><span class="p">,</span> <span class="n">fit_avoltage_bvoltage</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.ephys.ephys_extractor</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">efex</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.ephys.ephys_features</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ft</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.model.glif.glif_neuron_methods</span><span class="w"> </span><span class="kn">import</span> <span class="n">spike_component_of_threshold_exact</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.plotting</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plotting</span>
+
+<span class="n">RESTING_POTENTIAL</span> <span class="o">=</span> <span class="s1">'slow_vm_mv'</span>
+<span class="n">DEFAULT_DT</span> <span class="o">=</span> <span class="mf">5e-05</span>
+<span class="n">DEFAULT_CUT</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">DEFAULT_BESSEL</span> <span class="o">=</span> <span class="p">{</span> <span class="s1">'N'</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">'freq'</span><span class="p">:</span> <span class="mi">10000</span> <span class="p">}</span>
+<span class="n">MAKE_PLOT</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">SHOW_PLOT</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">SAVE_FIG</span> <span class="o">=</span><span class="kc">True</span>
+<span class="n">SHORT_RUN</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="MissingSpikeException">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.MissingSpikeException">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingSpikeException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<span class="n">RESTING_POTENTIAL</span> <span class="o">=</span> <span class="s1">'slow_vm_mv'</span>
+
+<div class="viewcode-block" id="find_first_spike_voltage">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.find_first_spike_voltage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_first_spike_voltage</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">ssq</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                             <span class="n">dv_cutoff</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''calculate voltage at threshold of first spike</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    voltage: numpy array</span>
+<span class="sd">        voltage trace</span>
+<span class="sd">    dt: float</span>
+<span class="sd">        sampling time step</span>
+<span class="sd">    ssq: Boolean</span>
+<span class="sd">        whether there is or is not a subrathreshold short square pulse (note that if thes</span>
+<span class="sd">    MAKE_PLOT: Boolean</span>
+<span class="sd">        specifies whether or not a plot should be made</span>
+<span class="sd">    SHOW_PLOT: Boolean</span>
+<span class="sd">        specifies if a visualization should be made</span>
+<span class="sd">    BLOCK: Boolean</span>
+<span class="sd">        if a plot is made this specifies weather to stop the code until the plot is closed</span>
+<span class="sd">    dv_cutoff: float</span>
+<span class="sd">        specifies cut off of the derivative of the voltage</span>
+<span class="sd">    thresh_frac: float</span>
+<span class="sd">        variable that goes into feature extractor</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :float</span>
+<span class="sd">        voltage of threshold of first spike</span>
+<span class="sd">    '''</span>
+    
+    <span class="k">if</span> <span class="n">ssq</span><span class="p">:</span>
+        <span class="n">spike_time_steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_spikes_ssq_list</span><span class="p">([</span><span class="n">voltage</span><span class="p">],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">dv_cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span><span class="o">=</span><span class="n">thresh_frac</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">spike_time_steps</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_spikes_list</span><span class="p">([</span><span class="n">voltage</span><span class="p">],</span> <span class="n">dt</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">MAKE_PLOT</span><span class="p">:</span>
+        <span class="n">plotting</span><span class="o">.</span><span class="n">plotSpikes</span><span class="p">([</span><span class="n">voltage</span><span class="p">],</span> <span class="n">spike_time_steps</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">blockME</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'dvdt_v2'</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">SHOW_PLOT</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="n">BLOCK</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spike_time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingSpikeException</span><span class="p">(</span><span class="s1">'No spike detected.'</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">voltage</span><span class="p">[</span><span class="n">spike_time_steps</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="tag_plot">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.tag_plot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="mi">9</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="mf">0.98</span><span class="p">,</span> <span class="mf">.01</span><span class="p">),</span>
+                 <span class="n">xycoords</span><span class="o">=</span><span class="s1">'figure fraction'</span><span class="p">,</span>
+                 <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">'right'</span><span class="p">,</span> 
+                 <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">'bottom'</span><span class="p">,</span>
+                 <span class="n">fontsize</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="estimate_dv_cutoff">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.estimate_dv_cutoff">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_dv_cutoff</span><span class="p">(</span><span class="n">voltage_list</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">start_t</span><span class="p">,</span> <span class="n">end_t</span><span class="p">):</span>
+    <span class="n">v_set</span> <span class="o">=</span> <span class="p">[</span> <span class="n">v</span> <span class="o">*</span> <span class="mf">1e3</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">voltage_list</span> <span class="p">]</span>
+    <span class="n">t_set</span> <span class="o">=</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="o">*</span> <span class="n">dt</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">voltage_list</span> <span class="p">]</span>
+    
+    <span class="n">dv_cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">estimate_adjusted_detection_parameters</span><span class="p">(</span><span class="n">v_set</span><span class="p">,</span> <span class="n">t_set</span><span class="p">,</span>
+                                                                       <span class="n">start_t</span><span class="p">,</span> <span class="n">end_t</span><span class="p">,</span>
+                                                                       <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">dv_cutoff</span><span class="p">,</span> <span class="n">thresh_frac</span></div>
+
+
+<div class="viewcode-block" id="preprocess_neuron">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.preprocess_neuron">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">preprocess_neuron</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">sweep_list</span><span class="p">,</span> <span class="n">cell_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">dt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cut</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bessel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">save_figure_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">DEFAULT_DT</span>  
+    <span class="k">if</span> <span class="n">cut</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cut</span> <span class="o">=</span> <span class="n">DEFAULT_CUT</span>  
+    <span class="k">if</span> <span class="n">bessel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bessel</span> <span class="o">=</span> <span class="n">DEFAULT_BESSEL</span>
+
+    <span class="n">sweep_index</span> <span class="o">=</span> <span class="p">{</span> <span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">]:</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweep_list</span> <span class="p">}</span>
+
+    <span class="n">noise_sweeps</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">find_noise_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)</span>
+    <span class="n">noise1_sweeps</span> <span class="o">=</span> <span class="n">noise_sweeps</span><span class="p">[</span><span class="s1">'noise1'</span><span class="p">]</span>
+    <span class="n">noise2_sweeps</span> <span class="o">=</span> <span class="n">noise_sweeps</span><span class="p">[</span><span class="s1">'noise2'</span><span class="p">]</span>
+
+    <span class="n">ssq_sweeps</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">find_short_square_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)</span> 
+    <span class="n">all_ssq_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">ssq_sweeps</span><span class="p">[</span><span class="s1">'all'</span><span class="p">],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+    <span class="n">ssq_dv_cutoff</span><span class="p">,</span> <span class="n">ssq_thresh_frac</span> <span class="o">=</span> <span class="n">estimate_dv_cutoff</span><span class="p">(</span><span class="n">all_ssq_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">dt</span><span class="p">,</span> 
+                                                        <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARES_WINDOW_START</span><span class="p">,</span>
+                                                        <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARES_WINDOW_END</span><span class="p">)</span>
+    
+    <span class="n">ssq_triple_sweeps</span> <span class="o">=</span> <span class="n">ssq_sweeps</span><span class="p">[</span><span class="s1">'triple'</span><span class="p">]</span>
+    
+    <span class="n">ramp_sweeps</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">find_ramp_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)[</span><span class="s1">'suprathreshold'</span><span class="p">]</span>
+    <span class="n">fs</span><span class="o">.</span><span class="n">find_ramp_to_rheo_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)[</span><span class="s1">'all'</span><span class="p">]</span>
+    
+    <span class="n">noise1_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">noise1_sweeps</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+    <span class="n">noise2_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">noise2_sweeps</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+
+    <span class="n">maximum_subthreshold_short_square_sweeps</span> <span class="o">=</span> <span class="n">ssq_sweeps</span><span class="p">[</span><span class="s1">'maximum_subthreshold'</span><span class="p">]</span>
+    <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="p">[</span><span class="n">maximum_subthreshold_short_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+    <span class="n">minimum_suprathreshold_short_square_sweeps</span> <span class="o">=</span> <span class="n">ssq_sweeps</span><span class="p">[</span><span class="s1">'minimum_suprathreshold'</span><span class="p">]</span>
+    <span class="n">minimum_suprathreshold_short_square_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="p">[</span><span class="n">minimum_suprathreshold_short_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'dt'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>  <span class="c1">#getting subsampled dt returned for ease of use</span>
+
+    <span class="n">subthresh_noise_current_list</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">subthresh_noise_voltage_list</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">noise_El_list</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ss</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">])):</span>
+        <span class="c1">#--subthreshold noise has first epoch of noise with a region of no stimulation before and after (note the selection of end point is hard coded)</span>
+        <span class="n">subthresh_noise_current_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">][</span><span class="n">ss</span><span class="p">][</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'start_idx'</span><span class="p">][</span><span class="n">ss</span><span class="p">]:</span><span class="nb">int</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="n">dt</span><span class="p">)])</span>
+        <span class="n">subthresh_noise_voltage_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">][</span><span class="n">ss</span><span class="p">][</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'start_idx'</span><span class="p">][</span><span class="n">ss</span><span class="p">]:</span><span class="nb">int</span><span class="p">(</span><span class="mf">6.</span><span class="o">/</span><span class="n">dt</span><span class="p">)])</span>
+        <span class="n">noise_El_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">[</span><span class="n">noise1_sweeps</span><span class="p">[</span><span class="n">ss</span><span class="p">]][</span><span class="n">RESTING_POTENTIAL</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span><span class="p">)</span>  
+
+    <span class="c1"># Els calculated from QC</span>
+    <span class="n">El_noise</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">noise_El_list</span><span class="p">)</span>
+    <span class="n">El_subthreshold_blip</span><span class="o">=</span><span class="n">sweep_index</span><span class="p">[</span><span class="n">maximum_subthreshold_short_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">RESTING_POTENTIAL</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+    <span class="n">El_suprathreshold_blip</span><span class="o">=</span><span class="n">sweep_index</span><span class="p">[</span><span class="n">minimum_suprathreshold_short_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">RESTING_POTENTIAL</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ramp_sweeps</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'has ramp'</span><span class="p">)</span>
+        <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">ramp_sweeps</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+        <span class="n">El_ramp</span><span class="o">=</span><span class="n">sweep_index</span><span class="p">[</span><span class="n">ramp_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">RESTING_POTENTIAL</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ramp_sweeps</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">El_ramp</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"No ramp"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ssq_triple_sweeps</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'has multi ss'</span><span class="p">)</span>
+        <span class="n">multi_ssq_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">ssq_triple_sweeps</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+        <span class="n">multi_ssq_dv_cutoff</span><span class="p">,</span> <span class="n">multi_ssq_thresh_frac</span> <span class="o">=</span> <span class="n">estimate_dv_cutoff</span><span class="p">(</span><span class="n">multi_ssq_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">dt</span><span class="p">,</span> 
+                                                                        <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARE_TRIPLE_WINDOW_START</span><span class="p">,</span>
+                                                                        <span class="n">efex</span><span class="o">.</span><span class="n">SHORT_SQUARE_TRIPLE_WINDOW_END</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"*************************"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"ssq"</span><span class="p">,</span> <span class="n">ssq_dv_cutoff</span><span class="p">,</span> <span class="n">ssq_thresh_frac</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"triple"</span><span class="p">,</span><span class="n">multi_ssq_dv_cutoff</span><span class="p">,</span> <span class="n">multi_ssq_thresh_frac</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ssq_triple_sweeps</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">multi_ssq_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"No multi short square"</span><span class="p">)</span>
+
+    <span class="c1"># Needed for MLIN</span>
+    <span class="n">long_square_config</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">find_long_square_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)</span>
+    <span class="n">maximum_subthreshold_long_square_sweeps</span> <span class="o">=</span> <span class="n">long_square_config</span><span class="p">[</span><span class="s1">'maximum_subthreshold'</span><span class="p">]</span>
+    <span class="c1">#TODO: Here you are loading just one sweep: probably should load all</span>
+    <span class="n">maximum_subthreshold_long_square_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="p">[</span><span class="n">maximum_subthreshold_long_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+    <span class="n">El_max_subth_long_square</span><span class="o">=</span><span class="n">sweep_index</span><span class="p">[</span><span class="n">maximum_subthreshold_long_square_sweeps</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">RESTING_POTENTIAL</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span>  
+
+    <span class="c1">#---------------------------------------------------------------        </span>
+    <span class="c1">#---------find spiking indicies of spikes in noise--------------</span>
+    <span class="c1">#---------------------------------------------------------------</span>
+
+    <span class="c1"># note that when using find_spikes_list without removing the testpulse a warning will result from calculating feature_data['base_v'] in the feature extractor (line 375) this not relavent here</span>
+    <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_spikes_list</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">noise2_ind_wo_test_pulse_removed</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">find_spikes_list</span><span class="p">(</span><span class="n">noise2_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="c1">#Put all ISI ind in a </span>
+    <span class="n">ISI_length</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+    <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">)):</span>
+        <span class="n">ISI_length</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ISI_length</span><span class="p">,</span><span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">-</span><span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">[</span><span class="n">ii</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">noise2_ind_wo_test_pulse_removed</span><span class="p">)):</span>
+        <span class="n">ISI_length</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ISI_length</span><span class="p">,</span><span class="n">noise2_ind_wo_test_pulse_removed</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span><span class="o">-</span><span class="n">noise2_ind_wo_test_pulse_removed</span><span class="p">[</span><span class="n">ii</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">min_ISI_len</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">ISI_length</span><span class="p">)</span>
+
+
+    <span class="c1">#-------------------------------------------------------------------------------------------------------------------</span>
+    <span class="c1">#---------------------Compute R, C and EL via least squares-------------------------------------------------</span>
+    <span class="c1">#------------------------------------------------------------------------------------------------------------------- </span>
+
+    <span class="c1">#--compute R, C, and El via least squares tested in verify_RCEl_GLM_vs_lssq_and_smooth.py</span>
+    <span class="p">(</span><span class="n">R_test_list</span><span class="p">,</span> <span class="n">C_test_list</span><span class="p">,</span> <span class="n">El_test_list</span><span class="p">)</span><span class="o">=</span><span class="n">least_squares_RCEl_calc_tested</span><span class="p">(</span><span class="n">subthresh_noise_voltage_list</span><span class="p">,</span> <span class="n">subthresh_noise_current_list</span><span class="p">,</span> <span class="n">dt</span><span class="p">)</span>
+    <span class="n">R_test_list_mean</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">R_test_list</span><span class="p">)</span>
+    <span class="n">C_test_list_mean</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">C_test_list</span><span class="p">)</span>
+
+    <span class="c1">#-----------------------------------------------------------------------------------------        </span>
+    <span class="c1">#------------------------ compute spike cut length----------------------------------------</span>
+    <span class="c1">#-----------------------------------------------------------------------------------------</span>
+
+    <span class="c1">#TODO: I should disentangle this function so I can get rid of the deltaV dependency </span>
+    <span class="p">(</span><span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> <span class="n">slope_at_min_expVar_list_NODELTAV</span><span class="p">,</span> <span class="n">intercept_at_min_expVar_list_NODELTAV</span><span class="p">)</span> \
+        <span class="o">=</span> <span class="n">calc_spike_cut_and_v_reset_via_expvar_residuals</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">],</span> <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> 
+                                                          <span class="n">dt</span><span class="p">,</span> <span class="n">El_noise</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> 
+                                                          <span class="n">max_spike_cut_time</span><span class="o">=</span><span class="n">min_ISI_len</span><span class="o">*</span><span class="n">dt</span><span class="p">,</span>
+                                                          <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> 
+                                                          <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="n">SHOW_PLOT</span><span class="p">,</span> 
+                                                          <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">SAVE_FIG</span><span class="p">:</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'spikeCutting_noDeltaV_regression.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'spikeCutting_noDeltaV_spike_wave_form.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'spike cut length: </span><span class="si">%d</span><span class="s1">'</span><span class="p">,</span> <span class="n">spike_cut_length_NODELTAV</span><span class="p">)</span>
+
+    <span class="c1">#-----------------------------------------------------------------------------------------        </span>
+    <span class="c1">#------------------------ compute ASC amplitudes------------------------------------------</span>
+    <span class="c1">#-----------------------------------------------------------------------------------------</span>
+
+    <span class="c1">#***Hack: k's are being hard coded into this function and are not necessarily consistent with what is in the setting of AS currents!!!</span>
+    <span class="n">k_asc_possible</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mf">10.</span><span class="p">,</span> <span class="mf">30.</span><span class="p">,</span> <span class="mf">100.</span><span class="p">,</span> <span class="mf">300.</span><span class="p">])</span> 
+    <span class="k">if</span> <span class="n">SHORT_RUN</span><span class="p">:</span>  <span class="c1">#THIS IS JUST FOR DEBUGGING SO THAT YOU DONT HAVE TO WAIT FOR THE ENTIRE MODULE TO RUN</span>
+        <span class="p">(</span><span class="n">best_k_pair_fit_ascR</span><span class="p">,</span> <span class="n">best_asc_amp_fit_ascR</span><span class="p">,</span> <span class="n">best_R_fit_ascR</span><span class="p">,</span> <span class="n">best_llh_fit_ascR</span><span class="p">)</span><span class="o">=</span><span class="n">ASGLM_pairwise</span><span class="p">(</span><span class="n">k_asc_possible</span><span class="p">,</span> 
+                            <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">],</span> <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">,</span> 
+                            <span class="n">C_test_list_mean</span><span class="p">,</span> <span class="n">C_test_list_mean</span><span class="o">*</span><span class="n">R_test_list_mean</span><span class="p">,</span> <span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">El_noise</span><span class="p">,</span>
+                            <span class="n">SHORT_RUN</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="n">SHOW_PLOT</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">asc_amp_from_ASGLM</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">best_asc_amp_fit_ascR</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">R_from_ASGLM</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">best_R_fit_ascR</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">best_k_pair_fit_ascR</span><span class="p">,</span> <span class="n">best_asc_amp_fit_ascR</span><span class="p">,</span> <span class="n">best_R_fit_ascR</span><span class="p">,</span> <span class="n">best_llh_fit_ascR</span><span class="p">)</span><span class="o">=</span><span class="n">ASGLM_pairwise</span><span class="p">(</span><span class="n">k_asc_possible</span><span class="p">,</span> 
+                            <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">],</span> <span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">,</span> 
+                            <span class="n">C_test_list_mean</span><span class="p">,</span> <span class="n">C_test_list_mean</span><span class="o">*</span><span class="n">R_test_list_mean</span><span class="p">,</span> <span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">El_noise</span><span class="p">,</span>
+                            <span class="n">SHORT_RUN</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="n">SHOW_PLOT</span><span class="p">,</span> <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>            
+        <span class="n">asc_amp_from_ASGLM</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">best_asc_amp_fit_ascR</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">R_from_ASGLM</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">best_R_fit_ascR</span><span class="p">)</span> 
+
+    <span class="k">if</span> <span class="n">SAVE_FIG</span><span class="p">:</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'GLM_fit_ascR_basis.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'GLM_fit_ascR_sumASC.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'GLM_fit_ascR_individualASC.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'Output of ASC fitting GLM'</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'R out_of_GLM_Rfit_Cfixed </span><span class="si">%f</span><span class="s1"> </span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="n">R_from_ASGLM</span><span class="o">/</span><span class="mf">1e6</span><span class="p">,</span> <span class="s2">"MOhms"</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'ASC amplitudes at the time of cut spike </span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">asc_amp_from_ASGLM</span><span class="o">*</span><span class="mf">1e12</span><span class="p">))</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"ks used </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">best_k_pair_fit_ascR</span><span class="p">))</span>
+
+    <span class="c1">#-----------------------------------------------------------------------------------------        </span>
+    <span class="c1">#------------------------ calculate thresholds-----------------------------------------</span>
+    <span class="c1">#-----------------------------------------------------------------------------------------</span>
+
+    <span class="c1"># ---extract instantaneous threshold from suprathreshold blip </span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">th_inf_via_Vmeasure</span> <span class="o">=</span> <span class="n">find_first_spike_voltage</span><span class="p">(</span><span class="n">minimum_suprathreshold_short_square_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">minimum_suprathreshold_short_square_data</span><span class="p">[</span><span class="s1">'start_idx'</span><span class="p">][</span><span class="mi">0</span><span class="p">]:],</span> 
+                                                           <span class="n">dt</span><span class="p">,</span>         
+                                                           <span class="n">ssq</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                                    
+                                                           <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> 
+                                                           <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="n">SHOW_PLOT</span><span class="p">,</span> 
+                                                           <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                           <span class="n">dv_cutoff</span><span class="o">=</span><span class="n">ssq_dv_cutoff</span><span class="p">,</span>
+                                                           <span class="n">thresh_frac</span><span class="o">=</span><span class="n">ssq_thresh_frac</span><span class="p">)</span>
+        <span class="n">th_inf_via_Vmeasure_from0</span><span class="o">=</span><span class="n">th_inf_via_Vmeasure</span><span class="o">-</span><span class="n">El_suprathreshold_blip</span>
+        <span class="k">if</span> <span class="n">SAVE_FIG</span><span class="p">:</span>
+            <span class="n">tag</span><span class="o">=</span><span class="s1">'th_inf_from_blip.png'</span>
+            <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span> <span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">MissingSpikeException</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingSpikeException</span><span class="p">(</span><span class="s2">"The suprathreshold short square sweep must have a spike, but no spike was detected. This means that feature extraction and GLIF spike detection are inconsistent."</span><span class="p">)</span>
+
+    <span class="c1">#-----------------------------------------------------------------------------------------------------</span>
+    <span class="c1">#-----------------find spike and voltage component of the threshold---------------------------</span>
+    <span class="c1">#-----------------------------------------------------------------------------------------------------</span>
+
+    <span class="c1"># If a multishort square stimulus exists calculate spike component of threshold..</span>
+    <span class="k">if</span> <span class="n">multi_ssq_data</span><span class="p">:</span>
+        <span class="p">(</span><span class="n">a_spike_component_of_threshold</span><span class="p">,</span> <span class="n">b_spike_component_of_threshold</span><span class="p">,</span> 
+         <span class="n">mean_voltage_first_spike_of_blip</span><span class="p">)</span> <span class="o">=</span> <span class="n">calc_spike_component_of_threshold_from_multiblip</span><span class="p">(</span><span class="n">multi_ssq_data</span><span class="p">,</span> 
+                                                                     <span class="n">dt</span><span class="p">,</span> 
+                                                                     <span class="n">multi_ssq_dv_cutoff</span><span class="p">,</span>
+                                                                     <span class="n">multi_ssq_thresh_frac</span><span class="p">,</span>
+                                                                     <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> 
+                                                                     <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                                                                     <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                                     <span class="n">PUBLICATION_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1">#adjust values to be after spike cutting</span>
+        <span class="k">if</span> <span class="n">a_spike_component_of_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">b_spike_component_of_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">a_spike_component_of_threshold</span><span class="o">=</span><span class="n">spike_component_of_threshold_exact</span><span class="p">(</span><span class="n">a_spike_component_of_threshold</span><span class="p">,</span> <span class="n">b_spike_component_of_threshold</span><span class="p">,</span> <span class="n">spike_cut_length_NODELTAV</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">SAVE_FIG</span><span class="p">:</span>
+            <span class="n">tag</span><span class="o">=</span><span class="s1">'multiblip_fit.png'</span>
+            <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span> <span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> 
+
+            <span class="n">tag</span><span class="o">=</span><span class="s1">'multiblip_data.png'</span>
+            <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> 
+
+        <span class="c1">#---calculate voltage componet of threshold </span>
+        <span class="k">if</span> <span class="n">a_spike_component_of_threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">b_spike_component_of_threshold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"spike component of threshold could not be calculated from the multiblip data"</span><span class="p">)</span>
+            <span class="n">a_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">b_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">a_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">b_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">th_inf_fit_w_v_comp_of_th</span><span class="o">=</span><span class="kc">None</span>
+            <span class="n">th_inf_fit_w_v_comp_of_th_from0</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#TODO:this function needs to be changed to use experimental change of reference</span>
+            <span class="n">b_voltage_guess</span> <span class="o">=</span> <span class="mf">5.0</span>         
+            <span class="n">a_voltage_guess</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">b_voltage_guess</span>
+            <span class="n">fit_ab_vcomp_from_noise</span> <span class="o">=</span> <span class="n">fmin</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">fit_avoltage_bvoltage</span><span class="p">,</span> 
+                                           <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> 
+                                                 <span class="n">noise_El_list</span><span class="p">,</span> 
+                                                 <span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> 
+                                                 <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">,</span> <span class="c1">#NOTE THAT IF YOU WANT TO USE THIS TO GET A VOLTAGE WITHIN THE FUNCTION YOU NEED TO SUBTRACT OFF AND INDICIE BECAUSE THIS IS THE VALUE SET TO NAN AS THE SPIKE WAS INITIATED IN THE PREVIOUS TIME STEP. </span>
+                                                 <span class="n">th_inf_via_Vmeasure</span><span class="p">,</span>
+                                                 <span class="n">dt</span><span class="p">,</span> 
+                                                 <span class="n">a_spike_component_of_threshold</span><span class="p">,</span> 
+                                                 <span class="n">b_spike_component_of_threshold</span><span class="p">),</span>
+                                           <span class="n">x0</span><span class="o">=</span><span class="p">[</span><span class="n">a_voltage_guess</span><span class="p">,</span><span class="n">b_voltage_guess</span><span class="p">])</span>
+
+            <span class="n">a_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="n">fit_ab_vcomp_from_noise</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">b_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="n">fit_ab_vcomp_from_noise</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"spike components </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">a_spike_component_of_threshold</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">b_spike_component_of_threshold</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"voltage components </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">a_voltage_comp_of_thr_from_fitab</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">b_voltage_comp_of_thr_from_fitab</span><span class="p">))</span>
+
+            <span class="n">fit_ab_vcomp_th_from_thr_from_noise</span> <span class="o">=</span> <span class="n">fmin</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">fit_avoltage_bvoltage_th</span><span class="p">,</span> 
+                                                       <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">noise1_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> 
+                                                             <span class="n">noise_El_list</span><span class="p">,</span> 
+                                                             <span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> 
+                                                             <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">,</span> <span class="c1">#NOTE THAT IF YOU WANT TO USE THIS TO GET A VOLTAGE WITHIN THE FUNCTION YOU NEED TO SUBTRACT OFF AND INDICIE BECAUSE THIS IS THE VALUE SET TO NAN AS THE SPIKE WAS INITIATED IN THE PREVIOUS TIME STEP. </span>
+                                                             <span class="n">dt</span><span class="p">,</span> 
+                                                             <span class="n">a_spike_component_of_threshold</span><span class="p">,</span> 
+                                                             <span class="n">b_spike_component_of_threshold</span><span class="p">),</span>
+                                                       <span class="n">x0</span><span class="o">=</span><span class="p">[</span><span class="n">a_voltage_guess</span><span class="p">,</span><span class="n">b_voltage_guess</span><span class="p">,</span> <span class="n">th_inf_via_Vmeasure</span><span class="p">])</span>
+
+            <span class="n">a_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="n">fit_ab_vcomp_th_from_thr_from_noise</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">b_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="n">fit_ab_vcomp_th_from_thr_from_noise</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">th_inf_fit_w_v_comp_of_th</span><span class="o">=</span><span class="n">fit_ab_vcomp_th_from_thr_from_noise</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>    
+            <span class="n">th_inf_fit_w_v_comp_of_th_from0</span><span class="o">=</span><span class="n">th_inf_fit_w_v_comp_of_th</span><span class="o">-</span><span class="n">El_noise</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"spike components </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">a_spike_component_of_threshold</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">b_spike_component_of_threshold</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"voltage components </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">a_voltage_comp_of_thr_from_fitabth</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">b_voltage_comp_of_thr_from_fitabth</span><span class="p">),</span> <span class="s1">'fit threshold'</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">th_inf_fit_w_v_comp_of_th</span><span class="p">))</span>
+
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">a_spike_component_of_threshold</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">b_spike_component_of_threshold</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">a_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">b_voltage_comp_of_thr_from_fitab</span><span class="o">=</span><span class="kc">None</span> 
+        <span class="n">a_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">b_voltage_comp_of_thr_from_fitabth</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">th_inf_fit_w_v_comp_of_th_from0</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">th_inf_fit_w_v_comp_of_th</span><span class="o">=</span><span class="kc">None</span>
+
+    <span class="c1">#--------------------------------------------------------------------------     </span>
+    <span class="c1">#------------------------ MLIN calculations--------------------------------</span>
+    <span class="c1">#--------------------------------------------------------------------------</span>
+
+    <span class="c1">#TODO: probably want to use more than just one square pulse for this distribution</span>
+    <span class="n">STLS_voltage</span><span class="o">=</span><span class="n">maximum_subthreshold_long_square_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">maximum_subthreshold_long_square_data</span><span class="p">[</span><span class="s1">'start_idx'</span><span class="p">][</span><span class="mi">0</span><span class="p">]:]</span>
+    <span class="n">STLS_current</span><span class="o">=</span><span class="n">maximum_subthreshold_long_square_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="n">maximum_subthreshold_long_square_data</span><span class="p">[</span><span class="s1">'start_idx'</span><span class="p">][</span><span class="mi">0</span><span class="p">]:]</span>
+    <span class="p">(</span><span class="n">var_of_section</span><span class="p">,</span> <span class="n">sv_for_expsymm</span><span class="p">,</span> <span class="n">tau_from_AC</span><span class="p">)</span><span class="o">=</span><span class="n">MLIN</span><span class="p">(</span><span class="n">STLS_voltage</span><span class="p">,</span> <span class="n">STLS_current</span><span class="p">,</span> <span class="n">R_test_list_mean</span><span class="p">,</span> <span class="n">C_test_list_mean</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> 
+                                                       <span class="n">MAKE_PLOT</span><span class="o">=</span><span class="n">MAKE_PLOT</span><span class="p">,</span> 
+                                                       <span class="n">SHOW_PLOT</span><span class="o">=</span><span class="n">SHOW_PLOT</span><span class="p">,</span> 
+                                                       <span class="n">BLOCK</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                                                       <span class="n">PUBLICATION_PLOT</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">SAVE_FIG</span><span class="p">:</span>
+        <span class="n">tag</span><span class="o">=</span><span class="s1">'MLIN.png'</span>
+        <span class="n">tag_plot</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_figure_path</span><span class="p">,</span><span class="n">tag</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'png'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> 
+
+    <span class="c1">#--------------------------------------------------------------------------     </span>
+    <span class="c1">#------------------------ make output dictionaries-------------------------</span>
+    <span class="c1">#--------------------------------------------------------------------------</span>
+
+    <span class="c1">#TODO: find out how many are the max number of all_passing_sweeps. </span>
+    <span class="n">El_noise_1</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">sweep_noise_1</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">spike_ind_noise_1</span><span class="o">=</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fill_in_lists</span><span class="p">(</span><span class="n">out_list</span><span class="p">,</span> <span class="n">data_list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''note since the input is a list shouldnt need to return anything (pass by reference)'''</span>
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data_list</span><span class="p">)):</span>
+            <span class="n">out_list</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">=</span><span class="n">data_list</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> 
+    <span class="n">fill_in_lists</span><span class="p">(</span><span class="n">El_noise_1</span><span class="p">,</span> <span class="n">noise_El_list</span><span class="p">)</span>
+    <span class="n">fill_in_lists</span><span class="p">(</span><span class="n">sweep_noise_1</span><span class="p">,</span> <span class="n">noise1_sweeps</span><span class="p">)</span>
+    <span class="n">fill_in_lists</span><span class="p">(</span><span class="n">spike_ind_noise_1</span><span class="p">,</span> <span class="n">noise1_ind_wo_test_pulse_removed</span><span class="p">)</span>
+
+    <span class="c1">#--initialize output dictionaries</span>
+    <span class="n">for_reference_dict</span><span class="o">=</span><span class="p">{}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'dt_used_for_preprocessor_calculations'</span><span class="p">]</span><span class="o">=</span><span class="n">dt</span>
+    <span class="c1">#for_reference_dict['optional_methods']=self.optional_methods</span>
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'sweep_properties'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'noise1'</span><span class="p">:</span> 
+                                                <span class="p">{</span><span class="s1">'1'</span><span class="p">:{</span><span class="s1">'El'</span><span class="p">:</span> <span class="n">El_noise_1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">sweep_noise_1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'spike_ind'</span><span class="p">:</span> <span class="n">spike_ind_noise_1</span><span class="p">[</span><span class="mi">0</span><span class="p">]},</span>
+                                                 <span class="s1">'2'</span><span class="p">:{</span><span class="s1">'El'</span><span class="p">:</span> <span class="n">El_noise_1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">sweep_noise_1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'spike_ind'</span><span class="p">:</span> <span class="n">spike_ind_noise_1</span><span class="p">[</span><span class="mi">1</span><span class="p">]},</span>
+                                                 <span class="s1">'3'</span><span class="p">:{</span><span class="s1">'El'</span><span class="p">:</span> <span class="n">El_noise_1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">sweep_noise_1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">'spike_ind'</span><span class="p">:</span> <span class="n">spike_ind_noise_1</span><span class="p">[</span><span class="mi">2</span><span class="p">]},</span>
+                                                 <span class="s1">'4'</span><span class="p">:{</span><span class="s1">'El'</span><span class="p">:</span> <span class="n">El_noise_1</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">sweep_noise_1</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="s1">'spike_ind'</span><span class="p">:</span> <span class="n">spike_ind_noise_1</span><span class="p">[</span><span class="mi">3</span><span class="p">]},</span>
+                                                 <span class="s1">'5'</span><span class="p">:{</span><span class="s1">'El'</span><span class="p">:</span> <span class="n">El_noise_1</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">sweep_noise_1</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="s1">'spike_ind'</span><span class="p">:</span> <span class="n">spike_ind_noise_1</span><span class="p">[</span><span class="mi">4</span><span class="p">]}},</span>
+                                            <span class="s1">'ramp'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">ramp_sweeps</span><span class="p">},</span>
+                                            <span class="s1">'subthreshold_short_square'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">maximum_subthreshold_short_square_sweeps</span><span class="p">},</span>
+                                            <span class="s1">'suprathreshold_short_square'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'R_testpulsesweep_num'</span><span class="p">:</span><span class="n">minimum_suprathreshold_short_square_sweeps</span><span class="p">},</span>
+                                            <span class="s1">'max_subthresh_long_square'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">maximum_subthreshold_long_square_sweeps</span><span class="p">},</span>
+                                            <span class="s1">'multi_short_square'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'sweep_num'</span><span class="p">:</span><span class="n">ssq_triple_sweeps</span><span class="p">}}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'El'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'El_noise'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'measured'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'mean'</span><span class="p">:</span><span class="n">El_noise</span><span class="p">,</span> <span class="s1">'list'</span><span class="p">:</span><span class="n">noise_El_list</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span><span class="kc">None</span><span class="p">}},</span>
+                              <span class="s1">'El_ramp'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">El_ramp</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+                              <span class="s1">'El_subthreshold_blip'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">El_subthreshold_blip</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span><span class="kc">None</span><span class="p">},</span> 
+                              <span class="s1">'El_suprathreshold_blip'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">El_suprathreshold_blip</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span><span class="kc">None</span><span class="p">},</span>
+                              <span class="s1">'El_max_subth_long_square'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">El_max_subth_long_square</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span><span class="kc">None</span><span class="p">}}</span> 
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'resistance'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="c1">#'R_lssq_Wrest':{'mean': R_lssq_wrest_mean, 'list': R_lssq_wrest_list, 'dependencies': 'from subthreshold (no spike cutting) noise'},        </span>
+                                      <span class="s1">'R_from_lims'</span><span class="p">:{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">cell_properties</span><span class="p">[</span><span class="s1">'ri'</span><span class="p">]</span><span class="o">*</span><span class="mf">1e6</span><span class="p">},</span>
+                                      <span class="s1">'R_test_list'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'mean'</span><span class="p">:</span><span class="n">R_test_list_mean</span><span class="p">,</span> <span class="s1">'list'</span><span class="p">:</span> <span class="n">R_test_list</span><span class="p">},</span>
+                                      <span class="s1">'R_fit_ASC_and_R'</span><span class="p">:{</span><span class="s1">'mean'</span><span class="p">:</span><span class="n">R_from_ASGLM</span><span class="p">,</span> <span class="s1">'list'</span><span class="p">:</span> <span class="n">best_R_fit_ascR</span><span class="p">}}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'capacitance'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="c1">#'C_lssq_Wrest': {'mean':C_lssq_wrest_mean, 'list':C_lssq_wrest_list, 'dependencies': 'from subthreshold (no spike cutting) noise'},</span>
+                                       <span class="s1">'C_from_lims'</span><span class="p">:{</span><span class="s1">'value'</span><span class="p">:</span> <span class="p">(</span><span class="n">cell_properties</span><span class="p">[</span><span class="s1">'tau'</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-3</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">cell_properties</span><span class="p">[</span><span class="s1">'ri'</span><span class="p">]</span><span class="o">*</span><span class="mf">1e6</span><span class="p">)},</span>
+                                       <span class="s1">'C_test_list'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'mean'</span><span class="p">:</span><span class="n">C_test_list_mean</span><span class="p">,</span> <span class="s1">'list'</span><span class="p">:</span> <span class="n">C_test_list</span><span class="p">}}</span>
+    
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'spike_cut_length'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'no deltaV shift'</span><span class="p">:{</span><span class="s1">'length'</span><span class="p">:</span><span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> 
+                                                               <span class="s1">'slope'</span><span class="p">:</span><span class="n">slope_at_min_expVar_list_NODELTAV</span><span class="p">,</span> 
+                                                               <span class="s1">'intercept'</span><span class="p">:</span><span class="n">intercept_at_min_expVar_list_NODELTAV</span><span class="p">,</span> 
+                                                               <span class="s1">'dependencies'</span><span class="p">:</span><span class="kc">None</span><span class="p">}}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'spike_cutting'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'NOdeltaV'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'cut_length'</span><span class="p">:</span><span class="n">spike_cut_length_NODELTAV</span><span class="p">,</span> <span class="s1">'slope'</span><span class="p">:</span><span class="n">slope_at_min_expVar_list_NODELTAV</span><span class="p">,</span> <span class="s1">'intercept'</span><span class="p">:</span><span class="n">intercept_at_min_expVar_list_NODELTAV</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span> <span class="kc">None</span><span class="p">}}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'asc'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'k'</span><span class="p">:</span> <span class="n">best_k_pair_fit_ascR</span><span class="p">,</span> <span class="s1">'amp'</span><span class="p">:</span><span class="n">asc_amp_from_ASGLM</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span> <span class="s1">'Cap and res from least squares'</span><span class="p">}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'th_inf'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'via_Vmeasure'</span><span class="p">:{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">th_inf_via_Vmeasure</span><span class="p">,</span> <span class="s1">'from_zero'</span><span class="p">:</span><span class="n">th_inf_via_Vmeasure_from0</span><span class="p">,</span> <span class="s1">'dependencies'</span><span class="p">:</span><span class="s1">'measured from suprathreshold blip'</span><span class="p">},</span>
+                                  <span class="s1">'fit_with_v_comp_of_th'</span><span class="p">:{</span><span class="s1">'value'</span><span class="p">:</span><span class="n">th_inf_fit_w_v_comp_of_th</span><span class="p">,</span> <span class="s1">'from_zero'</span><span class="p">:</span><span class="n">th_inf_fit_w_v_comp_of_th_from0</span><span class="p">}}</span>
+
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'threshold_adaptation'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'a_spike_component_of_threshold'</span><span class="p">:</span><span class="n">a_spike_component_of_threshold</span><span class="p">,</span>
+                                                <span class="s1">'b_spike_component_of_threshold'</span><span class="p">:</span><span class="n">b_spike_component_of_threshold</span><span class="p">,</span>
+                                                <span class="s1">'a_voltage_comp_of_thr_from_fitab'</span><span class="p">:</span><span class="n">a_voltage_comp_of_thr_from_fitab</span><span class="p">,</span>
+                                                <span class="s1">'b_voltage_comp_of_thr_from_fitab'</span><span class="p">:</span><span class="n">b_voltage_comp_of_thr_from_fitab</span><span class="p">,</span>
+                                                <span class="s1">'a_voltage_comp_of_thr_from_fitabth'</span><span class="p">:</span><span class="n">a_voltage_comp_of_thr_from_fitabth</span><span class="p">,</span>
+                                                <span class="s1">'b_voltage_comp_of_thr_from_fitabth'</span><span class="p">:</span><span class="n">b_voltage_comp_of_thr_from_fitabth</span><span class="p">}</span>
+    <span class="n">for_reference_dict</span><span class="p">[</span><span class="s1">'MLIN'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="s1">'var_of_section'</span><span class="p">:</span><span class="n">var_of_section</span><span class="p">,</span>
+                                <span class="s1">'sv_for_expsymm'</span><span class="p">:</span><span class="n">sv_for_expsymm</span><span class="p">,</span>
+                                <span class="s1">'tau_from_AC'</span><span class="p">:</span><span class="n">tau_from_AC</span><span class="p">}</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"finished"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">for_reference_dict</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.preprocess_neuron.html#allensdk.internal.model.glif.preprocess_neuron.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"nwb_file"</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"sweep_list_file"</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"output_json"</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--dt"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_DT</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--bessel"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_BESSEL</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--cut"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_CUT</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">sweep_list</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sweep_list_file</span><span class="p">)</span>
+    
+    <span class="n">values</span> <span class="o">=</span> <span class="n">preprocess_neuron</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">sweep_list</span><span class="p">)</span>
+
+    <span class="n">ju</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_json</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span></div>
+
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

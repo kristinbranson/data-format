@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.stimuli.presentations &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.stimuli.presentations</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files</span><span class="w"> </span><span class="kn">import</span> <span class="n">BehaviorStimulusFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_files.stimulus_file</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MalformedStimulusFileError</span><span class="p">,</span>
+    <span class="n">StimulusFileReadableInterface</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects</span><span class="w"> </span><span class="kn">import</span> <span class="n">StimulusTimestamps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.metadata.behavior_metadata.project_code</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">ProjectCode</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.stimuli.fingerprint_stimulus</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">FingerprintStimulus</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.data_objects.trials.trials</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Trials</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.stimulus_processing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">add_active_flag</span><span class="p">,</span>
+    <span class="n">compute_is_sham_change</span><span class="p">,</span>
+    <span class="n">compute_trials_id_for_stimulus</span><span class="p">,</span>
+    <span class="n">fix_omitted_end_frame</span><span class="p">,</span>
+    <span class="n">get_flashes_since_change</span><span class="p">,</span>
+    <span class="n">get_stimulus_metadata</span><span class="p">,</span>
+    <span class="n">get_stimulus_presentations</span><span class="p">,</span>
+    <span class="n">is_change_event</span><span class="p">,</span>
+    <span class="n">produce_stimulus_block_names</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_stimulus_presentation_time_interval</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.dataframe_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">enforce_df_column_order</span><span class="p">,</span>
+    <span class="n">enforce_df_int_typing</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.brain_observatory.mouse</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mouse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+
+
+<div class="viewcode-block" id="Presentations">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.Presentations">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Presentations</span><span class="p">(</span>
+    <span class="n">DataObject</span><span class="p">,</span>
+    <span class="n">StimulusFileReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbReadableInterface</span><span class="p">,</span>
+    <span class="n">NwbWritableInterface</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Stimulus presentations"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">columns_to_rename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">column_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sort_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        presentations : pandas.DataFrame</span>
+<span class="sd">            The stimulus presentations table</span>
+<span class="sd">        columns_to_rename : Optional dict mapping</span>
+<span class="sd">            Mapping to rename columns. old column name -&gt; new column name</span>
+<span class="sd">        column_list: Optional list of columns to include.</span>
+<span class="sd">            This will reorder the columns.</span>
+<span class="sd">        sort_columns: bool</span>
+<span class="sd">            Whether to sort the columns by name</span>
+<span class="sd">        trials : Optional Trials object.</span>
+<span class="sd">            allensdk Trials object for the same session as the presentations</span>
+<span class="sd">            table.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">columns_to_rename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">presentations</span> <span class="o">=</span> <span class="n">presentations</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">columns_to_rename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">column_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">presentations</span> <span class="o">=</span> <span class="n">presentations</span><span class="p">[</span><span class="n">column_list</span><span class="p">]</span>
+        <span class="n">presentations</span> <span class="o">=</span> <span class="n">enforce_df_int_typing</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="p">,</span>
+            <span class="p">[</span>
+                <span class="s2">"flashes_since_change"</span><span class="p">,</span>
+                <span class="s2">"image_index"</span><span class="p">,</span>
+                <span class="s2">"movie_repeat"</span><span class="p">,</span>
+                <span class="s2">"movie_frame_index"</span><span class="p">,</span>
+                <span class="s2">"repeat"</span><span class="p">,</span>
+                <span class="s2">"stimulus_index"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">presentations</span> <span class="o">=</span> <span class="n">presentations</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">presentations</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="n">presentations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"stimulus_presentations_id"</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="s2">"int"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">trials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">"active"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">presentations</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="c1"># Add column marking where the mouse is engaged in active,</span>
+                <span class="c1"># trained behavior.</span>
+                <span class="n">presentations</span> <span class="o">=</span> <span class="n">add_active_flag</span><span class="p">(</span><span class="n">presentations</span><span class="p">,</span> <span class="n">trials</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"trials_id"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">presentations</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="c1"># Add trials_id to presentations df to allow for joining of the</span>
+                <span class="c1"># two tables.</span>
+                <span class="n">presentations</span><span class="p">[</span><span class="s2">"trials_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_trials_id_for_stimulus</span><span class="p">(</span>
+                    <span class="n">presentations</span><span class="p">,</span> <span class="n">trials</span><span class="o">.</span><span class="n">data</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"is_sham_change"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">presentations</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="c1"># Mark changes in active and replay stimulus that are</span>
+                <span class="c1"># #sham-changes</span>
+                <span class="n">presentations</span> <span class="o">=</span> <span class="n">compute_is_sham_change</span><span class="p">(</span>
+                    <span class="n">presentations</span><span class="p">,</span> <span class="n">trials</span><span class="o">.</span><span class="n">data</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="n">sort_columns</span><span class="p">:</span>
+            <span class="n">presentations</span> <span class="o">=</span> <span class="n">enforce_df_column_order</span><span class="p">(</span>
+                <span class="n">presentations</span><span class="p">,</span>
+                <span class="p">[</span>
+                    <span class="s2">"stimulus_block"</span><span class="p">,</span>
+                    <span class="s2">"stimulus_block_name"</span><span class="p">,</span>
+                    <span class="s2">"image_index"</span><span class="p">,</span>
+                    <span class="s2">"image_name"</span><span class="p">,</span>
+                    <span class="s2">"movie_frame_index"</span><span class="p">,</span>
+                    <span class="s2">"duration"</span><span class="p">,</span>
+                    <span class="s2">"start_time"</span><span class="p">,</span>
+                    <span class="s2">"end_time"</span><span class="p">,</span>
+                    <span class="s2">"stop_time"</span><span class="p">,</span>
+                    <span class="s2">"start_frame"</span><span class="p">,</span>
+                    <span class="s2">"end_frame"</span><span class="p">,</span>
+                    <span class="s2">"is_change"</span><span class="p">,</span>
+                    <span class="s2">"is_image_novel"</span><span class="p">,</span>
+                    <span class="s2">"omitted"</span><span class="p">,</span>
+                    <span class="s2">"movie_repeat"</span><span class="p">,</span>
+                    <span class="s2">"flashes_since_change"</span><span class="p">,</span>
+                    <span class="s2">"trials_id"</span><span class="p">,</span>
+                <span class="p">],</span>
+            <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"presentations"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">presentations</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Presentations.to_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.Presentations.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span> <span class="n">stimulus_name_column</span><span class="o">=</span><span class="s2">"stimulus_name"</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Adds a stimulus table (defining stimulus characteristics for each</span>
+<span class="sd">        time point in a session) to an nwbfile as TimeIntervals.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwbfile</span>
+<span class="sd">        stimulus_name_column: The column in the dataframe denoting the</span>
+<span class="sd">            stimulus name</span>
+<span class="sd">        """</span>
+        <span class="n">stimulus_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">ts</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">"stimulus"</span><span class="p">]</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"timestamps"</span><span class="p">)</span>
+        <span class="n">stimulus_names</span> <span class="o">=</span> <span class="n">stimulus_table</span><span class="p">[</span><span class="n">stimulus_name_column</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">stim_name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">stimulus_names</span><span class="p">):</span>
+            <span class="n">specific_stimulus_table</span> <span class="o">=</span> <span class="n">stimulus_table</span><span class="p">[</span>
+                <span class="n">stimulus_table</span><span class="p">[</span><span class="n">stimulus_name_column</span><span class="p">]</span> <span class="o">==</span> <span class="n">stim_name</span>
+            <span class="p">]</span>
+            <span class="c1"># Drop columns where all values in column are NaN</span>
+            <span class="n">cleaned_table</span> <span class="o">=</span> <span class="n">specific_stimulus_table</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"all"</span><span class="p">)</span>
+            <span class="c1"># For columns with mixed strings and NaNs, fill NaNs with 'N/A'</span>
+            <span class="k">for</span> <span class="n">colname</span><span class="p">,</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">cleaned_table</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">types</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="nb">type</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">types</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">str</span> <span class="ow">in</span> <span class="n">types</span><span class="p">:</span>
+                    <span class="n">series</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="s2">"N/A"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">cleaned_table</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"boolean"</span><span class="p">:</span>
+                    <span class="c1"># Fixing an issue in which a bool column contains</span>
+                    <span class="c1"># nans, which get coerced to True in pynwb</span>
+                    <span class="c1"># Float maintains the nan values, while bool does not</span>
+                    <span class="c1"># These will be coerced to boolean when reading</span>
+                    <span class="n">cleaned_table</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">interval_description</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Presentation times and stimuli details "</span>
+                <span class="sa">f</span><span class="s2">"for '</span><span class="si">{</span><span class="n">stim_name</span><span class="si">}</span><span class="s2">' stimuli. "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+                <span class="sa">f</span><span class="s2">"Note: image_name references "</span>
+                <span class="sa">f</span><span class="s2">"control_description in "</span>
+                <span class="sa">f</span><span class="s2">"stimulus/templates"</span>
+            <span class="p">)</span>
+            <span class="n">presentation_interval</span> <span class="o">=</span> <span class="n">create_stimulus_presentation_time_interval</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stim_name</span><span class="si">}</span><span class="s2">_presentations"</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="n">interval_description</span><span class="p">,</span>
+                <span class="n">columns_to_add</span><span class="o">=</span><span class="n">cleaned_table</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cleaned_table</span><span class="o">.</span><span class="n">itertuples</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">_asdict</span><span class="p">()</span>
+
+                <span class="n">presentation_interval</span><span class="o">.</span><span class="n">add_interval</span><span class="p">(</span>
+                    <span class="o">**</span><span class="n">row</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="s2">"stimulus_time_interval"</span><span class="p">,</span> <span class="n">timeseries</span><span class="o">=</span><span class="n">ts</span>
+                <span class="p">)</span>
+
+            <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_time_intervals</span><span class="p">(</span><span class="n">presentation_interval</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+<div class="viewcode-block" id="Presentations.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.Presentations.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">,</span>
+        <span class="n">add_is_change</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">add_trials_dependent_values</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">column_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Presentations"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nwbfile</span>
+<span class="sd">        add_is_change: Whether to add a column denoting whether the current</span>
+<span class="sd">            row represents a stimulus in which there was a change event</span>
+<span class="sd">        column_list: The columns and order of columns</span>
+<span class="sd">            in the final dataframe.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        `Presentations` instance</span>
+<span class="sd">        """</span>
+        <span class="n">columns_to_ignore</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"tags"</span><span class="p">,</span>
+            <span class="s2">"timeseries"</span><span class="p">,</span>
+            <span class="s2">"tags_index"</span><span class="p">,</span>
+            <span class="s2">"timeseries_index"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">presentation_dfs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">interval_name</span><span class="p">,</span> <span class="n">interval</span> <span class="ow">in</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">intervals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">interval_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_presentations"</span><span class="p">):</span>
+                <span class="n">presentations</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">interval</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">columns_to_ignore</span><span class="p">:</span>
+                        <span class="n">presentations</span><span class="p">[</span><span class="n">col</span><span class="o">.</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">presentations</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="s2">"N/A"</span><span class="p">:</span> <span class="s2">""</span><span class="p">})</span>
+                <span class="n">presentation_dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+
+        <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">presentation_dfs</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="s2">"int64"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"int"</span><span class="p">)}</span>
+        <span class="p">)</span>
+
+        <span class="c1"># coercing bool columns with nans to boolean. "Boolean" dtype</span>
+        <span class="c1"># allows null values, while "bool" does not (see comment in to_nwb)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="n">c</span><span class="p">:</span> <span class="s2">"boolean"</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="s2">"float"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="o">~</span><span class="n">table</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">})</span>
+                <span class="c1"># These columns should not be coerced to boolean</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">c</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_index"</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">"start_time"</span><span class="p">])</span>
+
+        <span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">table</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">add_is_change</span><span class="p">:</span>
+            <span class="n">table</span><span class="p">[</span><span class="s2">"is_change"</span><span class="p">]</span> <span class="o">=</span> <span class="n">is_change_event</span><span class="p">(</span><span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">table</span><span class="p">)</span>
+            <span class="n">table</span><span class="p">[</span><span class="s2">"flashes_since_change"</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_flashes_since_change</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">table</span>
+            <span class="p">)</span>
+        <span class="n">trials</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">add_trials_dependent_values</span> <span class="ow">and</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">trials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">trials</span> <span class="o">=</span> <span class="n">Trials</span><span class="o">.</span><span class="n">from_nwb</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Presentations</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">column_list</span><span class="o">=</span><span class="n">column_list</span><span class="p">,</span> <span class="n">trials</span><span class="o">=</span><span class="n">trials</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Presentations.from_stimulus_file">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.Presentations.from_stimulus_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_stimulus_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+        <span class="n">stimulus_timestamps</span><span class="p">:</span> <span class="n">StimulusTimestamps</span><span class="p">,</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">:</span> <span class="n">Trials</span><span class="p">,</span>
+        <span class="n">limit_to_images</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">column_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">fill_omitted_values</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">project_code</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProjectCode</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Presentations"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Get stimulus presentation data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_file : BehaviorStimulusFile</span>
+<span class="sd">            Input stimulus_file to create presentations dataframe from.</span>
+<span class="sd">        stimulus_timestamps : StimulusTimestamps</span>
+<span class="sd">            Timestamps of the stimuli</span>
+<span class="sd">        behavior_session_id : int</span>
+<span class="sd">            LIMS id of behavior session</span>
+<span class="sd">        trials: Trials</span>
+<span class="sd">            Object to create trials_id column in Presentations table</span>
+<span class="sd">            allowing for mering of the two tables.</span>
+<span class="sd">        limit_to_images : Optional, list of str</span>
+<span class="sd">            Only return images given by these image names</span>
+<span class="sd">        column_list : Optional, list of str</span>
+<span class="sd">            The columns and order of columns in the final dataframe</span>
+<span class="sd">        fill_omitted_values : Optional, bool</span>
+<span class="sd">            Whether to fill stop_time and duration for omitted frames</span>
+<span class="sd">        project_code: Optional, ProjectCode</span>
+<span class="sd">            For released datasets, provide a project code</span>
+<span class="sd">            to produce explicitly named stimulus_block column values in the</span>
+<span class="sd">            column stimulus_block_name</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        output_presentations: Presentations</span>
+<span class="sd">            Object with a table whose rows are stimulus presentations</span>
+<span class="sd">            (i.e. a given image, for a given duration, typically 250 ms)</span>
+<span class="sd">            and whose columns are presentation characteristics.</span>
+<span class="sd">        """</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">raw_stim_pres_df</span> <span class="o">=</span> <span class="n">get_stimulus_presentations</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">stimulus_timestamps</span><span class="o">.</span><span class="n">value</span>
+        <span class="p">)</span>
+        <span class="n">raw_stim_pres_df</span> <span class="o">=</span> <span class="n">raw_stim_pres_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"index"</span><span class="p">])</span>
+        <span class="n">raw_stim_pres_df</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_check_for_errant_omitted_stimulus</span><span class="p">(</span>
+            <span class="n">input_df</span><span class="o">=</span><span class="n">raw_stim_pres_df</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Fill in nulls for image_name</span>
+        <span class="c1"># This makes two assumptions:</span>
+        <span class="c1">#   1. Nulls in `image_name` should be "gratings_&lt;orientation&gt;"</span>
+        <span class="c1">#   2. Gratings are only present (or need to be fixed) when all</span>
+        <span class="c1">#      values for `image_name` are null.</span>
+        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">raw_stim_pres_df</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="o">~</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">raw_stim_pres_df</span><span class="p">[</span><span class="s2">"orientation"</span><span class="p">])</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="n">raw_stim_pres_df</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw_stim_pres_df</span><span class="p">[</span>
+                    <span class="s2">"orientation"</span>
+                <span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"gratings_</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">"All values for 'orientation' and "</span> <span class="s2">"'image_name are null."</span>
+                <span class="p">)</span>
+
+        <span class="n">stimulus_metadata_df</span> <span class="o">=</span> <span class="n">get_stimulus_metadata</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">idx_name</span> <span class="o">=</span> <span class="n">raw_stim_pres_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">raw_stim_pres_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">stimulus_metadata_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(),</span> <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">idx_name</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_index_df</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">stimulus_index_df</span><span class="p">[</span>
+                <span class="p">[</span>
+                    <span class="s2">"image_set"</span><span class="p">,</span>
+                    <span class="s2">"image_index"</span><span class="p">,</span>
+                    <span class="s2">"start_time"</span><span class="p">,</span>
+                    <span class="s2">"phase"</span><span class="p">,</span>
+                    <span class="s2">"spatial_frequency"</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">]</span>
+            <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"start_time"</span><span class="p">:</span> <span class="s2">"timestamps"</span><span class="p">})</span>
+            <span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"timestamps"</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_index_df</span><span class="p">[</span><span class="s2">"image_index"</span><span class="p">]</span> <span class="o">=</span> <span class="n">stimulus_index_df</span><span class="p">[</span>
+            <span class="s2">"image_index"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int"</span><span class="p">)</span>
+        <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="n">raw_stim_pres_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+            <span class="n">stimulus_index_df</span><span class="p">,</span>
+            <span class="n">left_on</span><span class="o">=</span><span class="s2">"start_time"</span><span class="p">,</span>
+            <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">how</span><span class="o">=</span><span class="s2">"left"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_stim_pres_df</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">stim_pres_df</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"Length of `stim_pres_df` should not change after"</span>
+                <span class="sa">f</span><span class="s2">" merge; was </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">raw_stim_pres_df</span><span class="p">)</span><span class="si">}</span><span class="s2">, now "</span>
+                <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">stim_pres_df</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+
+        <span class="n">stim_pres_df</span><span class="p">[</span><span class="s2">"is_change"</span><span class="p">]</span> <span class="o">=</span> <span class="n">is_change_event</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">stim_pres_df</span>
+        <span class="p">)</span>
+        <span class="n">stim_pres_df</span><span class="p">[</span><span class="s2">"flashes_since_change"</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_flashes_since_change</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">stim_pres_df</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Sort columns then drop columns which contain only all NaN values</span>
+        <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="n">stim_pres_df</span><span class="p">[</span><span class="nb">sorted</span><span class="p">(</span><span class="n">stim_pres_df</span><span class="p">)]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"all"</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit_to_images</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="n">stim_pres_df</span><span class="p">[</span>
+                <span class="n">stim_pres_df</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">limit_to_images</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">stim_pres_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="n">stim_pres_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">name</span><span class="o">=</span><span class="n">stim_pres_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">)</span>
+
+        <span class="n">stim_pres_df</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">stim_pres_df</span><span class="p">[</span><span class="s2">"stimulus_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">stimulus_name</span>
+
+        <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="n">fix_omitted_end_frame</span><span class="p">(</span><span class="n">stim_pres_df</span><span class="p">)</span>
+
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_add_is_image_novel</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">stim_pres_df</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">has_fingerprint_stimulus</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"fingerprint"</span> <span class="ow">in</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"behavior"</span><span class="p">][</span><span class="s2">"items"</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">has_fingerprint_stimulus</span><span class="p">:</span>
+            <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_add_fingerprint_stimulus</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">stim_pres_df</span><span class="p">,</span>
+                <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_postprocess</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="o">=</span><span class="n">stim_pres_df</span><span class="p">,</span>
+            <span class="n">fill_omitted_values</span><span class="o">=</span><span class="n">fill_omitted_values</span><span class="p">,</span>
+            <span class="n">coerce_bool_to_boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">project_code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stim_pres_df</span> <span class="o">=</span> <span class="n">produce_stimulus_block_names</span><span class="p">(</span>
+                <span class="n">stim_pres_df</span><span class="p">,</span> <span class="n">stimulus_file</span><span class="o">.</span><span class="n">session_type</span><span class="p">,</span> <span class="n">project_code</span><span class="o">.</span><span class="n">value</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Presentations</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="o">=</span><span class="n">stim_pres_df</span><span class="p">,</span> <span class="n">column_list</span><span class="o">=</span><span class="n">column_list</span><span class="p">,</span> <span class="n">trials</span><span class="o">=</span><span class="n">trials</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Presentations.from_path">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.Presentations.from_path">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_path</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">exclude_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">columns_to_rename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sort_columns</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">trials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Presentations"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Reads the table directly from a precomputed csv</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        path: Path to load table from</span>
+<span class="sd">        behavior_session_id</span>
+<span class="sd">            LIMS behavior session id</span>
+<span class="sd">        exclude_columns: Columns to exclude</span>
+<span class="sd">        columns_to_rename: Optional d ict mapping</span>
+<span class="sd">            old column name -&gt; new column name</span>
+<span class="sd">        sort_columns: Whether to sort the columns by name</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Presentations instance</span>
+<span class="sd">        """</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_add_is_image_novel</span><span class="p">(</span>
+            <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+        <span class="p">)</span>
+        <span class="n">exclude_columns</span> <span class="o">=</span> <span class="n">exclude_columns</span> <span class="k">if</span> <span class="n">exclude_columns</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_columns</span><span class="p">]]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_postprocess</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+            <span class="n">fill_omitted_values</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">coerce_bool_to_boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Presentations</span><span class="p">(</span>
+            <span class="n">presentations</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+            <span class="n">columns_to_rename</span><span class="o">=</span><span class="n">columns_to_rename</span><span class="p">,</span>
+            <span class="n">sort_columns</span><span class="o">=</span><span class="n">sort_columns</span><span class="p">,</span>
+            <span class="n">trials</span><span class="o">=</span><span class="n">trials</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_is_image_novel</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">image_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Returns whether each image in `image_names` is novel for the mouse</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        image_names:</span>
+<span class="sd">            List of image names</span>
+<span class="sd">        behavior_session_id</span>
+<span class="sd">            LIMS behavior session id</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dict mapping image name to is_novel</span>
+<span class="sd">        """</span>
+        <span class="n">mouse</span> <span class="o">=</span> <span class="n">Mouse</span><span class="o">.</span><span class="n">from_behavior_session_id</span><span class="p">(</span>
+            <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+        <span class="p">)</span>
+        <span class="n">prior_images_shown</span> <span class="o">=</span> <span class="n">mouse</span><span class="o">.</span><span class="n">get_images_shown</span><span class="p">(</span>
+            <span class="n">up_to_behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span>
+        <span class="p">)</span>
+
+        <span class="n">image_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">image_names</span> <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="s2">"omitted"</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">is_novel</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">image_name</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">image_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prior_images_shown</span>
+            <span class="k">for</span> <span class="n">image_name</span> <span class="ow">in</span> <span class="n">image_names</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">is_novel</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_is_image_novel</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">behavior_session_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Adds a column 'is_image_novel' to `stimulus_presentations`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stimulus_presentations: stimulus presentations table</span>
+<span class="sd">        behavior_session_id: LIMS id of behavior session</span>
+
+<span class="sd">        """</span>
+        <span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"is_image_novel"</span><span class="p">]</span> <span class="o">=</span> <span class="n">stimulus_presentations</span><span class="p">[</span>
+            <span class="s2">"image_name"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_get_is_image_novel</span><span class="p">(</span>
+                <span class="n">image_names</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="p">[</span><span class="s2">"image_name"</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                <span class="n">behavior_session_id</span><span class="o">=</span><span class="n">behavior_session_id</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_postprocess</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">fill_omitted_values</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">coerce_bool_to_boolean</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">omitted_time_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Applies further processing to `presentations`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        presentations</span>
+<span class="sd">            Presentations df</span>
+<span class="sd">        fill_omitted_values</span>
+<span class="sd">            Whether to fill stop time and duration for omitted flashes</span>
+<span class="sd">        coerce_bool_to_boolean</span>
+<span class="sd">            Whether to coerce columns of "Object" dtype that are truly bool</span>
+<span class="sd">            to nullable "boolean" dtype</span>
+<span class="sd">        omitted_time_duration</span>
+<span class="sd">            Amount of time a stimuli is omitted for in seconds"""</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">presentations</span>
+        <span class="k">if</span> <span class="n">fill_omitted_values</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_fill_missing_values_for_omitted_flashes</span><span class="p">(</span>
+                <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">omitted_time_duration</span><span class="o">=</span><span class="n">omitted_time_duration</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">coerce_bool_to_boolean</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">c</span><span class="p">:</span> <span class="s2">"boolean"</span>
+                    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="s2">"O"</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="o">~</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span>
+                        <span class="p">{</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">}</span>
+                    <span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_check_for_errant_omitted_stimulus</span><span class="p">(</span><span class="n">input_df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_for_errant_omitted_stimulus</span><span class="p">(</span>
+        <span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if the first entry in the DataFrame is an omitted stimulus.</span>
+
+<span class="sd">        This shouldn't happen and likely reflects some sort of camstim error</span>
+<span class="sd">        with appending frames to the omitted flash frame log. See</span>
+<span class="sd">        explanation here:</span>
+<span class="sd">        https://github.com/AllenInstitute/AllenSDK/issues/2577</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------/</span>
+<span class="sd">        input_df : DataFrame</span>
+<span class="sd">            Input stimulus table to check for "omitted" stimulus.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        modified_df : DataFrame</span>
+<span class="sd">            Dataframe with omitted stimulus removed from first row or if not</span>
+<span class="sd">            found, return input_df unmodified.</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">safe_omitted_check</span><span class="p">(</span><span class="n">input_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
+                               <span class="n">stimulus_block</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">stimulus_block</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">first_row</span> <span class="o">=</span> <span class="n">input_df</span><span class="p">[</span>
+                    <span class="n">input_df</span><span class="p">[</span><span class="s1">'stimulus_block'</span><span class="p">]</span> <span class="o">==</span> <span class="n">stim_block</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">first_row</span> <span class="o">=</span> <span class="n">input_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">first_row</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">first_row</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]:</span>
+                    <span class="n">input_df</span> <span class="o">=</span> <span class="n">input_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">first_row</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">input_df</span>
+
+        <span class="k">if</span> <span class="s2">"omitted"</span> <span class="ow">in</span> <span class="n">input_df</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_df</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">"stimulus_block"</span> <span class="ow">in</span> <span class="n">input_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">stim_block</span> <span class="ow">in</span> <span class="n">input_df</span><span class="p">[</span><span class="s1">'stimulus_block'</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+                    <span class="n">input_df</span> <span class="o">=</span> <span class="n">safe_omitted_check</span><span class="p">(</span><span class="n">input_df</span><span class="o">=</span><span class="n">input_df</span><span class="p">,</span>
+                                                  <span class="n">stimulus_block</span><span class="o">=</span><span class="n">stim_block</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_df</span> <span class="o">=</span> <span class="n">safe_omitted_check</span><span class="p">(</span><span class="n">input_df</span><span class="o">=</span><span class="n">input_df</span><span class="p">,</span>
+                                              <span class="n">stimulus_block</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">input_df</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fill_missing_values_for_omitted_flashes</span><span class="p">(</span>
+        <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">omitted_time_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        This function sets the stop time for a row that is an omitted</span>
+<span class="sd">        stimulus. An omitted stimulus is a stimulus where a mouse is</span>
+<span class="sd">        shown only a grey screen and these last for 250 milliseconds.</span>
+<span class="sd">        These do not include a stop_time or end_frame like other stimuli in</span>
+<span class="sd">        the stimulus table due to design choices.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        df</span>
+<span class="sd">            Stimuli presentations dataframe</span>
+<span class="sd">        omitted_time_duration</span>
+<span class="sd">            Amount of time a stimulus is omitted for in seconds</span>
+<span class="sd">        """</span>
+        <span class="n">omitted</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"omitted"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">omitted</span><span class="p">,</span> <span class="s2">"stop_time"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">omitted</span><span class="p">,</span> <span class="s2">"start_time"</span><span class="p">]</span> <span class="o">+</span> <span class="n">omitted_time_duration</span>
+        <span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">omitted</span><span class="p">,</span> <span class="s2">"duration"</span><span class="p">]</span> <span class="o">=</span> <span class="n">omitted_time_duration</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_spontaneous_stimulus</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">stimulus_presentations_table</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The spontaneous stimulus is a gray screen shown in between</span>
+<span class="sd">        different stimulus blocks. This method finds any gaps in the stimulus</span>
+<span class="sd">        presentations. These gaps are assumed to be spontaneous stimulus.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------</span>
+<span class="sd">        stimulus_presentations_table : pd.DataFrame</span>
+<span class="sd">            Input stimulus presentations table.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        output_frame : pd.DataFrame</span>
+<span class="sd">           stimulus_presentations_table with added spotaneous stimulus blocks</span>
+<span class="sd">           added.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        RuntimeError if there are any gaps in stimulus blocks &gt; 1</span>
+<span class="sd">        """</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Check for 5 minute gray screen stimulus block at the start of the</span>
+        <span class="c1"># movie. We give some leeway around 5 minutes at 285 seconds to account</span>
+        <span class="c1"># for some sessions which have start times slightly less than 300</span>
+        <span class="c1"># seconds. This also makes sure that presentations that start slightly</span>
+        <span class="c1"># late are not erroneously added as a "grey screen".</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">stimulus_presentations_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"start_frame"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">stimulus_presentations_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"start_time"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">285</span>
+        <span class="p">):</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"duration"</span><span class="p">:</span> <span class="n">stimulus_presentations_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span>
+                        <span class="s2">"start_time"</span>
+                    <span class="p">],</span>
+                    <span class="s2">"start_time"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"stop_time"</span><span class="p">:</span> <span class="n">stimulus_presentations_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span>
+                        <span class="s2">"start_time"</span>
+                    <span class="p">],</span>
+                    <span class="s2">"start_frame"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"end_frame"</span><span class="p">:</span> <span class="n">stimulus_presentations_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span>
+                        <span class="s2">"start_frame"</span>
+                    <span class="p">],</span>
+                    <span class="s2">"stimulus_block"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                    <span class="s2">"stimulus_name"</span><span class="p">:</span> <span class="s2">"spontaneous"</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+            <span class="c1"># Increment the stimulus blocks by 1 to to account for the</span>
+            <span class="c1"># new stimulus at the start of the file.</span>
+            <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">spontaneous_stimulus_blocks</span> <span class="o">=</span> <span class="n">get_spontaneous_block_indices</span><span class="p">(</span>
+            <span class="n">stimulus_blocks</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">spontaneous_block</span> <span class="ow">in</span> <span class="n">spontaneous_stimulus_blocks</span><span class="p">:</span>
+            <span class="n">prev_stop_time</span> <span class="o">=</span> <span class="n">stimulus_presentations_table</span><span class="p">[</span>
+                <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span>
+                <span class="o">==</span> <span class="n">spontaneous_block</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">][</span><span class="s2">"stop_time"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">prev_end_frame</span> <span class="o">=</span> <span class="n">stimulus_presentations_table</span><span class="p">[</span>
+                <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span>
+                <span class="o">==</span> <span class="n">spontaneous_block</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="p">][</span><span class="s2">"end_frame"</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">next_start_time</span> <span class="o">=</span> <span class="n">stimulus_presentations_table</span><span class="p">[</span>
+                <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span>
+                <span class="o">==</span> <span class="n">spontaneous_block</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="p">][</span><span class="s2">"start_time"</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">next_start_frame</span> <span class="o">=</span> <span class="n">stimulus_presentations_table</span><span class="p">[</span>
+                <span class="n">stimulus_presentations_table</span><span class="p">[</span><span class="s2">"stimulus_block"</span><span class="p">]</span>
+                <span class="o">==</span> <span class="n">spontaneous_block</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="p">][</span><span class="s2">"start_frame"</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"duration"</span><span class="p">:</span> <span class="n">next_start_time</span> <span class="o">-</span> <span class="n">prev_stop_time</span><span class="p">,</span>
+                    <span class="s2">"start_time"</span><span class="p">:</span> <span class="n">prev_stop_time</span><span class="p">,</span>
+                    <span class="s2">"stop_time"</span><span class="p">:</span> <span class="n">next_start_time</span><span class="p">,</span>
+                    <span class="s2">"start_frame"</span><span class="p">:</span> <span class="n">prev_end_frame</span><span class="p">,</span>
+                    <span class="s2">"end_frame"</span><span class="p">:</span> <span class="n">next_start_frame</span><span class="p">,</span>
+                    <span class="s2">"stimulus_block"</span><span class="p">:</span> <span class="n">spontaneous_block</span><span class="p">,</span>
+                    <span class="s2">"stimulus_name"</span><span class="p">:</span> <span class="s2">"spontaneous"</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">stimulus_presentations_table</span><span class="p">,</span> <span class="n">res</span><span class="p">])</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span>
+            <span class="s2">"start_frame"</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_fingerprint_stimulus</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">stimulus_presentations</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">stimulus_file</span><span class="p">:</span> <span class="n">BehaviorStimulusFile</span><span class="p">,</span>
+        <span class="n">stimulus_timestamps</span><span class="p">:</span> <span class="n">StimulusTimestamps</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Adds the fingerprint stimulus and the preceding gray screen to</span>
+<span class="sd">        the stimulus presentations table</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame: stimulus presentations with gray screen + fingerprint</span>
+<span class="sd">        movie added"""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fingerprint_stimulus</span> <span class="o">=</span> <span class="n">FingerprintStimulus</span><span class="o">.</span><span class="n">from_stimulus_file</span><span class="p">(</span>
+                <span class="n">stimulus_presentations</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="p">,</span>
+                <span class="n">stimulus_file</span><span class="o">=</span><span class="n">stimulus_file</span><span class="p">,</span>
+                <span class="n">stimulus_timestamps</span><span class="o">=</span><span class="n">stimulus_timestamps</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">MalformedStimulusFileError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">stimulus_presentations</span>
+
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">stimulus_presentations</span><span class="p">,</span> <span class="n">fingerprint_stimulus</span><span class="o">.</span><span class="n">table</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">stimulus_presentations</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_spontaneous_stimulus</span><span class="p">(</span>
+            <span class="n">stimulus_presentations_table</span><span class="o">=</span><span class="n">stimulus_presentations</span>
+        <span class="p">)</span>
+
+        <span class="c1"># reset index to go from 0...end</span>
+        <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">stimulus_presentations</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">stimulus_presentations</span></div>
+
+
+
+<div class="viewcode-block" id="get_spontaneous_block_indices">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.html#allensdk.brain_observatory.behavior.data_objects.stimuli.presentations.get_spontaneous_block_indices">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_spontaneous_block_indices</span><span class="p">(</span><span class="n">stimulus_blocks</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Gets the indices where there is a gap in stimulus block. This is</span>
+<span class="sd">    where spontaneous blocks are.</span>
+<span class="sd">    Example: stimulus blocks are [0, 2, 3]. There is a spontaneous block at 1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    stimulus_blocks: Stimulus blocks in the stimulus presentations table</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This doesn't support a spontaneous block appearing at the beginning or</span>
+<span class="sd">    end of a session</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.array: spontaneous stimulus blocks</span>
+<span class="sd">    """</span>
+    <span class="n">blocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">stimulus_blocks</span><span class="p">))</span>
+    <span class="n">block_diffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">blocks</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">block_diffs</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"There should not be any stimulus block "</span>
+            <span class="sa">f</span><span class="s2">"diffs greater than 2. The stimulus "</span>
+            <span class="sa">f</span><span class="s2">"blocks are </span><span class="si">{</span><span class="n">blocks</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="c1"># i.e. if the current blocks are [0, 2], then block_diffs will</span>
+    <span class="c1"># be [2], with a gap (== 2) at index 0, meaning that the spontaneous block</span>
+    <span class="c1"># is at index 1</span>
+    <span class="n">block_indices</span> <span class="o">=</span> <span class="n">blocks</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">block_diffs</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">block_indices</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

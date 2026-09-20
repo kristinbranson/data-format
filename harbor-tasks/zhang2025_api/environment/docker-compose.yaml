@@ -1,0 +1,32 @@
+services:
+  main:
+    volumes:
+      # Read-only, and NOT at /app/data: the entrypoint (environment/stage_cache.sh)
+      # assembles a writable ONE cache at /app/data/one_cache from this mount, because
+      # ONE writes REST responses and refreshes release tables while it reads. Mounting
+      # the dataset writable instead would require rootless podman on Kerberos-squashed
+      # NFS, let concurrent trials write into one shared tree, and let an agent modify
+      # the dataset.
+      - "${DATA_ROOT:?DATA_ROOT must be set - run via harbor-scripts/run_harbor.sh}/zhang2025:/mnt/dataset:ro"
+    # Alyx is unreachable from this task, on purpose. The dataset ships a cache of
+    # Alyx's answers (one_cache/.rest) whose expiry is set 50 years out, so the
+    # reference solution reads it from disk and never asks the server. Leaving the
+    # server reachable would mean a query missing from that cache silently succeeds
+    # over the network instead of failing -- the converted data, and so the reference
+    # statistics, would then depend on what Alyx returned that day. On the datalimit
+    # task it would also let an agent fetch sessions outside the 50 GB subset the task
+    # is defined by. Only this hostname is blocked; the rest of the internet works,
+    # because the agent's tooling needs it.
+    extra_hosts:
+      - "openalyx.internationalbrainlab.org:127.0.0.1"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            # Name the GPU id rather than asking for "a GPU". podman-compose satisfies
+            # `count: 1` with physical index 0, which on a multi-GPU node may not be
+            # assigned to this job. HARBOR_GPU_ID is the physical index, which harbor-scripts/gpu_ids.py
+            # resolves from the card's PCI address
+            - driver: nvidia
+              device_ids: ["${HARBOR_GPU_ID:-0}"]
+              capabilities: [gpu]

@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.ecephys.ecephys_project_cache &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.ecephys.ecephys_project_cache</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">SimpleITK</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sitk</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pynwb</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.warehouse_cache.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core.authentication</span><span class="w"> </span><span class="kn">import</span> <span class="n">DbCredentials</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.ecephys_project_api</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EcephysProjectApi</span><span class="p">,</span> <span class="n">EcephysProjectLimsApi</span><span class="p">,</span> <span class="n">EcephysProjectWarehouseApi</span><span class="p">,</span>
+    <span class="n">EcephysProjectFixedApi</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.ecephys_project_api.http_engine</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">write_bytes_from_coroutine</span><span class="p">,</span> <span class="n">write_from_stream</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.ecephys_session_api</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EcephysNwbSessionApi</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys.ecephys_session</span><span class="w"> </span><span class="kn">import</span> <span class="n">EcephysSession</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_unit_filter_value</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.warehouse_cache.caching_utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">one_file_call_caching</span>
+
+
+<div class="viewcode-block" id="EcephysProjectCache">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EcephysProjectCache</span><span class="p">(</span><span class="n">Cache</span><span class="p">):</span>
+
+    <span class="n">SESSIONS_KEY</span> <span class="o">=</span> <span class="s1">'sessions'</span>
+    <span class="n">PROBES_KEY</span> <span class="o">=</span> <span class="s1">'probes'</span>
+    <span class="n">CHANNELS_KEY</span> <span class="o">=</span> <span class="s1">'channels'</span>
+    <span class="n">UNITS_KEY</span> <span class="o">=</span> <span class="s1">'units'</span>
+
+    <span class="n">SESSION_DIR_KEY</span> <span class="o">=</span> <span class="s1">'session_data'</span>
+    <span class="n">SESSION_NWB_KEY</span> <span class="o">=</span> <span class="s1">'session_nwb'</span>
+    <span class="n">PROBE_LFP_NWB_KEY</span> <span class="o">=</span> <span class="s2">"probe_lfp_nwb"</span>
+
+    <span class="n">NATURAL_MOVIE_DIR_KEY</span> <span class="o">=</span> <span class="s2">"movie_dir"</span>
+    <span class="n">NATURAL_MOVIE_KEY</span> <span class="o">=</span> <span class="s2">"natural_movie"</span>
+
+    <span class="n">NATURAL_SCENE_DIR_KEY</span> <span class="o">=</span> <span class="s2">"natural_scene_dir"</span>
+    <span class="n">NATURAL_SCENE_KEY</span> <span class="o">=</span> <span class="s2">"natural_scene"</span>
+
+    <span class="n">SESSION_ANALYSIS_METRICS_KEY</span> <span class="o">=</span> <span class="s2">"session_analysis_metrics"</span>
+    <span class="n">TYPEWISE_ANALYSIS_METRICS_KEY</span> <span class="o">=</span> <span class="s2">"typewise_analysis_metrics"</span>
+
+    <span class="n">MANIFEST_VERSION</span> <span class="o">=</span> <span class="s1">'0.3.0'</span>
+
+    <span class="n">SUPPRESS_FROM_UNITS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"air_channel_index"</span><span class="p">,</span>
+                           <span class="s2">"surface_channel_index"</span><span class="p">,</span>
+                           <span class="s2">"has_nwb"</span><span class="p">,</span>
+                           <span class="s2">"lfp_temporal_subsampling_factor"</span><span class="p">,</span>
+                           <span class="s2">"epoch_name_quality_metrics"</span><span class="p">,</span>
+                           <span class="s2">"epoch_name_waveform_metrics"</span><span class="p">,</span>
+                           <span class="s2">"isi_experiment_id"</span><span class="p">)</span>
+    <span class="n">SUPPRESS_FROM_CHANNELS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"air_channel_index"</span><span class="p">,</span> <span class="s2">"surface_channel_index"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span>
+        <span class="s2">"date_of_acquisition"</span><span class="p">,</span> <span class="s2">"published_at"</span><span class="p">,</span> <span class="s2">"specimen_id"</span><span class="p">,</span> <span class="s2">"session_type"</span><span class="p">,</span> <span class="s2">"isi_experiment_id"</span><span class="p">,</span> <span class="s2">"age_in_days"</span><span class="p">,</span>
+        <span class="s2">"sex"</span><span class="p">,</span> <span class="s2">"genotype"</span><span class="p">,</span> <span class="s2">"has_nwb"</span><span class="p">,</span> <span class="s2">"lfp_temporal_subsampling_factor"</span>
+    <span class="p">)</span>
+    <span class="n">SUPPRESS_FROM_PROBES</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"air_channel_index"</span><span class="p">,</span> <span class="s2">"surface_channel_index"</span><span class="p">,</span>
+        <span class="s2">"date_of_acquisition"</span><span class="p">,</span> <span class="s2">"published_at"</span><span class="p">,</span> <span class="s2">"specimen_id"</span><span class="p">,</span> <span class="s2">"session_type"</span><span class="p">,</span> <span class="s2">"isi_experiment_id"</span><span class="p">,</span> <span class="s2">"age_in_days"</span><span class="p">,</span>
+        <span class="s2">"sex"</span><span class="p">,</span> <span class="s2">"genotype"</span><span class="p">,</span> <span class="s2">"has_nwb"</span><span class="p">,</span> <span class="s2">"lfp_temporal_subsampling_factor"</span>
+    <span class="p">)</span>
+    <span class="n">SUPPRESS_FROM_SESSION_TABLE</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"has_nwb"</span><span class="p">,</span>
+        <span class="s2">"isi_experiment_id"</span><span class="p">,</span>
+        <span class="s2">"date_of_acquisition"</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">fetch_api</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EcephysProjectApi</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="n">stream_writer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">manifest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Entrypoint for accessing ecephys (neuropixels) data. Supports</span>
+<span class="sd">        access to cross-session data (like stimulus templates) and high-level</span>
+<span class="sd">        summaries of sessionwise data and provides tools for downloading detailed</span>
+<span class="sd">        sessionwise data (such as spike times).</span>
+
+<span class="sd">        To ensure correct configuration, it is recommended to use one of the</span>
+<span class="sd">        class constructors rather than to initialize this class directly.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        fetch_api : Optional[EcephysProjectApi]</span>
+<span class="sd">            Used to pull data from remote sources, after which it is locally</span>
+<span class="sd">            cached. Any object exposing the EcephysProjectApi interface is</span>
+<span class="sd">            suitable. Standard options are:</span>
+<span class="sd">                EcephysProjectWarehouseApi :: The default. Fetches publically</span>
+<span class="sd">                    available Allen Institute data</span>
+<span class="sd">                EcephysProjectFixedApi :: Refuses to fetch any data - only the</span>
+<span class="sd">                    existing local cache is accessible. Useful if you want to</span>
+<span class="sd">                    settle on a fixed dataset for analysis</span>
+<span class="sd">                EcephysProjectLimsApi :: Fetches bleeding-edge data from the</span>
+<span class="sd">                    Allen Institute's internal database. Only works if you are</span>
+<span class="sd">                    on our internal network.</span>
+<span class="sd">            By default None. If None, then fetch_api will be set to:</span>
+<span class="sd">            EcephysProjectWarehouseApi.default()</span>
+<span class="sd">        fetch_tries : int</span>
+<span class="sd">            Maximum number of times to attempt a download before giving up and</span>
+<span class="sd">            raising an exception. Note that this is total tries, not retries</span>
+<span class="sd">        stream_writer: Callable</span>
+<span class="sd">            The method used to write from stream. Depends on whether the</span>
+<span class="sd">            engine is synchronous or asynchronous. If not set, will use the</span>
+<span class="sd">            `write_bytes` method native to the `fetch_api`'s `rma_engine`.</span>
+<span class="sd">            If the method is incompatible with the `fetch_api`'s `rma_engine`,</span>
+<span class="sd">            will likely encounter errors. For this reason it is recommended</span>
+<span class="sd">            to leave this field unspecified, or to use one of the class</span>
+<span class="sd">            constructors.</span>
+<span class="sd">        manifest : str or Path</span>
+<span class="sd">            full path at which manifest json will be stored (default =</span>
+<span class="sd">            "ecephys_project_manifest.json" in the local directory.)</span>
+<span class="sd">        version : str</span>
+<span class="sd">            version of manifest file. If this mismatches the version</span>
+<span class="sd">            recorded in the file at manifest, an error will be raised.</span>
+<span class="sd">        cache: bool</span>
+<span class="sd">            Whether to write to the cache (default=True)</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        =====</span>
+<span class="sd">        It is highly recommended to construct an instance of this class</span>
+<span class="sd">        using one of the following constructor methods:</span>
+
+<span class="sd">        from_warehouse(scheme: Optional[str] = None,</span>
+<span class="sd">                       host: Optional[str] = None,</span>
+<span class="sd">                       asynchronous: bool = True,</span>
+<span class="sd">                       manifest: Optional[Union[str, Path]] = None,</span>
+<span class="sd">                       version: Optional[str] = None,</span>
+<span class="sd">                       cache: bool = True,</span>
+<span class="sd">                       fetch_tries: int = 2)</span>
+<span class="sd">            Create an instance of EcephysProjectCache with an</span>
+<span class="sd">            EcephysProjectWarehouseApi. Retrieves released data stored</span>
+<span class="sd">            in the warehouse. Suitable for all users downloading</span>
+<span class="sd">            published Allen Institute data.</span>
+<span class="sd">        from_lims(lims_credentials: Optional[DbCredentials] = None,</span>
+<span class="sd">                  scheme: Optional[str] = None,</span>
+<span class="sd">                  host: Optional[str] = None,</span>
+<span class="sd">                  asynchronous: bool = True,</span>
+<span class="sd">                  manifest: Optional[str] = None,</span>
+<span class="sd">                  version: Optional[str] = None,</span>
+<span class="sd">                  cache: bool = True,</span>
+<span class="sd">                  fetch_tries: int = 2)</span>
+<span class="sd">            Create an instance of EcephysProjectCache with an</span>
+<span class="sd">            EcephysProjectLimsApi. Retrieves bleeding-edge data stored</span>
+<span class="sd">            locally on Allen Institute servers. Suitable for internal</span>
+<span class="sd">            users on-site at the Allen Institute or using the corporate</span>
+<span class="sd">            vpn. Requires Allen Institute database credentials.</span>
+<span class="sd">        fixed(manifest: Optional[Union[str, Path]] = None,</span>
+<span class="sd">              version: Optional[str] = None)</span>
+<span class="sd">            Create an instance of EcephysProjectCache that will only</span>
+<span class="sd">            use locally stored data, downloaded previously from LIMS</span>
+<span class="sd">            or warehouse using the EcephysProjectCache.</span>
+<span class="sd">            Suitable for users who want to analyze a fixed dataset they</span>
+<span class="sd">            have previously downloaded using EcephysProjectCache.</span>
+<span class="sd">        """</span>
+        <span class="n">manifest_</span> <span class="o">=</span> <span class="n">manifest</span> <span class="ow">or</span> <span class="s2">"ecephys_project_manifest.json"</span>
+        <span class="n">version_</span> <span class="o">=</span> <span class="n">version</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">MANIFEST_VERSION</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">EcephysProjectCache</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">manifest</span><span class="o">=</span><span class="n">manifest_</span><span class="p">,</span>
+                                                  <span class="n">version</span><span class="o">=</span><span class="n">version_</span><span class="p">,</span>
+                                                  <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span> <span class="o">=</span> <span class="p">(</span><span class="n">EcephysProjectWarehouseApi</span><span class="o">.</span><span class="n">default</span><span class="p">()</span>
+                          <span class="k">if</span> <span class="n">fetch_api</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">fetch_api</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span> <span class="o">=</span> <span class="n">fetch_tries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span> <span class="o">=</span> <span class="p">(</span><span class="n">stream_writer</span>
+                              <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stream_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span> <span class="o">=</span> <span class="n">stream_writer</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="s2">"rma_engine"</span><span class="p">):</span>    <span class="c1"># EcephysProjectWarehouseApi    # noqa</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">rma_engine</span><span class="o">.</span><span class="n">write_bytes</span>
+            <span class="c1"># TODO: Make these names consistent in the different fetch apis</span>
+            <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="p">,</span> <span class="s2">"app_engine"</span><span class="p">):</span>    <span class="c1"># EcephysProjectLimsApi    # noqa</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">app_engine</span><span class="o">.</span><span class="n">write_bytes</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">"Must either set value for `stream_writer`, or use a "</span>
+                    <span class="s2">"`fetch_api` with an rma_engine or app_engine attribute "</span>
+                    <span class="s2">"that implements `write_bytes`. See `HttpEngine` and "</span>
+                    <span class="s2">"`AsyncHttpEngine` from "</span>
+                    <span class="s2">"allensdk.brain_observatory.ecephys.ecephys_project_api."</span>
+                    <span class="s2">"http_engine for examples."</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SESSIONS_KEY</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">one_file_call_caching</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_sessions</span><span class="p">,</span> <span class="n">write_csv</span><span class="p">,</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">"structure_acronyms"</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>  <span class="c1"># unfortunately, structure_acronyms is a list of str</span>
+            <span class="n">response</span><span class="p">[</span><span class="s2">"ecephys_structure_acronyms"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">ast</span><span class="o">.</span><span class="n">literal_eval</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">"structure_acronyms"</span><span class="p">]]</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"structure_acronyms"</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">PROBES_KEY</span><span class="p">)</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="n">one_file_call_caching</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_probes</span><span class="p">,</span> <span class="n">write_csv</span><span class="p">,</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span><span class="p">)</span>
+        <span class="c1"># Divide the lfp sampling by the subsampling factor for clearer presentation (if provided)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">probes</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span>
+               <span class="p">[</span><span class="s2">"lfp_sampling_rate"</span><span class="p">,</span> <span class="s2">"lfp_temporal_subsampling_factor"</span><span class="p">]):</span>
+            <span class="n">probes</span><span class="p">[</span><span class="s2">"lfp_sampling_rate"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">probes</span><span class="p">[</span><span class="s2">"lfp_sampling_rate"</span><span class="p">]</span> <span class="o">/</span> <span class="n">probes</span><span class="p">[</span><span class="s2">"lfp_temporal_subsampling_factor"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">probes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHANNELS_KEY</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">one_file_call_caching</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_channels</span><span class="p">,</span> <span class="n">write_csv</span><span class="p">,</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">UNITS_KEY</span><span class="p">)</span>
+
+        <span class="n">units</span> <span class="o">=</span> <span class="n">one_file_call_caching</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_units</span><span class="p">,</span> <span class="n">write_csv</span><span class="p">,</span> <span class="n">read_csv</span><span class="p">,</span> <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span><span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'PT_ratio'</span><span class="p">:</span> <span class="s1">'waveform_PT_ratio'</span><span class="p">,</span>
+            <span class="s1">'amplitude'</span><span class="p">:</span> <span class="s1">'waveform_amplitude'</span><span class="p">,</span>
+            <span class="s1">'duration'</span><span class="p">:</span> <span class="s1">'waveform_duration'</span><span class="p">,</span>
+            <span class="s1">'halfwidth'</span><span class="p">:</span> <span class="s1">'waveform_halfwidth'</span><span class="p">,</span>
+            <span class="s1">'recovery_slope'</span><span class="p">:</span> <span class="s1">'waveform_recovery_slope'</span><span class="p">,</span>
+            <span class="s1">'repolarization_slope'</span><span class="p">:</span> <span class="s1">'waveform_repolarization_slope'</span><span class="p">,</span>
+            <span class="s1">'spread'</span><span class="p">:</span> <span class="s1">'waveform_spread'</span><span class="p">,</span>
+            <span class="s1">'velocity_above'</span><span class="p">:</span> <span class="s1">'waveform_velocity_above'</span><span class="p">,</span>
+            <span class="s1">'velocity_below'</span><span class="p">:</span> <span class="s1">'waveform_velocity_below'</span><span class="p">,</span>
+            <span class="s1">'l_ratio'</span><span class="p">:</span> <span class="s1">'L_ratio'</span><span class="p">,</span>
+        <span class="p">})</span>
+
+        <span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="p">[</span>
+            <span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s2">"amplitude_cutoff"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span><span class="s2">"amplitude_cutoff_maximum"</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">))</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s2">"presence_ratio"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span><span class="s2">"presence_ratio_minimum"</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">))</span>
+            <span class="o">&amp;</span> <span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s2">"isi_violations"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">get_unit_filter_value</span><span class="p">(</span><span class="s2">"isi_violations_maximum"</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">))</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">"quality"</span> <span class="ow">in</span> <span class="n">units</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="n">filter_by_validity</span><span class="p">:</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="p">[</span><span class="n">units</span><span class="p">[</span><span class="s2">"quality"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"good"</span><span class="p">]</span>
+            <span class="n">units</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s2">"quality"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">"ecephys_structure_id"</span> <span class="ow">in</span> <span class="n">units</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="n">unit_filter_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"filter_out_of_brain_units"</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s2">"ecephys_structure_id"</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">())]</span>
+
+        <span class="k">return</span> <span class="n">units</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_annotated_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sessions</span><span class="p">()</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_probes</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">probes</span><span class="p">,</span> <span class="n">sessions</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_probe'</span><span class="p">,</span> <span class="s1">'_session'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_annotated_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_channels</span><span class="p">()</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_probes</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">probes</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s2">"ecephys_probe_id"</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_channel'</span><span class="p">,</span> <span class="s1">'_probe'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_annotated_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_units</span><span class="p">(</span><span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">()</span>
+        <span class="n">annotated_units</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">'ecephys_channel_id'</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_unit'</span><span class="p">,</span> <span class="s1">'_channel'</span><span class="p">])</span>
+        <span class="n">annotated_units</span> <span class="o">=</span> <span class="n">annotated_units</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">'name'</span><span class="p">:</span> <span class="s1">'probe_name'</span><span class="p">,</span>
+            <span class="s1">'phase'</span><span class="p">:</span> <span class="s1">'probe_phase'</span><span class="p">,</span>
+            <span class="s1">'sampling_rate'</span><span class="p">:</span> <span class="s1">'probe_sampling_rate'</span><span class="p">,</span>
+            <span class="s1">'lfp_sampling_rate'</span><span class="p">:</span> <span class="s1">'probe_lfp_sampling_rate'</span><span class="p">,</span>
+            <span class="s1">'local_index'</span><span class="p">:</span> <span class="s1">'peak_channel'</span>
+        <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">'ecephys_channel_id'</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[</span><span class="s1">'_unit'</span><span class="p">,</span> <span class="s1">'_channel'</span><span class="p">])</span>
+
+<div class="viewcode-block" id="EcephysProjectCache.get_session_table">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_session_table">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">sessions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_sessions</span><span class="p">()</span>
+
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">sessions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_units</span><span class="p">(),</span> <span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"unit_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">sessions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">(),</span> <span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"channel_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">sessions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_probes</span><span class="p">(),</span> <span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"probe_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">get_grouped_uniques</span><span class="p">(</span><span class="n">sessions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">(),</span> <span class="s2">"ecephys_session_id"</span><span class="p">,</span> <span class="s2">"ecephys_structure_acronym"</span><span class="p">,</span> <span class="s2">"ecephys_structure_acronyms"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">suppress</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">suppress</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SUPPRESS_FROM_SESSION_TABLE</span><span class="p">)</span>
+        <span class="n">sessions</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">suppress</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+        <span class="n">sessions</span> <span class="o">=</span> <span class="n">sessions</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">'genotype'</span><span class="p">:</span> <span class="s1">'full_genotype'</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">sessions</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_probes">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_probes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_probes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_probes</span><span class="p">()</span>
+
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">probes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_units</span><span class="p">(),</span> <span class="s2">"ecephys_probe_id"</span><span class="p">,</span> <span class="s2">"unit_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">probes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">(),</span> <span class="s2">"ecephys_probe_id"</span><span class="p">,</span> <span class="s2">"channel_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">get_grouped_uniques</span><span class="p">(</span><span class="n">probes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">(),</span> <span class="s2">"ecephys_probe_id"</span><span class="p">,</span> <span class="s2">"ecephys_structure_acronym"</span><span class="p">,</span> <span class="s2">"ecephys_structure_acronyms"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">suppress</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">suppress</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SUPPRESS_FROM_PROBES</span><span class="p">)</span>
+        <span class="n">probes</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">suppress</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">probes</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_channels">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_channels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_channels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">suppress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Load (potentially downloading and caching) a table whose rows are individual channels.</span>
+<span class="sd">        """</span>
+
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_channels</span><span class="p">()</span>
+        <span class="n">count_owned</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_units</span><span class="p">(),</span> <span class="s2">"ecephys_channel_id"</span><span class="p">,</span> <span class="s2">"unit_count"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">suppress</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">suppress</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SUPPRESS_FROM_CHANNELS</span><span class="p">)</span>
+        <span class="n">channels</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">suppress</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+        <span class="n">channels</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"probe_name"</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">channels</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_units">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_units">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">suppress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Reports a table consisting of all sorted units across the entire extracellular electrophysiology project.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        suppress : Optional[List[str]], optional</span>
+<span class="sd">            A list of dataframe column names to hide, by default None</span>
+<span class="sd">            (None will hide dataframe columns specified in: SUPPRESS_FROM_UNITS)</span>
+
+<span class="sd">        filter_by_validity : bool, optional</span>
+<span class="sd">            Filter units so that only 'valid' units are returned, by default True</span>
+
+<span class="sd">        **unit_filter_kwargs :</span>
+<span class="sd">            Additional keyword arguments that can be used to filter units (for power users).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pd.DataFrame</span>
+<span class="sd">            A table consisting of sorted units across the entire extracellular electrophysiology project</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">suppress</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">suppress</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SUPPRESS_FROM_UNITS</span><span class="p">)</span>
+
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_annotated_units</span><span class="p">(</span><span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span>
+        <span class="n">units</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">suppress</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">units</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_session_data">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_session_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_session_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Obtain an EcephysSession object containing detailed data for a single session</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">_path</span><span class="p">):</span>
+            <span class="n">session_api</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_nwb_api_for_session</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">EcephysSession</span><span class="p">(</span><span class="n">api</span><span class="o">=</span><span class="n">session_api</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">one_file_call_caching</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SESSION_NWB_KEY</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">),</span>
+            <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_session_data</span><span class="p">,</span> <span class="n">session_id</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span><span class="p">,</span>
+            <span class="n">read</span><span class="p">,</span>
+            <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_nwb_api_for_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">):</span>
+
+        <span class="n">get_analysis_metrics</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_unit_analysis_metrics_for_session</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">annotate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">filter_by_validity</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">unit_filter_kwargs</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">EcephysNwbSessionApi</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">probe_lfp_paths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_setup_probe_promises</span><span class="p">(</span><span class="n">session_id</span><span class="p">),</span>
+            <span class="n">additional_unit_metrics</span><span class="o">=</span><span class="n">get_analysis_metrics</span><span class="p">,</span>
+            <span class="n">external_channel_columns</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_substitute_channel_columns</span><span class="p">,</span> <span class="n">session_id</span><span class="p">),</span>
+            <span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">unit_filter_kwargs</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_probe_promises</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+        <span class="n">probes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_probes</span><span class="p">()</span>
+        <span class="n">probe_ids</span> <span class="o">=</span> <span class="n">probes</span><span class="p">[</span><span class="n">probes</span><span class="p">[</span><span class="s2">"ecephys_session_id"</span><span class="p">]</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">probe_id</span><span class="p">:</span> <span class="n">partial</span><span class="p">(</span>
+                <span class="n">one_file_call_caching</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">PROBE_LFP_NWB_KEY</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">),</span>
+                <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_probe_lfp_data</span><span class="p">,</span> <span class="n">probe_id</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span><span class="p">,</span>
+                <span class="n">read_nwb</span><span class="p">,</span>
+                <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">probe_id</span> <span class="ow">in</span> <span class="n">probe_ids</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_substitute_channel_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">):</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_channels</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">channels</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">channels</span><span class="p">[</span><span class="s2">"ecephys_session_id"</span><span class="p">]</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">,</span> <span class="p">[</span>
+            <span class="s2">"ecephys_structure_id"</span><span class="p">,</span>
+            <span class="s2">"ecephys_structure_acronym"</span><span class="p">,</span>
+            <span class="s2">"anterior_posterior_ccf_coordinate"</span><span class="p">,</span>
+            <span class="s2">"dorsal_ventral_ccf_coordinate"</span><span class="p">,</span>
+            <span class="s2">"left_right_ccf_coordinate"</span>
+        <span class="p">]]</span>
+
+<div class="viewcode-block" id="EcephysProjectCache.get_natural_movie_template">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_natural_movie_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_movie_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">one_file_call_caching</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_MOVIE_KEY</span><span class="p">,</span> <span class="n">number</span><span class="p">),</span>
+            <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_natural_movie_template</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="n">number</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span><span class="p">,</span>
+            <span class="n">read_movie</span><span class="p">,</span>
+            <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_natural_scene_template">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_natural_scene_template">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_natural_scene_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">one_file_call_caching</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_SCENE_KEY</span><span class="p">,</span> <span class="n">number</span><span class="p">),</span>
+            <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_natural_scene_template</span><span class="p">,</span> <span class="n">number</span><span class="o">=</span><span class="n">number</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream_writer</span><span class="p">,</span>
+            <span class="n">read_scene</span><span class="p">,</span>
+            <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_all_session_types">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_all_session_types">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_session_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_values</span><span class="p">(</span><span class="s2">"session_type"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_table</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_all_full_genotypes">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_all_full_genotypes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_full_genotypes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_values</span><span class="p">(</span><span class="s2">"full_genotype"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_table</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_structure_acronyms">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_structure_acronyms">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_structure_acronyms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">channel_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_values</span><span class="p">(</span><span class="s2">"ecephys_structure_acronym"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_channels</span><span class="p">,</span> <span class="o">**</span><span class="n">channel_kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_all_ages">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_all_ages">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_ages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_values</span><span class="p">(</span><span class="s2">"age_in_days"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_table</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_all_sexes">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_all_sexes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_sexes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_all_values</span><span class="p">(</span><span class="s2">"sex"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_table</span><span class="p">,</span> <span class="o">**</span><span class="n">session_kwargs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_all_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_session_table</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="o">**</span><span class="n">method_kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+<div class="viewcode-block" id="EcephysProjectCache.get_unit_analysis_metrics_for_session">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_unit_analysis_metrics_for_session">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_analysis_metrics_for_session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">annotate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Cache and return a table of analysis metrics calculated on each unit from a specified session. See</span>
+<span class="sd">        get_session_table for a list of sessions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_id : int</span>
+<span class="sd">            identifies the session from which to fetch analysis metrics.</span>
+<span class="sd">        annotate : bool, optional</span>
+<span class="sd">            if True, information from the annotated units table will be merged onto the outputs</span>
+<span class="sd">        filter_by_validity : bool, optional</span>
+<span class="sd">            Filter units used by analysis so that only 'valid' units are returned, by default True</span>
+<span class="sd">        **unit_filter_kwargs :</span>
+<span class="sd">            Additional keyword arguments that can be used to filter units (for power users).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        metrics : pd.DataFrame</span>
+<span class="sd">            Each row corresponds to a single unit, describing a set of analysis metrics calculated on that unit.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SESSION_ANALYSIS_METRICS_KEY</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">)</span>
+        <span class="n">fetch_metrics</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_unit_analysis_metrics</span><span class="p">,</span> <span class="n">ecephys_session_ids</span><span class="o">=</span><span class="p">[</span><span class="n">session_id</span><span class="p">])</span>
+
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">one_file_call_caching</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fetch_metrics</span><span class="p">,</span> <span class="n">write_metrics_csv</span><span class="p">,</span> <span class="n">read_metrics_csv</span><span class="p">,</span> <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">annotate</span><span class="p">:</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="n">units</span><span class="p">[</span><span class="n">units</span><span class="p">[</span><span class="s2">"ecephys_session_id"</span><span class="p">]</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">]</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"inner"</span><span class="p">)</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">"ecephys_unit_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.get_unit_analysis_metrics_by_session_type">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.get_unit_analysis_metrics_by_session_type">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_analysis_metrics_by_session_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session_type</span><span class="p">,</span> <span class="n">annotate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">filter_by_validity</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">""" Cache and return a table of analysis metrics calculated on each unit from a specified session type. See</span>
+<span class="sd">        get_all_session_types for a list of session types.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        session_type : str</span>
+<span class="sd">            identifies the session type for which to fetch analysis metrics.</span>
+<span class="sd">        annotate : bool, optional</span>
+<span class="sd">            if True, information from the annotated units table will be merged onto the outputs</span>
+<span class="sd">        filter_by_validity : bool, optional</span>
+<span class="sd">            Filter units used by analysis so that only 'valid' units are returned, by default True</span>
+<span class="sd">        **unit_filter_kwargs :</span>
+<span class="sd">            Additional keyword arguments that can be used to filter units (for power users).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        metrics : pd.DataFrame</span>
+<span class="sd">            Each row corresponds to a single unit, describing a set of analysis metrics calculated on that unit.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">known_session_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_session_types</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">session_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known_session_types</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unrecognized session type: </span><span class="si">{</span><span class="n">session_type</span><span class="si">}</span><span class="s2">. Available types: </span><span class="si">{</span><span class="n">known_session_types</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">TYPEWISE_ANALYSIS_METRICS_KEY</span><span class="p">,</span> <span class="n">session_type</span><span class="p">)</span>
+        <span class="n">fetch_metrics</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_api</span><span class="o">.</span><span class="n">get_unit_analysis_metrics</span><span class="p">,</span> <span class="n">session_types</span><span class="o">=</span><span class="p">[</span><span class="n">session_type</span><span class="p">])</span>
+
+        <span class="n">metrics</span> <span class="o">=</span> <span class="n">one_file_call_caching</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span>
+            <span class="n">fetch_metrics</span><span class="p">,</span>
+            <span class="n">write_metrics_csv</span><span class="p">,</span>
+            <span class="n">read_metrics_csv</span><span class="p">,</span>
+            <span class="n">num_tries</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fetch_tries</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">annotate</span><span class="p">:</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">filter_by_validity</span><span class="o">=</span><span class="n">filter_by_validity</span><span class="p">,</span> <span class="o">**</span><span class="n">unit_filter_kwargs</span><span class="p">)</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">left_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">right_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">"inner"</span><span class="p">)</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s2">"ecephys_unit_id"</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">metrics</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.add_manifest_paths">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.add_manifest_paths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_manifest_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_builder</span><span class="p">):</span>
+        <span class="n">manifest_builder</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">EcephysProjectCache</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_manifest_paths</span><span class="p">(</span><span class="n">manifest_builder</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SESSIONS_KEY</span><span class="p">,</span> <span class="s1">'sessions.csv'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PROBES_KEY</span><span class="p">,</span> <span class="s1">'probes.csv'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">CHANNELS_KEY</span><span class="p">,</span> <span class="s1">'channels.csv'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">UNITS_KEY</span><span class="p">,</span> <span class="s1">'units.csv'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SESSION_DIR_KEY</span><span class="p">,</span> <span class="s1">'session_</span><span class="si">%d</span><span class="s1">'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'dir'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SESSION_NWB_KEY</span><span class="p">,</span> <span class="s1">'session_</span><span class="si">%d</span><span class="s1">.nwb'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SESSION_DIR_KEY</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SESSION_ANALYSIS_METRICS_KEY</span><span class="p">,</span> <span class="s1">'session_</span><span class="si">%d</span><span class="s1">_analysis_metrics.csv'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SESSION_DIR_KEY</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PROBE_LFP_NWB_KEY</span><span class="p">,</span> <span class="s1">'probe_</span><span class="si">%d</span><span class="s1">_lfp.nwb'</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">SESSION_DIR_KEY</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_MOVIE_DIR_KEY</span><span class="p">,</span> <span class="s2">"natural_movie_templates"</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s2">"BASEDIR"</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s2">"dir"</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">TYPEWISE_ANALYSIS_METRICS_KEY</span><span class="p">,</span> <span class="s2">"</span><span class="si">%s</span><span class="s2">_analysis_metrics.csv"</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s2">"file"</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_MOVIE_KEY</span><span class="p">,</span> <span class="s2">"natural_movie_</span><span class="si">%d</span><span class="s2">.h5"</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_MOVIE_DIR_KEY</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s2">"file"</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_SCENE_DIR_KEY</span><span class="p">,</span> <span class="s2">"natural_scene_templates"</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="s2">"BASEDIR"</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s2">"dir"</span>
+        <span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_SCENE_KEY</span><span class="p">,</span> <span class="s2">"natural_scene_</span><span class="si">%d</span><span class="s2">.tiff"</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">NATURAL_SCENE_DIR_KEY</span><span class="p">,</span> <span class="n">typename</span><span class="o">=</span><span class="s2">"file"</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">manifest_builder</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_from_http_source_default</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">fetch_api_cls</span><span class="p">,</span> <span class="n">fetch_api_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">fetch_api_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"asynchronous"</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">}</span> <span class="k">if</span> <span class="n">fetch_api_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">fetch_api_kwargs</span>
+
+        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"stream_writer"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fetch_api_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"asynchronous"</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">"stream_writer"</span><span class="p">]</span> <span class="o">=</span> <span class="n">write_bytes_from_coroutine</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">"stream_writer"</span><span class="p">]</span> <span class="o">=</span> <span class="n">write_from_stream</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">fetch_api</span><span class="o">=</span><span class="n">fetch_api_cls</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="o">**</span><span class="n">fetch_api_kwargs</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="EcephysProjectCache.from_lims">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">lims_credentials</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DbCredentials</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">scheme</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">asynchronous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">manifest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                  <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                  <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Create an instance of EcephysProjectCache with an</span>
+<span class="sd">        EcephysProjectLimsApi. Retrieves bleeding-edge data stored</span>
+<span class="sd">        locally on Allen Institute servers. Only available for use</span>
+<span class="sd">        on-site at the Allen Institute or through a vpn. Requires Allen</span>
+<span class="sd">        Institute database credentials.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        lims_credentials : DbCredentials</span>
+<span class="sd">            Credentials to access LIMS database. If not provided will</span>
+<span class="sd">            attempt to find credentials in environment variables.</span>
+<span class="sd">        scheme : str</span>
+<span class="sd">            URI scheme, such as "http". Defaults to</span>
+<span class="sd">            EcephysProjectLimsApi.default value if unspecified.</span>
+<span class="sd">            Will not be used unless `host` is also specified.</span>
+<span class="sd">        host : str</span>
+<span class="sd">            Web host. Defaults to EcephysProjectLimsApi.default</span>
+<span class="sd">            value if unspecified. Will not be used unless `scheme` is</span>
+<span class="sd">            also specified.</span>
+<span class="sd">        asynchronous : bool</span>
+<span class="sd">            Whether to fetch file asynchronously. Defaults to False.</span>
+<span class="sd">        manifest : str or Path</span>
+<span class="sd">            full path at which manifest json will be stored</span>
+<span class="sd">        version : str</span>
+<span class="sd">            version of manifest file. If this mismatches the version</span>
+<span class="sd">            recorded in the file at manifest, an error will be raised.</span>
+<span class="sd">        cache: bool</span>
+<span class="sd">            Whether to write to the cache (default=True)</span>
+<span class="sd">        fetch_tries : int</span>
+<span class="sd">            Maximum number of times to attempt a download before giving up and</span>
+<span class="sd">            raising an exception. Note that this is total tries, not retries</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">scheme</span> <span class="ow">and</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"scheme"</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">:</span> <span class="n">host</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_http_source_default</span><span class="p">(</span>
+            <span class="n">EcephysProjectLimsApi</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">"lims_credentials"</span><span class="p">:</span> <span class="n">lims_credentials</span><span class="p">,</span>
+             <span class="s2">"app_kwargs"</span><span class="p">:</span> <span class="n">app_kwargs</span><span class="p">,</span>
+             <span class="s2">"asynchronous"</span><span class="p">:</span> <span class="n">asynchronous</span><span class="p">,</span>
+            <span class="p">},</span>    <span class="c1"># expects dictionary of kwargs</span>
+            <span class="n">manifest</span><span class="o">=</span><span class="n">manifest</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
+            <span class="n">fetch_tries</span><span class="o">=</span><span class="n">fetch_tries</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.from_warehouse">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.from_warehouse">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_warehouse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+                       <span class="n">scheme</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">host</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">asynchronous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                       <span class="n">manifest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                       <span class="n">fetch_tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                       <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1200</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Create an instance of EcephysProjectCache with an</span>
+<span class="sd">        EcephysProjectWarehouseApi. Retrieves released data stored in</span>
+<span class="sd">        the warehouse.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        scheme : str</span>
+<span class="sd">            URI scheme, such as "http". Defaults to</span>
+<span class="sd">            EcephysProjectWarehouseAPI.default value if unspecified.</span>
+<span class="sd">            Will not be used unless `host` is also specified.</span>
+<span class="sd">        host : str</span>
+<span class="sd">            Web host. Defaults to EcephysProjectWarehouseApi.default</span>
+<span class="sd">            value if unspecified. Will not be used unless `scheme` is also</span>
+<span class="sd">            specified.</span>
+<span class="sd">        asynchronous : bool</span>
+<span class="sd">            Whether to fetch file asynchronously. Defaults to False.</span>
+<span class="sd">        manifest : str or Path</span>
+<span class="sd">            full path at which manifest json will be stored</span>
+<span class="sd">        version : str</span>
+<span class="sd">            version of manifest file. If this mismatches the version</span>
+<span class="sd">            recorded in the file at manifest, an error will be raised.</span>
+<span class="sd">        cache: bool</span>
+<span class="sd">            Whether to write to the cache (default=True)</span>
+<span class="sd">        fetch_tries : int</span>
+<span class="sd">            Maximum number of times to attempt a download before giving up and</span>
+<span class="sd">            raising an exception. Note that this is total tries, not retries</span>
+<span class="sd">        timeout : int</span>
+<span class="sd">            Amount of time (in seconds) to wait on an HTTP request before raising</span>
+<span class="sd">            an error. Increase this duration if you find that warehouse servers</span>
+<span class="sd">            are not responding quickly. Defaults to 1200 seconds (20 minutes).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">scheme</span> <span class="ow">and</span> <span class="n">host</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"scheme"</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span> <span class="s2">"host"</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span>
+                          <span class="s2">"asynchronous"</span><span class="p">:</span> <span class="n">asynchronous</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">app_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"asynchronous"</span><span class="p">:</span> <span class="n">asynchronous</span><span class="p">}</span>
+        <span class="n">app_kwargs</span><span class="p">[</span><span class="s1">'timeout'</span><span class="p">]</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_http_source_default</span><span class="p">(</span>
+            <span class="n">EcephysProjectWarehouseApi</span><span class="p">,</span> <span class="n">app_kwargs</span><span class="p">,</span> <span class="n">manifest</span><span class="o">=</span><span class="n">manifest</span><span class="p">,</span>
+            <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span> <span class="n">fetch_tries</span><span class="o">=</span><span class="n">fetch_tries</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EcephysProjectCache.fixed">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.EcephysProjectCache.fixed">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fixed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Creates a EcephysProjectCache that refuses to fetch any data</span>
+<span class="sd">        - only the existing local cache is accessible. Useful if you</span>
+<span class="sd">        want to settle on a fixed dataset for analysis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ==========</span>
+<span class="sd">        manifest : str or Path</span>
+<span class="sd">            full path to existing manifest json</span>
+<span class="sd">        version : str</span>
+<span class="sd">            version of manifest file. If this mismatches the version</span>
+<span class="sd">            recorded in the file at manifest, an error will be raised.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">fetch_api</span><span class="o">=</span><span class="n">EcephysProjectFixedApi</span><span class="p">(),</span> <span class="n">manifest</span><span class="o">=</span><span class="n">manifest</span><span class="p">,</span>
+                   <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="count_owned">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.count_owned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_owned</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">foreign_key</span><span class="p">,</span> <span class="n">count_key</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+        <span class="n">this</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">foreign_key</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+    <span class="n">this</span><span class="p">[</span><span class="n">count_key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">this</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">counts</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">count_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">this</span></div>
+
+
+
+<div class="viewcode-block" id="get_grouped_uniques">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.get_grouped_uniques">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grouped_uniques</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">foreign_key</span><span class="p">,</span> <span class="n">field_key</span><span class="p">,</span> <span class="n">unique_key</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+        <span class="n">this</span> <span class="o">=</span> <span class="n">this</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">uniques</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">foreign_key</span><span class="p">)[</span><span class="n">field_key</span><span class="p">]</span>\
+        <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    <span class="n">this</span><span class="p">[</span><span class="n">unique_key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">this</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">uniques</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">unique_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">uniques</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inplace</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">this</span></div>
+
+
+
+<div class="viewcode-block" id="read_csv">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.read_csv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_csv">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.write_csv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_metrics_csv">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.write_metrics_csv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_metrics_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="read_metrics_csv">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.read_metrics_csv">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_metrics_csv</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s1">'ecephys_unit_id'</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="read_scene">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.read_scene">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_scene</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">sitk</span><span class="o">.</span><span class="n">GetArrayFromImage</span><span class="p">(</span><span class="n">sitk</span><span class="o">.</span><span class="n">ReadImage</span><span class="p">(</span><span class="n">path</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="read_movie">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.read_movie">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_movie</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">allow_pickle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="read_nwb">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.ecephys.ecephys_project_cache.html#allensdk.brain_observatory.ecephys.ecephys_project_cache.read_nwb">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_nwb</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">NWBHDF5IO</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="s1">'r'</span><span class="p">)</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span>  <span class="c1"># if the file is corrupt, make sure an exception gets raised during read</span>
+    <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Make a Roundtrip Test &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon_96.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to Make a Tutorial" href="../make_a_tutorial.html" />
+    <link rel="prev" title="Mock" href="mock.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Testing</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mock.html">Mock</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">How to Make a Roundtrip  Test</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nwbh5iomixin"><code class="docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#setupcontainer"><code class="docutils literal notranslate"><span class="pre">setUpContainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#addcontainer"><code class="docutils literal notranslate"><span class="pre">addContainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#getcontainer"><code class="docutils literal notranslate"><span class="pre">getContainer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#setupbuilder"><code class="docutils literal notranslate"><span class="pre">setUpBuilder</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#acquisitionh5iomixin"><code class="docutils literal notranslate"><span class="pre">AcquisitionH5IOMixin</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Testing</a></li>
+      <li class="breadcrumb-item active">How to Make a Roundtrip  Test</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/testing/make_roundtrip_test.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-make-a-roundtrip-test">
+<h1>How to Make a Roundtrip  Test<a class="headerlink" href="#how-to-make-a-roundtrip-test" title="Link to this heading"></a></h1>
+<p>The PyNWB test suite has tools for easily doing round-trip tests of container classes. These
+tools exist in the integration test suite in <code class="docutils literal notranslate"><span class="pre">tests/integration/ui_write/base.py</span></code> for this reason
+and for the sake of keeping the repository organized, we recommend you write your tests in
+the <code class="docutils literal notranslate"><span class="pre">tests/integration/ui_write</span></code> subdirectory of the Git repository.</p>
+<p>For executing your new tests, we recommend using the <cite>test.py</cite> script in the top of the Git
+repository. Roundtrip tests will get executed as part of the integration test suite, which can be executed
+with the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python test.py -i
+</pre></div>
+</div>
+<p>The roundtrip test will generate a new NWB file with the name <code class="docutils literal notranslate"><span class="pre">test_&lt;CLASS_NAME&gt;.nwb</span></code> where <code class="docutils literal notranslate"><span class="pre">CLASS_NAME</span></code> is
+the class name of the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Container</span></code></a> class you are roundtripping. The test
+will write an NWB file with an instance of the container to disk, read this instance back in, and compare it
+to the instance that was used for writing to disk. Once the test is complete, the NWB file will be deleted.
+You can keep the NWB file around after the test completes by setting the environment variable <code class="docutils literal notranslate"><span class="pre">CLEAN_NWB</span></code>
+to <code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>. Setting <code class="docutils literal notranslate"><span class="pre">CLEAN_NWB</span></code> to any value not listed here will
+cause the roundtrip NWB file to be deleted once the test has completed</p>
+<p>Before writing tests, we also suggest you familiarize yourself with the
+<a class="reference internal" href="../overview_software_architecture.html#software-architecture"><span class="std std-ref">software architecture</span></a> of PyNWB.</p>
+<section id="nwbh5iomixin">
+<h2><code class="docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code><a class="headerlink" href="#nwbh5iomixin" title="Link to this heading"></a></h2>
+<p>To write a roundtrip test, you will need to subclass the <a class="reference internal" href="../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin" title="pynwb.testing.testh5io.NWBH5IOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code></a> class and
+override some of its instance methods.</p>
+<p><a class="reference internal" href="../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin" title="pynwb.testing.testh5io.NWBH5IOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code></a> provides four methods for testing the process of going from
+in-memory Python object to data stored on disk and back. Three of these methods–<code class="docutils literal notranslate"><span class="pre">setUpContainer</span></code>,
+<code class="docutils literal notranslate"><span class="pre">addContainer</span></code>, and <code class="docutils literal notranslate"><span class="pre">getContainer</span></code>–are required for carrying out the roundtrip test. The fourth method is
+required for testing the conversion from the container to the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.build.builders.html#module-hdmf.build.builders" title="(in HDMF v6.2.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">builder</span></code></a>–the
+intermediate data structure that gets used by <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">HDMFIO</span></code></a> implementations for writing to disk.</p>
+<p>If you do not want to test step of the process, you can just implement <code class="docutils literal notranslate"><span class="pre">setUpContainer</span></code>, <code class="docutils literal notranslate"><span class="pre">addContainer</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">getContainer</span></code>.</p>
+<section id="setupcontainer">
+<h3><code class="docutils literal notranslate"><span class="pre">setUpContainer</span></code><a class="headerlink" href="#setupcontainer" title="Link to this heading"></a></h3>
+<p>The first thing (and possibly the <em>only</em> thing – see <a class="reference internal" href="#rt-below"><span class="std std-ref">AcquisitionH5IOMixin</span></a>) you need to do is override is the <code class="docutils literal notranslate"><span class="pre">setUpContainer</span></code>
+method. This method should take no arguments, and return an instance of the container class you are testing.</p>
+<p>Here is an example using a generic <a class="reference internal" href="../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBH5IOMixin</span><span class="p">,</span> <span class="n">TestCase</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesRoundTrip</span><span class="p">(</span><span class="n">NWBH5IOMixin</span><span class="p">,</span> <span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">setUpContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="s2">&quot;test_timeseries&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;example_source&quot;</span><span class="p">,</span>
+            <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
+            <span class="s2">&quot;SIunit&quot;</span><span class="p">,</span>
+            <span class="n">timestamps</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)),</span>
+            <span class="n">resolution</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="addcontainer">
+<h3><code class="docutils literal notranslate"><span class="pre">addContainer</span></code><a class="headerlink" href="#addcontainer" title="Link to this heading"></a></h3>
+<p>The next thing is to tell the <a class="reference internal" href="../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin" title="pynwb.testing.testh5io.NWBH5IOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code></a> how to add the container to an NWBFile.
+This method takes a single argument–the <a class="reference internal" href="../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> instance that will be used to write your
+container.</p>
+<p>This method is required because different container types are allowed in different parts of an NWBFile. This method is
+also where you can add additional containers that your container of interest depends on. For example, for the
+<a class="reference internal" href="../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> roundtrip test, <code class="docutils literal notranslate"><span class="pre">addContainer</span></code> handles adding the
+<a class="reference internal" href="../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a>, <a class="reference internal" href="../pynwb.file.html#pynwb.file.ElectrodeTable" title="pynwb.file.ElectrodeTable"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeTable</span></code></a>, and
+<a class="reference internal" href="../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> dependencies.</p>
+<p>Continuing from our example above, we will add the method for adding a generic <a class="reference internal" href="../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesRoundTrip</span><span class="p">(</span><span class="n">NWBH5IOMixin</span><span class="p">,</span> <span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">addContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="getcontainer">
+<h3><code class="docutils literal notranslate"><span class="pre">getContainer</span></code><a class="headerlink" href="#getcontainer" title="Link to this heading"></a></h3>
+<p>Finally, you need to tell <a class="reference internal" href="../pynwb.testing.testh5io.html#pynwb.testing.testh5io.NWBH5IOMixin" title="pynwb.testing.testh5io.NWBH5IOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBH5IOMixin</span></code></a> how to get back the container we added. As
+with <code class="docutils literal notranslate"><span class="pre">addContainer</span></code>, this method takes an <a class="reference internal" href="../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> as its single argument. The only
+difference is that this <a class="reference internal" href="../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> instance is what was read back in.</p>
+<p>Again, since not all containers go in the same place, we need to tell the test harness how to get back our container
+of interest.</p>
+<p>To finish off example from above, we will add the method for getting back our generic <a class="reference internal" href="../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesRoundTrip</span><span class="p">(</span><span class="n">NWBH5IOMixin</span><span class="p">,</span> <span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">getContainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">container</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="setupbuilder">
+<h3><code class="docutils literal notranslate"><span class="pre">setUpBuilder</span></code><a class="headerlink" href="#setupbuilder" title="Link to this heading"></a></h3>
+<p>As mentioned above, there is an optional method to override. This method will add two additional tests. First, it will
+add a test for converting your container into a builder to make sure the intermerdiate data structure gets built
+appropriately. Second it will add a test for constructing your container from the builder returned by your overridden
+<code class="docutils literal notranslate"><span class="pre">setUpBuilder</span></code> method.  This method takes no arguments, and should return the builder representation of your
+container class instance.</p>
+<p>This method is not required, but can serve as an additional check to make sure your containers are getting converted
+to the expected structure as described in your specification.</p>
+<p>Continuing from the <a class="reference internal" href="../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> example, lets add <code class="docutils literal notranslate"><span class="pre">setUpBuilder</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">GroupBuilder</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeSeriesRoundTrip</span><span class="p">(</span><span class="n">NWBH5IOMixin</span><span class="p">,</span> <span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">setUpBuilder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">GroupBuilder</span><span class="p">(</span>
+            <span class="s1">&#39;test_timeseries&#39;</span><span class="p">,</span>
+            <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;example_source&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;namespace&#39;</span><span class="p">:</span> <span class="n">base</span><span class="o">.</span><span class="n">CORE_NAMESPACE</span><span class="p">,</span>
+                <span class="s1">&#39;neurodata_type&#39;</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;no description&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;comments&#39;</span><span class="p">:</span> <span class="s1">&#39;no comments&#39;</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">datasets</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">DatasetBuilder</span><span class="p">(</span>
+                    <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">10</span><span class="p">)),</span>
+                    <span class="n">attributes</span><span class="o">=</span><span class="p">{</span>
+                        <span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;SIunit&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;conversion&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                        <span class="s1">&#39;resolution&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">),</span>
+                <span class="s1">&#39;timestamps&#39;</span><span class="p">:</span> <span class="n">DatasetBuilder</span><span class="p">(</span>
+                    <span class="s1">&#39;timestamps&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)),</span>
+                    <span class="n">attributes</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;Seconds&#39;</span><span class="p">,</span> <span class="s1">&#39;interval&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="acquisitionh5iomixin">
+<span id="rt-below"></span><h2><code class="docutils literal notranslate"><span class="pre">AcquisitionH5IOMixin</span></code><a class="headerlink" href="#acquisitionh5iomixin" title="Link to this heading"></a></h2>
+<p>If you are testing something that can go in <em>acquisition</em>, you can avoid writing <code class="docutils literal notranslate"><span class="pre">addContainer</span></code> and <code class="docutils literal notranslate"><span class="pre">getContainer</span></code>
+by extending <a class="reference internal" href="../pynwb.testing.testh5io.html#pynwb.testing.testh5io.AcquisitionH5IOMixin" title="pynwb.testing.testh5io.AcquisitionH5IOMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionH5IOMixin</span></code></a>.  This class has already overridden these
+methods to add your container object to acquisition.</p>
+<p>Even if your container can go in acquisition, you may still need to override <code class="docutils literal notranslate"><span class="pre">addContainer</span></code> if your container depends
+other containers that you need to add to the <a class="reference internal" href="../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> that will be written.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mock.html" class="btn btn-neutral float-left" title="Mock" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../make_a_tutorial.html" class="btn btn-neutral float-right" title="How to Make a Tutorial" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

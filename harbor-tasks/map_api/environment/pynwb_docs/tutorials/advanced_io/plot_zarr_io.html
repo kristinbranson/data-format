@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zarr IO &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Citing PyNWB" href="../../overview_citing.html" />
+    <link rel="prev" title="Streaming NWB files" href="streaming.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="h5dataio.html">Defining HDF5 Dataset I/O Settings (chunking, compression, etc.)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_editing.html">Editing NWB files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_iterative_write.html">Iterative Data Write</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_linking_data.html">Modular Data Storage using External Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="parallelio.html">Parallel I/O using MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="streaming.html">Streaming NWB files</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Zarr IO</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dataset-configuration">Dataset Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-to-zarr">Writing to Zarr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-from-zarr">Reading from Zarr</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Zarr IO</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/advanced_io/plot_zarr_io.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-advanced-io-plot-zarr-io-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="zarr-io">
+<span id="sphx-glr-tutorials-advanced-io-plot-zarr-io-py"></span><h1>Zarr IO<a class="headerlink" href="#zarr-io" title="Link to this heading"></a></h1>
+<p>Zarr is an alternative backend option for NWB files. It is a Python package that
+provides an implementation of chunked, compressed, N-dimensional arrays. Zarr is a good
+option for large datasets because, like HDF5, it is designed to store data on disk and
+only load the data into memory when needed. Zarr is also a good option for parallel
+computing because it supports concurrent reads and writes.</p>
+<p>Note that the Zarr native storage formats are optimized for storage in cloud storage
+(e.g., S3). For very large files, Zarr will create many files which can lead to
+issues for traditional file system (that are not cloud object stores) due to limitations
+on the number of files per directory (this affects local disk, GDrive, Dropbox etc.).</p>
+<p>Zarr read and write is provided by the <a class="extlink-hdmf-zarr reference external" href="https://hdmf-zarr.readthedocs.io/en/stable/">hdmf-zarr</a> package. First, create an
+an NWBFile using PyNWB.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a>
+
+<span class="c1"># Create the NWBFile. Substitute your NWBFile generation here.</span>
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;EXAMPLE_ID&quot;</span><span class="p">,</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.tzinfo" title="datetime.tzinfo" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">tzlocal</span></a><span class="p">()),</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;LONELYMTN&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="dataset-configuration">
+<h2>Dataset Configuration<a class="headerlink" href="#dataset-configuration" title="Link to this heading"></a></h2>
+<p>Like HDF5, Zarr provides options to chunk and compress datasets. To leverage these
+features, replace all <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5_utils.html#hdmf.backends.hdf5.h5_utils.H5DataIO" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">H5DataIO</span></code></a> with the analogous
+<a class="reference external" href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.utils.html#hdmf_zarr.utils.ZarrDataIO" title="(in hdmf_zarr v0.13.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ZarrDataIO</span></code></a>, which takes compressors specified by the
+<a class="reference external" href="https://numcodecs.readthedocs.io/en/latest/index.html#module-numcodecs" title="(in numcodecs v0.17.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">numcodecs</span></code></a> library. For example, here is an example <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+where the <code class="docutils literal notranslate"><span class="pre">data</span></code> Dataset is compressed with a Blosc-zstd compressor:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numcodecs</span><span class="w"> </span><span class="kn">import</span> <a href="https://numcodecs.readthedocs.io/en/latest/compression/blosc.html#numcodecs.blosc.Blosc" title="numcodecs.blosc.Blosc" class="sphx-glr-backref-module-numcodecs-blosc sphx-glr-backref-type-py-class"><span class="n">Blosc</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hdmf_zarr</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.ZarrDataIO" title="hdmf_zarr.ZarrDataIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class"><span class="n">ZarrDataIO</span></a>
+
+<a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.ZarrDataIO" title="hdmf_zarr.ZarrDataIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_with_zarr_data_io</span></a> <span class="o">=</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.ZarrDataIO" title="hdmf_zarr.ZarrDataIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class"><span class="n">ZarrDataIO</span></a><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="n">chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="n">fillvalue</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">compressor</span><span class="o">=</span><a href="https://numcodecs.readthedocs.io/en/latest/compression/blosc.html#numcodecs.blosc.Blosc" title="numcodecs.blosc.Blosc" class="sphx-glr-backref-module-numcodecs-blosc sphx-glr-backref-type-py-class"><span class="n">Blosc</span></a><span class="p">(</span><span class="n">cname</span><span class="o">=</span><span class="s1">&#39;zstd&#39;</span><span class="p">,</span> <span class="n">clevel</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">Blosc</span><span class="o">.</span><span class="n">SHUFFLE</span></a><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Now add it to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span>
+    <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">TimeSeries</span></a><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;synthetic_timeseries&quot;</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.ZarrDataIO" title="hdmf_zarr.ZarrDataIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_with_zarr_data_io</span></a><span class="p">,</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m&quot;</span><span class="p">,</span>
+        <span class="n">rate</span><span class="o">=</span><span class="mf">10e3</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="writing-to-zarr">
+<h2>Writing to Zarr<a class="headerlink" href="#writing-to-zarr" title="Link to this heading"></a></h2>
+<p>To write NWB files to Zarr, replace the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> with
+<a class="reference external" href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.nwb.html#hdmf_zarr.nwb.NWBZarrIO" title="(in hdmf_zarr v0.13.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">hdmf_zarr.nwb.NWBZarrIO</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hdmf_zarr.nwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.NWBZarrIO" title="hdmf_zarr.NWBZarrIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class"><span class="n">NWBZarrIO</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">path</span></a> <span class="o">=</span> <span class="s2">&quot;zarr_tutorial.nwb.zarr&quot;</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">absolute_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">path</span></a><span class="p">)</span>
+<span class="k">with</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.NWBZarrIO" title="hdmf_zarr.NWBZarrIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class"><span class="n">NWBZarrIO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">path</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">path</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.NWBZarrIO" title="hdmf_zarr.NWBZarrIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">io</span></a><span class="p">:</span>
+    <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.ZarrIO.write" title="hdmf_zarr.ZarrIO.write" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">write</span></a><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The main reason for using the <code class="docutils literal notranslate"><span class="pre">absolute_path</span></code> here is for testing purposes to
+ensure links and references work as expected. Otherwise, using the relative path
+here instead is fine.</p>
+</div>
+</section>
+<section id="reading-from-zarr">
+<h2>Reading from Zarr<a class="headerlink" href="#reading-from-zarr" title="Link to this heading"></a></h2>
+<p>To read NWB files from Zarr, replace the <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a> with the analogous
+<a class="reference external" href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.nwb.html#hdmf_zarr.nwb.NWBZarrIO" title="(in hdmf_zarr v0.13.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">hdmf_zarr.nwb.NWBZarrIO</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.NWBZarrIO" title="hdmf_zarr.NWBZarrIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class"><span class="n">NWBZarrIO</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">path</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">absolute_path</span></a><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <a href="https://hdmf-zarr.readthedocs.io/en/stable/hdmf_zarr.html#hdmf_zarr.NWBZarrIO" title="hdmf_zarr.NWBZarrIO" class="sphx-glr-backref-module-hdmf_zarr sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">io</span></a><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.io.html#hdmf.backends.io.HDMFIO.read" title="hdmf.backends.io.HDMFIO.read" class="sphx-glr-backref-module-hdmf-backends-io sphx-glr-backref-type-py-method"><span class="n">io</span><span class="o">.</span><span class="n">read</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information, see the <a class="extlink-hdmf-zarr reference external" href="https://hdmf-zarr.readthedocs.io/en/stable/">hdmf-zarr documentation</a>.</p>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 5.535 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-advanced-io-plot-zarr-io-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/21d301cff203197dcf03dcfeb92ce172/plot_zarr_io.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_zarr_io.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/e64eed719777629e681210e1a392d504/plot_zarr_io.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_zarr_io.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d38eedaacfec6d5f837656ce80e4091b/plot_zarr_io.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_zarr_io.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="streaming.html" class="btn btn-neutral float-left" title="Streaming NWB files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../overview_citing.html" class="btn btn-neutral float-right" title="Citing PyNWB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

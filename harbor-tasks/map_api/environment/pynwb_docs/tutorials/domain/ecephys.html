@@ -1,0 +1,599 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extracellular Electrophysiology Data &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Calcium Imaging Data" href="ophys.html" />
+    <link rel="prev" title="Annotating Multiple Streamed NWB Files with a Single HERD" href="../general/resources_streaming.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Extracellular Electrophysiology Data</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#creating-and-writing-nwb-files">Creating and Writing NWB files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#electrodes-table">Electrodes Table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#extracellular-recordings">Extracellular recordings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#writing-electrophysiology-data">Writing electrophysiology data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-electrophysiology-data">Reading electrophysiology data</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="ophys.html">Calcium Imaging Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys.html">Intracellular Electrophysiology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_icephys_pandas.html">Query Intracellular Electrophysiology Metadata</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_behavior.html">Behavior Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="images.html">Storing Image Data in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ogen.html">Optogenetics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Extracellular Electrophysiology Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/domain/ecephys.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-domain-ecephys-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="extracellular-electrophysiology-data">
+<span id="ecephys-tutorial"></span><span id="sphx-glr-tutorials-domain-ecephys-py"></span><h1>Extracellular Electrophysiology Data<a class="headerlink" href="#extracellular-electrophysiology-data" title="Link to this heading"></a></h1>
+<p>This tutorial describes storage of extracellular electrophysiology data in NWB in four
+main steps:</p>
+<ol class="arabic simple">
+<li><p>Create the electrodes table</p></li>
+<li><p>Add acquired raw voltage data</p></li>
+<li><p>Add LFP data</p></li>
+<li><p>Add spike data</p></li>
+</ol>
+<p>It is recommended to cover <a class="reference internal" href="../general/plot_file.html#basics"><span class="std std-ref">NWB File Basics</span></a> before this tutorial.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended to check if your source data is supported by
+<a class="reference external" href="https://neuroconv.readthedocs.io/en/main/conversion_examples_gallery/#extracellular-electrophysiology">NeuroConv Extracellular Electrophysiology Gallery</a>.
+If it is supported, it is recommended to use NeuroConv to convert your data.</p>
+</div>
+<p>The following examples will reference variables that may not be defined within the block they are used in. For
+clarity, we define them here:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil.tz</span><span class="w"> </span><span class="kn">import</span> <span class="n">tzlocal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBHDF5IO</span><span class="p">,</span> <span class="n">NWBFile</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">LFP</span><span class="p">,</span> <span class="n">ElectricalSeries</span><span class="p">,</span> <span class="n">SpikeEventSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.misc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecompositionSeries</span>
+</pre></div>
+</div>
+<section id="creating-and-writing-nwb-files">
+<h2>Creating and Writing NWB files<a class="headerlink" href="#creating-and-writing-nwb-files" title="Link to this heading"></a></h2>
+<p>When creating a NWB file, the first step is to create the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span> <span class="o">=</span> <span class="n">NWBFile</span><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;my first synthetic recording&quot;</span><span class="p">,</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>
+    <span class="n">session_start_time</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime.now" title="datetime.datetime.now" class="sphx-glr-backref-module-datetime-datetime sphx-glr-backref-type-py-method"><span class="n">datetime</span><span class="o">.</span><span class="n">now</span></a><span class="p">(</span><span class="n">tzlocal</span><span class="p">()),</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Baggins, Bilbo&quot;</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of Middle Earth at the Shire&quot;</span><span class="p">,</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>
+    <span class="n">keywords</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">,</span> <span class="s2">&quot;exploration&quot;</span><span class="p">,</span> <span class="s2">&quot;wanderlust&quot;</span><span class="p">],</span>
+    <span class="n">related_publications</span><span class="o">=</span><span class="s2">&quot;doi:10.1016/j.neuron.2016.12.011&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="electrodes-table">
+<h2>Electrodes Table<a class="headerlink" href="#electrodes-table" title="Link to this heading"></a></h2>
+<p>To store extracellular electrophysiology data, you first must create an electrodes table
+describing the electrodes that generated this data. Extracellular electrodes are stored in an
+<code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code> table, which is a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>.</p>
+<a class="reference internal image-reference" href="../../_images/Electrodes.svg"><img alt="electrodes table UML diagram" class="align-center" src="../../_images/Electrodes.svg" width="500" />
+</a>
+<p>The electrodes table references a required <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a>, which is used to represent a
+group of electrodes. Before creating an <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a>, you must define a
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a> object using the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_device" title="pynwb.file.NWBFile.create_device"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.create_device</span></code></a>. The fields
+<code class="docutils literal notranslate"><span class="pre">description</span></code>, <code class="docutils literal notranslate"><span class="pre">serial_number</span></code>, and <code class="docutils literal notranslate"><span class="pre">model</span></code> are optional, but recommended. The
+<a class="reference internal" href="../../pynwb.device.html#pynwb.device.DeviceModel" title="pynwb.device.DeviceModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeviceModel</span></code></a> object stores information about the device model, which can be useful
+when searching a set of NWB files or a data archive for all files that use a specific device model
+(e.g., Neuropixels probe).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">device_model</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device_model</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Neurovoxels 0.99&quot;</span><span class="p">,</span>
+    <span class="n">manufacturer</span><span class="o">=</span><span class="s2">&quot;Array Technologies&quot;</span><span class="p">,</span>
+    <span class="n">model_number</span><span class="o">=</span><span class="s2">&quot;PRB_1_4_0480_123&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A 12-channel array with 4 shanks and 3 channels per shank&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_device</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;array&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;A 12-channel array with 4 shanks and 3 channels per shank&quot;</span><span class="p">,</span>
+    <span class="n">serial_number</span><span class="o">=</span><span class="s2">&quot;1234567890&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">device_model</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have created the <a class="reference internal" href="../../pynwb.device.html#pynwb.device.Device" title="pynwb.device.Device"><code class="xref py py-class docutils literal notranslate"><span class="pre">Device</span></code></a>, you can create an
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a>. Then you can add electrodes one-at-a-time with
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_electrode" title="pynwb.file.NWBFile.add_electrode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_electrode</span></code></a>. <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_electrode" title="pynwb.file.NWBFile.add_electrode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_electrode</span></code></a> has two required arguments,
+<code class="docutils literal notranslate"><span class="pre">group</span></code>, which takes an <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a>, and <code class="docutils literal notranslate"><span class="pre">location</span></code>, which takes a string. It also
+has a number of optional metadata fields for electrode features (e.g, <code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">y</span></code>, <code class="docutils literal notranslate"><span class="pre">z</span></code>, <code class="docutils literal notranslate"><span class="pre">imp</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">filtering</span></code>). Since this table is a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>, we can add
+additional user-specified metadata as custom columns of the table. We will be adding a <code class="docutils literal notranslate"><span class="pre">&quot;label&quot;</span></code> column to the
+table. Use the following code to add electrodes for an array with 4 shanks and 3 channels per shank.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_electrode_column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;label of electrode&quot;</span><span class="p">)</span>
+
+<span class="n">nshanks</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">nchannels_per_shank</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">electrode_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">ishank</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nshanks</span><span class="p">):</span>
+    <span class="c1"># create an electrode group for this shank</span>
+    <span class="n">electrode_group</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_group</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;shank</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ishank</span><span class="p">),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;electrode group for shank </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ishank</span><span class="p">),</span>
+        <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+        <span class="n">location</span><span class="o">=</span><span class="s2">&quot;brain area&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="c1"># add electrodes to the electrode table</span>
+    <span class="k">for</span> <span class="n">ielec</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchannels_per_shank</span><span class="p">):</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_electrode</span><span class="p">(</span>
+            <span class="n">group</span><span class="o">=</span><span class="n">electrode_group</span><span class="p">,</span>
+            <span class="n">location</span><span class="o">=</span><span class="s2">&quot;brain area&quot;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;shank</span><span class="si">{}</span><span class="s2">elec</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ishank</span><span class="p">,</span> <span class="n">ielec</span><span class="p">),</span>  <span class="c1"># custom column data are specified with keyword arguments</span>
+        <span class="p">)</span>
+        <span class="n">electrode_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Similarly to other tables in PyNWB, we can view the <code class="docutils literal notranslate"><span class="pre">electrodes</span></code> table in tabular form
+by converting it to a pandas <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">electrodes</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When we added an electrode with the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_electrode" title="pynwb.file.NWBFile.add_electrode"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_electrode</span></code></a>
+method, we passed in the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a> object for the <code class="docutils literal notranslate"><span class="pre">&quot;group&quot;</span></code> argument.
+This creates a reference from the <code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code> table to the individual
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectrodeGroup" title="pynwb.ecephys.ElectrodeGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectrodeGroup</span></code></a> objects, one per row (electrode).</p>
+</div>
+</section>
+<section id="extracellular-recordings">
+<span id="ec-recordings"></span><h2>Extracellular recordings<a class="headerlink" href="#extracellular-recordings" title="Link to this heading"></a></h2>
+<p>Raw voltage traces and local-field potential (LFP) data are stored in <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>
+objects. <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> is a subclass of <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+specialized for voltage data. To create the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> objects, we need to
+reference a set of rows in the <code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code> table to indicate which electrodes were recorded. We will do this
+by creating a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>, which is a type of link that allows you to reference
+rows of a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>. <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_electrode_table_region" title="pynwb.file.NWBFile.create_electrode_table_region"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.create_electrode_table_region</span></code></a> is a
+convenience function that creates a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> which references the
+<code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code> table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">all_table_region</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_table_region</span><span class="p">(</span>
+    <span class="n">region</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">electrode_counter</span><span class="p">)),</span>  <span class="c1"># reference row indices 0 to N-1</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;all electrodes&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="raw-voltage-data">
+<h3>Raw voltage data<a class="headerlink" href="#raw-voltage-data" title="Link to this heading"></a></h3>
+<p>Now create an <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object to store raw data collected
+during the experiment, passing in this <code class="docutils literal notranslate"><span class="pre">all_table_region</span></code> <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a>
+reference to all rows of the electrodes table.</p>
+<a class="reference internal image-reference" href="../../_images/ElectricalSeries.svg"><img alt="electrical series UML diagram" class="align-center" src="../../_images/ElectricalSeries.svg" width="800" />
+</a>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">raw_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">raw_electrical_series</span> <span class="o">=</span> <span class="n">ElectricalSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Raw acquisition traces&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">raw_data</span><span class="p">,</span>
+    <span class="n">electrodes</span><span class="o">=</span><span class="n">all_table_region</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>  <span class="c1"># timestamp of the first sample in seconds relative to the session start time</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">20000.0</span><span class="p">,</span>  <span class="c1"># in Hz</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Since this <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> represents raw data from the data acquisition system,
+add it to the acquisition group of the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">raw_electrical_series</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="lfp">
+<h3>LFP<a class="headerlink" href="#lfp" title="Link to this heading"></a></h3>
+<p>Now create an <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object to store LFP data collected during the experiment,
+again passing in the <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTableRegion" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTableRegion</span></code></a> reference to all rows of the <code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code>
+table.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">lfp_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">lfp_electrical_series</span> <span class="o">=</span> <span class="n">ElectricalSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;LFP data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">lfp_data</span><span class="p">,</span>
+    <span class="n">filtering</span><span class="o">=</span><span class="s1">&#39;Low-pass filter at 300 Hz&#39;</span><span class="p">,</span>
+    <span class="n">electrodes</span><span class="o">=</span><span class="n">all_table_region</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">200.0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To help data analysis and visualization tools know that this <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object
+represents LFP data, store the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object inside of an
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> object. This is analogous to how we can store the
+<a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.SpatialSeries" title="pynwb.behavior.SpatialSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatialSeries</span></code></a> object inside of a <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object.</p>
+<a class="reference internal image-reference" href="../../_images/LFP.svg"><img alt="LFP UML diagram" class="align-center" src="../../_images/LFP.svg" width="800" />
+</a>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">lfp</span> <span class="o">=</span> <span class="n">LFP</span><span class="p">(</span><span class="n">electrical_series</span><span class="o">=</span><span class="n">lfp_electrical_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>LFP refers to data that has been low-pass filtered, typically below 300 Hz. This data may also be downsampled.
+Because it is filtered and potentially resampled, it is categorized as processed data.</p>
+<p>Create a processing module named <code class="docutils literal notranslate"><span class="pre">&quot;ecephys&quot;</span></code> and add the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> object to it.
+This is analogous to how we can store the <a class="reference internal" href="../../pynwb.behavior.html#pynwb.behavior.Position" title="pynwb.behavior.Position"><code class="xref py py-class docutils literal notranslate"><span class="pre">Position</span></code></a> object in a processing module
+created with the method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.create_processing_module" title="pynwb.file.NWBFile.create_processing_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.create_processing_module</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ecephys_module</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_processing_module</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ecephys&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;processed extracellular electrophysiology data&quot;</span>
+<span class="p">)</span>
+<span class="n">ecephys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lfp</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If your data is filtered for frequency ranges other than LFP — such as Gamma or Theta — you should store it in an
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> and encapsulate it within a
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.FilteredEphys" title="pynwb.ecephys.FilteredEphys"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilteredEphys</span></code></a> object.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilteredEphys</span>
+
+<span class="n">filtered_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">filtered_electrical_series</span> <span class="o">=</span> <span class="n">ElectricalSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;FilteredElectricalSeries&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Filtered data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">filtered_data</span><span class="p">,</span>
+    <span class="n">filtering</span><span class="o">=</span><span class="s1">&#39;Band-pass filtered between 4 and 8 Hz&#39;</span><span class="p">,</span>
+    <span class="n">electrodes</span><span class="o">=</span><span class="n">all_table_region</span><span class="p">,</span>
+    <span class="n">starting_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">200.0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">filtered_ephys</span> <span class="o">=</span> <span class="n">FilteredEphys</span><span class="p">(</span><span class="n">electrical_series</span><span class="o">=</span><span class="n">filtered_electrical_series</span><span class="p">)</span>
+<span class="n">ecephys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">filtered_ephys</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In some cases, you may want to further process the LFP data and decompose the signal into different frequency bands
+to use for other downstream analyses. You can store the processed data from these spectral analyses using a
+<a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.DecompositionSeries" title="pynwb.misc.DecompositionSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">DecompositionSeries</span></code></a> object. This object allows you to include metadata about the frequency
+bands and metric used (e.g., power, phase, amplitude), as well as link the decomposed data to the original
+<a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a> signal the data was derived from.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When adding data to <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.DecompositionSeries" title="pynwb.misc.DecompositionSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">DecompositionSeries</span></code></a>, the <code class="docutils literal notranslate"><span class="pre">data</span></code> argument is assumed to be
+3D where the first dimension is time, the second dimension is channels, and the third dimension is bands.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">bands</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">),</span>
+             <span class="n">beta</span><span class="o">=</span><span class="p">(</span><span class="mf">12.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">),</span>
+             <span class="n">gamma</span><span class="o">=</span><span class="p">(</span><span class="mf">30.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">))</span>  <span class="c1"># in Hz</span>
+<span class="n">phase_data</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.randn.html#numpy.random.randn" title="numpy.random.randn" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span></a><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands</span><span class="p">))</span>  <span class="c1"># 50 samples, 12 channels, 3 frequency bands</span>
+
+<span class="n">decomp_series</span> <span class="o">=</span> <span class="n">DecompositionSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;theta&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;phase of bandpass filtered LFP data&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">phase_data</span><span class="p">,</span>
+    <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;phase&#39;</span><span class="p">,</span>
+    <span class="n">rate</span><span class="o">=</span><span class="mf">200.0</span><span class="p">,</span>
+    <span class="n">source_channels</span><span class="o">=</span><span class="n">all_table_region</span><span class="p">,</span>
+    <span class="n">source_timeseries</span><span class="o">=</span><span class="n">lfp_electrical_series</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">band_name</span><span class="p">,</span> <span class="n">band_limits</span> <span class="ow">in</span> <span class="n">bands</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">decomp_series</span><span class="o">.</span><span class="n">add_band</span><span class="p">(</span>
+        <span class="n">band_name</span><span class="o">=</span><span class="n">band_name</span><span class="p">,</span>
+        <span class="n">band_limits</span><span class="o">=</span><span class="n">band_limits</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="n">ecephys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">decomp_series</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The frequency band information can also be viewed as a pandas DataFrame.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">decomp_series</span><span class="o">.</span><span class="n">bands</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="sorted-spike-times">
+<span id="units-electrode"></span><h3>Sorted spike times<a class="headerlink" href="#sorted-spike-times" title="Link to this heading"></a></h3>
+<p>Spike times are stored in the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table, which is a subclass of
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.common.table.html#hdmf.common.table.DynamicTable" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DynamicTable</span></code></a>. Adding columns to the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table is analogous
+to how we can add columns to the <code class="docutils literal notranslate"><span class="pre">&quot;electrodes&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;trials&quot;</span></code> tables. Use the convenience method
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_unit_column" title="pynwb.file.NWBFile.add_unit_column"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_unit_column</span></code></a> to add a new column on the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table for the
+sorting quality of the units.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">add_unit_column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;quality&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;sorting quality&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Generate some random spike data and populate the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table using the
+method <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.add_unit" title="pynwb.file.NWBFile.add_unit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.add_unit</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">firing_rate</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">n_units</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">res</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">duration</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="k">for</span> <span class="n">n_units_per_shank</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_units</span><span class="p">):</span>
+    <span class="n">spike_times</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.where.html#numpy.where" title="numpy.where" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">where</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">((</span><span class="n">res</span> <span class="o">*</span> <span class="n">duration</span><span class="p">))</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">firing_rate</span> <span class="o">/</span> <span class="n">res</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">res</span>
+    <span class="c1"># custom column data, e.g., quality, are specified with keyword arguments to `add_unit`</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_unit</span><span class="p">(</span><span class="n">spike_times</span><span class="o">=</span><span class="n">spike_times</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="s2">&quot;good&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">resolution</span></code> field on the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table documents the precision of spike timing
+data, typically <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">sampling_rate</span></code> of the acquisition system (i.e., the smallest measurable difference
+between two spike times, in seconds). Setting it helps downstream users judge whether fine-timescale
+analyses are appropriate for the dataset.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">res</span>  <span class="c1"># resolution in seconds (1 / sampling rate)</span>
+</pre></div>
+</div>
+<p>The <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table can also be converted to a pandas <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></a>.</p>
+<p>The <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table can contain simply the spike times of sorted units, or you can also include
+individual and mean waveform information in some of the optional, predefined <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table
+columns: <code class="docutils literal notranslate"><span class="pre">waveform_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">waveform_sd</span></code>, or <code class="docutils literal notranslate"><span class="pre">waveforms</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">nwbfile</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="unsorted-spike-times">
+<h3>Unsorted spike times<a class="headerlink" href="#unsorted-spike-times" title="Link to this heading"></a></h3>
+<p>While the <a class="reference internal" href="../../pynwb.misc.html#pynwb.misc.Units" title="pynwb.misc.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a> table is used to store spike times and waveform data for
+spike-sorted, single-unit activity, you may also want to store spike times and waveform snippets of
+unsorted spiking activity (e.g., multi-unit activity detected via threshold crossings during data acquisition).
+This information can be stored using <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a> objects.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">spike_snippets</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>  <span class="c1"># 40 events, 3 channels, 30 samples per event</span>
+<span class="n">shank0</span> <span class="o">=</span> <span class="n">nwbfile</span><span class="o">.</span><span class="n">create_electrode_table_region</span><span class="p">(</span>
+    <span class="n">region</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;shank0&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">spike_events</span> <span class="o">=</span> <span class="n">SpikeEventSeries</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;SpikeEvents_Shank0&#39;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;events detected with 100uV threshold&quot;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">spike_snippets</span><span class="p">,</span>
+    <span class="n">timestamps</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="mi">40</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+    <span class="n">electrodes</span><span class="o">=</span><span class="n">shank0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">add_acquisition</span><span class="p">(</span><span class="n">spike_events</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you need to store the complete, continuous raw voltage traces, along with unsorted spike times, you should store
+the traces with <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> objects as <a class="reference internal" href="../general/plot_file.html#basic-timeseries"><span class="std std-ref">acquisition</span></a> data,
+and use the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.EventDetection" title="pynwb.ecephys.EventDetection"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventDetection</span></code></a> class to identify the spike events in your raw traces.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDetection</span>
+
+<span class="n">event_detection</span> <span class="o">=</span> <span class="n">EventDetection</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;threshold_events&quot;</span><span class="p">,</span>
+    <span class="n">detection_method</span><span class="o">=</span><span class="s2">&quot;thresholding, 1.5 * std&quot;</span><span class="p">,</span>
+    <span class="n">source_electricalseries</span><span class="o">=</span><span class="n">raw_electrical_series</span><span class="p">,</span>
+    <span class="n">source_idx</span><span class="o">=</span><span class="p">[[</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">3000</span><span class="p">,</span> <span class="mi">8</span><span class="p">]],</span>  <span class="c1"># indicates the time and channel indices</span>
+    <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="mf">.033</span><span class="p">,</span> <span class="mf">.066</span><span class="p">,</span> <span class="mf">.099</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">ecephys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">event_detection</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you do not want to store the raw voltage traces and only the waveform ‘snippets’ surrounding spike events,
+you should store the snippets with <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.SpikeEventSeries" title="pynwb.ecephys.SpikeEventSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpikeEventSeries</span></code></a> objects.</p>
+<p>NWB also provides a way to store features of spikes, such as principal components, using the
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.FeatureExtraction" title="pynwb.ecephys.FeatureExtraction"><code class="xref py py-class docutils literal notranslate"><span class="pre">FeatureExtraction</span></code></a> class.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.ecephys</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureExtraction</span>
+
+<span class="n">feature_extraction</span> <span class="o">=</span> <span class="n">FeatureExtraction</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PCA_features&quot;</span><span class="p">,</span>
+    <span class="n">electrodes</span><span class="o">=</span><span class="n">all_table_region</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PC1&quot;</span><span class="p">,</span> <span class="s2">&quot;PC2&quot;</span><span class="p">,</span> <span class="s2">&quot;PC3&quot;</span><span class="p">,</span> <span class="s2">&quot;PC4&quot;</span><span class="p">],</span>
+    <span class="n">times</span><span class="o">=</span><span class="p">[</span><span class="mf">.033</span><span class="p">,</span> <span class="mf">.066</span><span class="p">,</span> <span class="mf">.099</span><span class="p">],</span>
+    <span class="n">features</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/random/generated/numpy.random.rand.html#numpy.random.rand" title="numpy.random.rand" class="sphx-glr-backref-module-numpy-random sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span></a><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>  <span class="c1"># time, channel, feature</span>
+<span class="p">)</span>
+
+<span class="n">ecephys_module</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">feature_extraction</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="writing-electrophysiology-data">
+<span id="ecephys-writing"></span><h2>Writing electrophysiology data<a class="headerlink" href="#writing-electrophysiology-data" title="Link to this heading"></a></h2>
+<p>Once you have finished adding all of your data to the <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>,
+write the file with <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ecephys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more details on <a class="reference internal" href="../../pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>, see the <a class="reference internal" href="../general/plot_file.html#basic-writing"><span class="std std-ref">Writing an NWB file</span></a> tutorial.</p>
+</section>
+<section id="reading-electrophysiology-data">
+<span id="ecephys-reading"></span><h2>Reading electrophysiology data<a class="headerlink" href="#reading-electrophysiology-data" title="Link to this heading"></a></h2>
+<p>Access the raw data by indexing <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.acquisition" title="pynwb.file.NWBFile.acquisition"><code class="xref py py-class docutils literal notranslate"><span class="pre">acquisition</span></code></a>
+with the name of the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>, which we named <code class="docutils literal notranslate"><span class="pre">&quot;ElectricalSeries&quot;</span></code>.
+We can also access the LFP data by indexing <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile.processing" title="pynwb.file.NWBFile.processing"><code class="xref py py-class docutils literal notranslate"><span class="pre">processing</span></code></a>
+with the name of the processing module <code class="docutils literal notranslate"><span class="pre">&quot;ecephys&quot;</span></code>.
+Then, we can access the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> object inside the <code class="docutils literal notranslate"><span class="pre">&quot;ecephys&quot;</span></code> processing module
+by indexing it with the name of the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> object.
+The default name of <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> objects is <code class="docutils literal notranslate"><span class="pre">&quot;LFP&quot;</span></code>.
+Finally, we can access the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object inside the
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.LFP" title="pynwb.ecephys.LFP"><code class="xref py py-class docutils literal notranslate"><span class="pre">LFP</span></code></a> object by indexing it with the name of the
+<a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> object, which we named <code class="docutils literal notranslate"><span class="pre">&quot;ElectricalSeries&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ecephys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">acquisition</span><span class="p">[</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">][</span><span class="s2">&quot;LFP&quot;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">][</span><span class="s2">&quot;LFP&quot;</span><span class="p">][</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+<section id="accessing-your-data">
+<h3>Accessing your data<a class="headerlink" href="#accessing-your-data" title="Link to this heading"></a></h3>
+<p>Data arrays are read passively from the file. Calling the data attribute on a <a class="reference internal" href="../../pynwb.base.html#pynwb.base.TimeSeries" title="pynwb.base.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>
+such as a <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a> does not read the data values, but presents an
+<a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">h5py.Dataset</span></code></a> object that can be indexed to read data. You can use the <code class="docutils literal notranslate"><span class="pre">[:]</span></code> operator to read the entire
+data array into memory.</p>
+<p>Load and print all the data values of the <a class="reference internal" href="../../pynwb.ecephys.html#pynwb.ecephys.ElectricalSeries" title="pynwb.ecephys.ElectricalSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricalSeries</span></code></a>
+object representing the LFP data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ecephys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">][</span><span class="s2">&quot;LFP&quot;</span><span class="p">][</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:])</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-data-regions">
+<h3>Accessing data regions<a class="headerlink" href="#accessing-data-regions" title="Link to this heading"></a></h3>
+<p>It is often preferable to read only a portion of the data. To do this, index
+or slice into the <code class="docutils literal notranslate"><span class="pre">data</span></code> attribute just like if you index or slice a
+<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>.</p>
+<p>The following code prints elements <code class="docutils literal notranslate"><span class="pre">0:10</span></code> in the first dimension (time)
+and <code class="docutils literal notranslate"><span class="pre">0:3</span></code> in the second dimension (electrodes) from the LFP data we have written.
+It also demonstrates how to access the spike times of the 0th unit.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="s2">&quot;ecephys_tutorial.nwb&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;section of LFP:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">processing</span><span class="p">[</span><span class="s2">&quot;ecephys&quot;</span><span class="p">][</span><span class="s2">&quot;LFP&quot;</span><span class="p">][</span><span class="s2">&quot;ElectricalSeries&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;spike times from 0th unit:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">read_nwbfile</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s2">&quot;spike_times&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-domain-ecephys-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/f52687e11fedfc53cc6f01f6f02370b0/ecephys.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">ecephys.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/1df98611ad03580c6eacb1b825e105e3/ecephys.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">ecephys.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/579eece2de2bcf70a1c9319e979da159/ecephys.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">ecephys.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../general/resources_streaming.html" class="btn btn-neutral float-left" title="Annotating Multiple Streamed NWB Files with a Single HERD" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ophys.html" class="btn btn-neutral float-right" title="Calcium Imaging Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

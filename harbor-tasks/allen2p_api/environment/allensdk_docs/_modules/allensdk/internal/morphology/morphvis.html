@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.morphology.morphvis &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.morphology.morphvis</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageDraw</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<div class="viewcode-block" id="MorphologyColors">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.MorphologyColors">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MorphologyColors</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">soma</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axon</span> <span class="o">=</span> <span class="p">(</span><span class="mi">70</span><span class="p">,</span> <span class="mi">130</span><span class="p">,</span> <span class="mi">180</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basal</span> <span class="o">=</span> <span class="p">(</span><span class="mi">178</span><span class="p">,</span> <span class="mi">34</span><span class="p">,</span> <span class="mi">34</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apical</span> <span class="o">=</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">80</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MorphologyColors.set_soma_color">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.MorphologyColors.set_soma_color">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_soma_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">soma</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MorphologyColors.set_axon_color">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.MorphologyColors.set_axon_color">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_axon_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axon</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MorphologyColors.set_basal_color">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.MorphologyColors.set_basal_color">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_basal_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basal</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MorphologyColors.set_apical_color">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.MorphologyColors.set_apical_color">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_apical_color</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apical</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># create empty image</span>
+<div class="viewcode-block" id="create_image">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.create_image">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_image</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">alpha</span><span class="p">:</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="s1">'RGBA'</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="s1">'RGB'</span>
+    <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Image</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">h</span><span class="p">),</span> <span class="n">color</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Image</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span><span class="n">h</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_scale">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.calculate_scale">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_scale</span><span class="p">(</span><span class="n">morph</span><span class="p">,</span> <span class="n">pix_width</span><span class="p">,</span> <span class="n">pix_height</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Calculates scaling factor and x,y insets required to auto-scale</span>
+<span class="sd">        and center morphology into box with specified numbers of pixels</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        morph: AISDK Morphology object</span>
+
+<span class="sd">        pix_width: int</span>
+<span class="sd">        Number of image pixels on X axis</span>
+
+<span class="sd">        pix_height: int</span>
+<span class="sd">        Number of image pixels on Y axis</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        real, real, real</span>
+<span class="sd">        First return value is the scaling factor. Second is the</span>
+<span class="sd">        number of pixels needed to adjust x-coordinates so that the</span>
+<span class="sd">        morphology is horizontally centered. Third is the number of </span>
+<span class="sd">        pixels needed to adjust the y-coordinates so that the morphology </span>
+<span class="sd">        is vertically centered.</span>
+<span class="sd">    """</span>
+    <span class="n">dims</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="n">morph</span><span class="o">.</span><span class="n">get_dimensions</span><span class="p">()</span>
+    <span class="c1"># get boundaries of morphology</span>
+    <span class="n">xlow</span> <span class="o">=</span> <span class="n">low</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">xhigh</span> <span class="o">=</span> <span class="n">high</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ylow</span> <span class="o">=</span> <span class="n">low</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">yhigh</span> <span class="o">=</span> <span class="n">high</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># determine scale on X and Y to make morphology fit in image area</span>
+    <span class="n">hscale</span> <span class="o">=</span> <span class="n">pix_width</span> <span class="o">/</span> <span class="p">(</span><span class="n">xhigh</span> <span class="o">-</span> <span class="n">xlow</span><span class="p">)</span>
+    <span class="n">vscale</span> <span class="o">=</span> <span class="n">pix_height</span> <span class="o">/</span> <span class="p">(</span><span class="n">yhigh</span> <span class="o">-</span> <span class="n">ylow</span><span class="p">)</span>
+    <span class="c1"># select lowest scaling factor so morphology is stretched to</span>
+    <span class="c1">#   maximum width/height along axis that is tightest fit</span>
+    <span class="c1">#   and adjust inset on other axis so morphology is centered</span>
+    <span class="n">scale_factor</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">hscale</span><span class="p">,</span> <span class="n">vscale</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">hscale</span> <span class="o">&lt;</span> <span class="n">vscale</span><span class="p">:</span>
+        <span class="c1"># image constrained on horizontal axis</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="n">hscale</span>
+        <span class="c1"># center image vertically</span>
+        <span class="n">v_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">ylow</span> <span class="o">+</span> <span class="n">yhigh</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="n">scale_inset_x</span> <span class="o">=</span> <span class="o">-</span><span class="n">low</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+        <span class="c1"># invert y coordinates for conversion to pixel space</span>
+        <span class="n">scale_inset_y</span> <span class="o">=</span> <span class="n">pix_height</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">scale_factor</span><span class="o">*</span><span class="n">v_center</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># image constrained on vertical axis</span>
+        <span class="n">scale_factor</span> <span class="o">=</span> <span class="n">vscale</span>
+        <span class="c1"># center image horizontally</span>
+        <span class="n">h_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">xlow</span> <span class="o">+</span> <span class="n">xhigh</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="n">scale_inset_x</span> <span class="o">=</span> <span class="n">pix_width</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">scale_factor</span><span class="o">*</span><span class="n">h_center</span>
+        <span class="n">scale_inset_y</span> <span class="o">=</span> <span class="o">-</span><span class="n">low</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale_factor</span>
+    <span class="k">return</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">scale_inset_x</span><span class="p">,</span> <span class="n">scale_inset_y</span></div>
+
+
+
+<span class="c1"># draw morphology on image -- takes image and morphology, modifies image</span>
+<span class="c1">#       options: scale to fit | linear scaling</span>
+<div class="viewcode-block" id="draw_morphology">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.draw_morphology">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_morphology</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">morph</span><span class="p">,</span> 
+        <span class="n">inset_left</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_right</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_top</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_bottom</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+        <span class="n">scale_to_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">scale_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Draws morphology onto image</span>
+<span class="sd">        When no scaling is applied, and no insets are provided, the </span>
+<span class="sd">        coordinates of the morphology are used directly -- i.e., 100 in</span>
+<span class="sd">        morphology coordinates is equal to 100 pixels.</span>
+
+<span class="sd">        The scale factor is multiplied to morphology coordinates before</span>
+<span class="sd">        being drawn. If scale_factor=2 then 50 in morphology coordinates</span>
+<span class="sd">        is 100 pixels. Left and top insets shift the coordinate axes</span>
+<span class="sd">        for drawing. E.g., if left=10 and top=5 then 0,0 in morphology</span>
+<span class="sd">        coordinates is 10,5 in pixel space. Bottom and right insets are</span>
+<span class="sd">        ignored.</span>
+<span class="sd">        </span>
+<span class="sd">        If scale_to_fit is set then scale factor is ignored. The </span>
+<span class="sd">        morphology is scaled to be the maximum size that fits in</span>
+<span class="sd">        the image, taking into account insets. In a 100x100 image, if</span>
+<span class="sd">        all insets=10, then the image is scaled to fit into the center</span>
+<span class="sd">        80x80 pixel area, and nothing is drawn in the inset border areas.</span>
+
+<span class="sd">        Axons are drawn before soma and dendrite compartments.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        img: PIL image object</span>
+
+<span class="sd">        morph: AISDK Morphology object</span>
+
+<span class="sd">        inset_*: real</span>
+<span class="sd">        This is the number of pixels to use as border on top/bottom/</span>
+<span class="sd">        right/left. If scale_to_fit is false then only the top/left</span>
+<span class="sd">        values are used, as the scale_factor will determine how</span>
+<span class="sd">        large the morphology is (it can be drawn beyond insets and even</span>
+<span class="sd">        beyond image boundaries)</span>
+
+<span class="sd">        scale_to_fit: boolean</span>
+<span class="sd">        If true then morphology is scaled to the inset area of the </span>
+<span class="sd">        image and scale_factor is ignored. Morphology is centered</span>
+<span class="sd">        in the image in the sense that the top/bottom and left/right</span>
+<span class="sd">        edges of the morphology are equidistant from image borders.</span>
+
+<span class="sd">        scale_factor: real</span>
+<span class="sd">        A scalar amount that is multiplied to morphology coordinates</span>
+<span class="sd">        before drawing</span>
+
+<span class="sd">        colors: MorphologyColors object</span>
+<span class="sd">        This is the color scheme used to draw the morphology. If </span>
+<span class="sd">        colors=None then default coloring is used</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        2-dimensional array, the pixel coordinates of the soma root [x,y]</span>
+<span class="sd">    """</span>
+    <span class="c1"># determine drawing area, scaling factor, offset to origin</span>
+    <span class="c1"># if scaling to fit, find value that scales morphology so height</span>
+    <span class="c1">#   or width matches image area. adjust scale_factor and insets</span>
+    <span class="c1">#   as necessary so morphology can be drawn normally</span>
+    <span class="n">dims</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="n">morph</span><span class="o">.</span><span class="n">get_dimensions</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">scale_to_fit</span><span class="p">:</span>
+        <span class="c1"># get image area based on requested insets</span>
+        <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">pix_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span> <span class="o">-</span> <span class="n">inset_right</span><span class="p">)</span> <span class="o">-</span> <span class="n">inset_left</span>
+        <span class="n">pix_height</span> <span class="o">=</span> <span class="p">(</span><span class="n">height</span> <span class="o">-</span> <span class="n">inset_bottom</span><span class="p">)</span> <span class="o">-</span> <span class="n">inset_top</span>
+        <span class="c1"># get scale and x,y insets from auto-scaling</span>
+        <span class="n">scale_factor</span><span class="p">,</span> <span class="n">scale_inset_x</span><span class="p">,</span> <span class="n">scale_inset_y</span> <span class="o">=</span> <span class="n">calculate_scale</span><span class="p">(</span><span class="n">morph</span><span class="p">,</span> <span class="n">pix_width</span><span class="p">,</span> <span class="n">pix_height</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># no implicit inset necessary due to scaling</span>
+        <span class="n">scale_inset_x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">scale_inset_y</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># order compartments by depth to approximate 3D rendering</span>
+    <span class="nb">sorted</span><span class="p">(</span><span class="n">morph</span><span class="o">.</span><span class="n">compartment_list</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+
+    <span class="c1"># if color not specified, select default</span>
+    <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">MorphologyColors</span><span class="p">()</span>
+
+    <span class="n">canvas</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">morph</span><span class="o">.</span><span class="n">compartment_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span> <span class="c1"># soma drawn last</span>
+                    <span class="c1"># NOTE: there are unlikely to be soma compartments</span>
+                    <span class="c1"># additional soma-drawing code is below</span>
+                    <span class="k">continue</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">soma</span>
+            <span class="k">elif</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># axon drawn first</span>
+                    <span class="k">continue</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">axon</span>
+            <span class="k">elif</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># dendrite drawn second</span>
+                    <span class="k">continue</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">basal</span>
+            <span class="k">elif</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># dendrite drawn second</span>
+                    <span class="k">continue</span>
+                <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="o">.</span><span class="n">apical</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">scale_inset_x</span> <span class="o">+</span> <span class="n">inset_left</span> <span class="o">+</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">comp</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">x</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="n">scale_inset_x</span> <span class="o">+</span> <span class="n">inset_left</span> <span class="o">+</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">x</span>
+            <span class="c1"># y coordinate inverted because morphology values are</span>
+            <span class="c1">#   increasing going 'up while pixel values increase</span>
+            <span class="c1">#   going down</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="n">scale_inset_y</span> <span class="o">+</span> <span class="n">inset_top</span> <span class="o">-</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">comp</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="n">scale_inset_y</span> <span class="o">+</span> <span class="n">inset_top</span> <span class="o">-</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">comp</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="n">color</span><span class="p">)</span>
+
+    <span class="c1"># a compartment type is defined by the type of the 2nd node defining</span>
+    <span class="c1">#   the compartment. if there is a single soma node, there can be</span>
+    <span class="c1">#   no soma compartments. draw the root soma node</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">morph</span><span class="o">.</span><span class="n">soma_root</span><span class="p">()</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">scale_inset_x</span> <span class="o">+</span> <span class="n">inset_left</span> <span class="o">+</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">root</span><span class="o">.</span><span class="n">x</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">scale_inset_y</span> <span class="o">+</span> <span class="n">inset_top</span> <span class="o">-</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">root</span><span class="o">.</span><span class="n">y</span>
+    <span class="n">rad</span> <span class="o">=</span> <span class="n">scale_factor</span> <span class="o">*</span> <span class="n">root</span><span class="o">.</span><span class="n">radius</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">rad</span><span class="p">)</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">rad</span><span class="p">)</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x0</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">rad</span><span class="p">)</span>
+    <span class="n">y1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">y0</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">rad</span><span class="p">)</span>
+    <span class="n">canvas</span><span class="o">.</span><span class="n">ellipse</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">),</span> <span class="n">fill</span><span class="o">=</span><span class="n">colors</span><span class="o">.</span><span class="n">soma</span><span class="p">,</span> <span class="n">outline</span><span class="o">=</span><span class="n">colors</span><span class="o">.</span><span class="n">soma</span><span class="p">)</span>
+
+    <span class="c1"># return soma root coordinate, in unit of pixels</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="draw_density_hist">
+<a class="viewcode-back" href="../../../../allensdk.internal.morphology.morphvis.html#allensdk.internal.morphology.morphvis.draw_density_hist">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_density_hist</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">morph</span><span class="p">,</span> <span class="n">vert_scale</span><span class="p">,</span>
+        <span class="n">inset_left</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_right</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_top</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">inset_bottom</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> 
+        <span class="n">num_bins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Draws density histogram onto image</span>
+<span class="sd">        When no scaling is applied, and no insets are provided, the </span>
+<span class="sd">        coordinates of the morphology are used directly -- i.e., 100 in</span>
+<span class="sd">        morphology coordinates is equal to 100 pixels.</span>
+
+<span class="sd">        The scale factor is multiplied to morphology coordinates before</span>
+<span class="sd">        being drawn. If scale_factor=2 then 50 in morphology coordinates</span>
+<span class="sd">        is 100 pixels. Left and top insets shift the coordinate axes</span>
+<span class="sd">        for drawing. E.g., if left=10 and top=5 then 0,0 in morphology</span>
+<span class="sd">        coordinates is 10,5 in pixel space. Bottom and right insets are</span>
+<span class="sd">        ignored.</span>
+<span class="sd">        </span>
+<span class="sd">        If scale_to_fit is set then scale factor is ignored. The </span>
+<span class="sd">        morphology is scaled to be the maximum size that fits in</span>
+<span class="sd">        the image, taking into account insets. In a 100x100 image, if</span>
+<span class="sd">        all insets=10, then the image is scaled to fit into the center</span>
+<span class="sd">        80x80 pixel area, and nothing is drawn in the inset border areas.</span>
+
+<span class="sd">        Axons are drawn before soma and dendrite compartments.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        img: PIL image object</span>
+
+<span class="sd">        morph: AISDK Morphology object</span>
+
+<span class="sd">        vert_scale: real</span>
+<span class="sd">        This is the amout required to multiply to a moprhology</span>
+<span class="sd">        y-coordinate to convert it to relative cortical depth (on [0,1]).</span>
+<span class="sd">        This is the inverse of the cortical thickness.</span>
+
+<span class="sd">        inset_*: real</span>
+<span class="sd">        This is the number of pixels to use as border on top/bottom/</span>
+<span class="sd">        right/left. If scale_to_fit is false then only the top/left</span>
+<span class="sd">        values are used, as the scale_factor will determine how</span>
+<span class="sd">        large the morphology is (it can be drawn beyond insets and even</span>
+<span class="sd">        beyond image boundaries)</span>
+
+<span class="sd">        num_bins: int</span>
+<span class="sd">        The number of bins in the histogram</span>
+
+<span class="sd">        colors: MorphologyColors object</span>
+<span class="sd">        This is the color scheme used to draw the morphology. If </span>
+<span class="sd">        colors=None then default coloring is used</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        Histogram arrays: [hist, hist2, hist3, hist4]</span>
+<span class="sd">        where hist is the histgram of all neurites, and hist[234] are</span>
+<span class="sd">        the histograms of SWC types 2,3,4</span>
+<span class="sd">    """</span>
+    <span class="c1"># if number of bins not specified, default to vertical size of </span>
+    <span class="c1">#   drawing area in image</span>
+    <span class="n">img_width</span><span class="p">,</span> <span class="n">img_height</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">draw_width</span> <span class="o">=</span> <span class="n">img_width</span> <span class="o">-</span> <span class="p">(</span><span class="n">inset_left</span> <span class="o">+</span> <span class="n">inset_right</span><span class="p">)</span>
+    <span class="n">draw_height</span> <span class="o">=</span> <span class="n">img_height</span> <span class="o">-</span> <span class="p">(</span><span class="n">inset_top</span> <span class="o">+</span> <span class="n">inset_bottom</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_bins</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">num_bins</span> <span class="o">=</span> <span class="n">draw_height</span>
+    <span class="c1"># histograms for each analyzed SWC type</span>
+    <span class="n">hist_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">hist_3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="n">hist_4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_bins</span><span class="p">)</span>
+    <span class="c1"># total response in a bin</span>
+    <span class="n">hist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_bins</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Vert scale"</span><span class="p">,</span> <span class="n">vert_scale</span><span class="p">)</span>
+
+    <span class="c1"># if color not specified, select default</span>
+    <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">MorphologyColors</span><span class="p">()</span>
+
+    <span class="n">canvas</span> <span class="o">=</span> <span class="n">ImageDraw</span><span class="o">.</span><span class="n">Draw</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+    <span class="c1"># for each compartment, split its length (weight) between bins for </span>
+    <span class="c1">#   start and end nodes</span>
+    <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">morph</span><span class="o">.</span><span class="n">compartment_list</span><span class="p">:</span>
+        <span class="n">wt</span> <span class="o">=</span> <span class="n">seg</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="c1"># node 1</span>
+        <span class="n">bin1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">vert_scale</span> <span class="o">*</span> <span class="n">seg</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">num_bins</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bin1</span> <span class="o">==</span> <span class="n">num_bins</span><span class="p">:</span>
+            <span class="n">bin1</span> <span class="o">=</span> <span class="n">num_bins</span><span class="o">-</span><span class="mi">1</span>
+        <span class="c1"># only include parts of the histogram that are in the viewable</span>
+        <span class="c1">#   range (ie, exclude parts that extend to pia and/or wm)</span>
+        <span class="k">if</span> <span class="n">bin1</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bin1</span> <span class="o">&lt;</span> <span class="n">num_bins</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">hist_2</span><span class="p">[</span><span class="n">bin1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">hist_3</span><span class="p">[</span><span class="n">bin1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">hist_4</span><span class="p">[</span><span class="n">bin1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="n">hist</span><span class="p">[</span><span class="n">bin1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+        <span class="c1"># node 2</span>
+        <span class="n">bin2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">vert_scale</span> <span class="o">*</span> <span class="n">seg</span><span class="o">.</span><span class="n">node1</span><span class="o">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">num_bins</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bin2</span> <span class="o">==</span> <span class="n">num_bins</span><span class="p">:</span>
+            <span class="n">bin2</span> <span class="o">=</span> <span class="n">num_bins</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">bin2</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bin2</span> <span class="o">&lt;</span> <span class="n">num_bins</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">seg</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">hist_2</span><span class="p">[</span><span class="n">bin2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="n">hist_3</span><span class="p">[</span><span class="n">bin2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="k">elif</span> <span class="n">seg</span><span class="o">.</span><span class="n">node2</span><span class="o">.</span><span class="n">t</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">hist_4</span><span class="p">[</span><span class="n">bin2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+            <span class="n">hist</span><span class="p">[</span><span class="n">bin2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">wt</span>
+
+    <span class="c1"># draw axis line</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">inset_left</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x0</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">inset_top</span>
+    <span class="n">y1</span> <span class="o">=</span> <span class="n">img_height</span><span class="o">-</span><span class="n">inset_bottom</span>
+    <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">y1</span><span class="p">),</span> <span class="n">col</span><span class="p">)</span>
+
+    <span class="n">hist_step</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">draw_height</span> <span class="o">/</span> <span class="n">num_bins</span>
+    <span class="n">hist_scale</span> <span class="o">=</span> <span class="p">(</span><span class="n">draw_width</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">hist</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">morph</span><span class="o">.</span><span class="n">compartment_list</span><span class="p">:</span>
+        <span class="n">ypos</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">inset_top</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_bins</span><span class="p">):</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ypos</span><span class="p">)</span>
+            <span class="n">y1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ypos</span> <span class="o">+</span> <span class="n">hist_step</span><span class="p">)</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">inset_left</span><span class="p">)</span>
+            <span class="n">x1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">inset_left</span> <span class="o">+</span> <span class="n">hist_2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">hist_scale</span> <span class="o">+</span> <span class="mf">0.99</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x0</span> <span class="o">!=</span> <span class="n">x1</span><span class="p">:</span>
+                <span class="n">ytmp</span> <span class="o">=</span> <span class="n">ypos</span>
+                <span class="k">while</span> <span class="n">ytmp</span> <span class="o">&lt;</span> <span class="n">y1</span><span class="p">:</span>
+                    <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">),</span> <span class="n">x1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">)),</span> <span class="n">colors</span><span class="o">.</span><span class="n">axon</span><span class="p">)</span>
+                    <span class="n">ytmp</span> <span class="o">+=</span> <span class="n">hist_step</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">x1</span>
+            <span class="n">x1</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hist_3</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">hist_scale</span> <span class="o">+</span> <span class="mf">0.99</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x0</span> <span class="o">!=</span> <span class="n">x1</span><span class="p">:</span>
+                <span class="n">ytmp</span> <span class="o">=</span> <span class="n">ypos</span>
+                <span class="k">while</span> <span class="n">ytmp</span> <span class="o">&lt;</span> <span class="n">y1</span><span class="p">:</span>
+                    <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">),</span> <span class="n">x1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">)),</span> <span class="n">colors</span><span class="o">.</span><span class="n">basal</span><span class="p">)</span>
+                    <span class="n">ytmp</span> <span class="o">+=</span> <span class="n">hist_step</span>
+            <span class="n">x0</span> <span class="o">=</span> <span class="n">x1</span>
+            <span class="n">x1</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hist_4</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">hist_scale</span> <span class="o">+</span> <span class="mf">0.99</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x0</span> <span class="o">&lt;</span> <span class="n">x1</span><span class="p">:</span>
+                <span class="n">ytmp</span> <span class="o">=</span> <span class="n">ypos</span>
+                <span class="k">while</span> <span class="n">ytmp</span> <span class="o">&lt;</span> <span class="n">y1</span><span class="p">:</span>
+                    <span class="n">canvas</span><span class="o">.</span><span class="n">line</span><span class="p">((</span><span class="n">x0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">),</span> <span class="n">x1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">ytmp</span><span class="p">)),</span> <span class="n">colors</span><span class="o">.</span><span class="n">apical</span><span class="p">)</span>
+                    <span class="n">ytmp</span> <span class="o">+=</span> <span class="n">hist_step</span>
+            <span class="n">ypos</span> <span class="o">+=</span> <span class="n">hist_step</span>
+
+    <span class="k">return</span> <span class="n">hist</span><span class="p">,</span> <span class="n">hist_2</span><span class="p">,</span> <span class="n">hist_3</span><span class="p">,</span> <span class="n">hist_4</span></div>
+
+
+<span class="c1"># TODO</span>
+<span class="c1"># draw path on image -- takes image and path, modifies image</span>
+<span class="c1">#def draw_path(img, path, color):</span>
+    <span class="c1"># path is in units of pixels</span>
+    <span class="c1"># foreach vertex, draw line in specified color</span>
+
+<span class="c1"># refine section boundaries -- takes labeled regions and generates labeled mask</span>
+<span class="c1"># -&gt; need constraints on input. lookup of points is easy. categorizing</span>
+<span class="c1">#   what pixel is part of what ask is not without expanding masks laterally</span>
+
+<span class="c1"># label morphology -- takes morpholgoy and labeled mask and adds lables</span>
+<span class="c1">#   to each compartment</span>
+
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

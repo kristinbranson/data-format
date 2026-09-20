@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.session_api_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.session_api_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">zip_longest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.comparison_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare_fields</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="is_equal">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.is_equal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_equal</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Function to deal with checking if two variables of possibly mixed types</span>
+<span class="sd">    have the same value."""</span>
+
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">type</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">a</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">a_elem</span><span class="p">,</span> <span class="n">b_elem</span> <span class="ow">in</span> <span class="n">zip_longest</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span><span class="n">a_elem</span><span class="p">,</span> <span class="n">b_elem</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">set</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">a_elem</span><span class="p">,</span> <span class="n">b_elem</span> <span class="ow">in</span> <span class="n">zip_longest</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">b</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span><span class="n">a_elem</span><span class="p">,</span> <span class="n">b_elem</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">a_k</span><span class="p">,</span> <span class="n">a_v</span><span class="p">),</span> <span class="p">(</span><span class="n">b_k</span><span class="p">,</span> <span class="n">b_v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">zip_longest</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span>
+                                                  <span class="nb">sorted</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">items</span><span class="p">())):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">a_k</span> <span class="o">!=</span> <span class="n">b_k</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span><span class="n">a_v</span><span class="p">,</span> <span class="n">b_v</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">b</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ParamsMixin">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.ParamsMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParamsMixin</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""This mixin adds parameter management functionality to the class it is</span>
+<span class="sd">    mixed into.</span>
+
+<span class="sd">    This mixin expects that the class it is mixed into will have an __init__</span>
+<span class="sd">    with type annotated parameters. It also expects for the class to have</span>
+<span class="sd">    semi-private attributes of the __init__ type annotated parameters.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    SomeClassWhereParamManagementIsDesired(ParamsMixin):</span>
+
+<span class="sd">        # Managed params should be typed (with simple types if possible)!</span>
+<span class="sd">        def __init__(self, param_to_ignore, a_param_1: int, a_param_2: float,</span>
+<span class="sd">                     b_param_1: list):</span>
+<span class="sd">            # Parameters can be ignored by the mixin</span>
+<span class="sd">            super().__init__(ignore={'param_to_ignore'})</span>
+
+<span class="sd">            # Pay attention to the naming scheme!</span>
+<span class="sd">            self._a_param_1 = a_param_1</span>
+<span class="sd">            self._a_param_2 = a_param_2</span>
+<span class="sd">            self._b_param_1 = b_param_1</span>
+
+<span class="sd">        ...</span>
+
+<span class="sd">    After being mixed in, methods like 'get_params', 'set_params',</span>
+<span class="sd">    'needs_data_refresh', and 'clear_updated_params' will be available.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'api'</span><span class="p">}):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updated_params</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignore</span> <span class="o">=</span> <span class="n">ignore</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_param_signatures</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">]:</span>
+        <span class="n">init</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">'__init__'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">init</span> <span class="ow">is</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__init__</span><span class="p">:</span>
+            <span class="c1"># Class has a default __init__ and thus no params</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">init_signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+        <span class="c1"># Filter out 'self' and '**kwargs' params</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">init_signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                      <span class="k">if</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">'self'</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="n">p</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">parameters</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_param_type_annotations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]:</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_param_signatures</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">annotation</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">}</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_param_names</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_param_signatures</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">])</span>
+
+<div class="viewcode-block" id="ParamsMixin.get_params">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.ParamsMixin.get_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Get managed params and their values"""</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_param_names</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignore</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">param</span><span class="p">:</span> <span class="n">value</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="ParamsMixin.set_params">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.ParamsMixin.set_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Set managed params"""</span>
+        <span class="n">valid_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_params</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">param_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_param_type_annotations</span><span class="p">()</span>
+        <span class="n">current_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_params</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">param</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">valid_params</span><span class="p">:</span>
+                <span class="n">current_value</span> <span class="o">=</span> <span class="n">current_params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">param_types</span><span class="p">[</span><span class="n">param</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_equal</span><span class="p">(</span><span class="n">current_value</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_updated_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The value (</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">) for parameter "</span>
+                                  <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">' should be of type "</span>
+                                  <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">param_types</span><span class="p">[</span><span class="n">param</span><span class="p">]</span><span class="si">}</span><span class="s2">' but is instead "</span>
+                                  <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">. It will remain as: "</span>
+                                  <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">current_value</span><span class="si">}</span><span class="s2"> "</span>
+                                  <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">current_value</span><span class="p">)</span><span class="si">}</span><span class="s2">)."</span><span class="p">,</span>
+                                  <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The parameter '</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">' is not valid "</span>
+                              <span class="sa">f</span><span class="s2">"and is being ignored! "</span>
+                              <span class="sa">f</span><span class="s2">"Possible params are: </span><span class="si">{</span><span class="n">valid_params</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                              <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParamsMixin.needs_data_refresh">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.ParamsMixin.needs_data_refresh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">needs_data_refresh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_params</span><span class="p">:</span> <span class="nb">set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check if specific params have been updated via `set_params()`"""</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">data_params</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updated_params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParamsMixin.clear_updated_params">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.ParamsMixin.clear_updated_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_updated_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_params</span><span class="p">:</span> <span class="nb">set</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""This method clears 'updated params' whose data have been updated"""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updated_params</span> <span class="o">-=</span> <span class="n">data_params</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="sessions_are_equal">
+<a class="viewcode-back" href="../../../allensdk.brain_observatory.session_api_utils.html#allensdk.brain_observatory.session_api_utils.sessions_are_equal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sessions_are_equal</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">reraise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                       <span class="n">ignore_keys</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">skip_fields</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">test_methods</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> \
+        <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Check if two Session objects are equal (have same property and</span>
+<span class="sd">    get method values).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A : Session A</span>
+<span class="sd">        The first session to compare</span>
+<span class="sd">    B : Session B</span>
+<span class="sd">        The second session to compare</span>
+<span class="sd">    reraise : bool, optional</span>
+<span class="sd">        Whether to reraise when encountering an Assertion or AttributeError,</span>
+<span class="sd">        by default False</span>
+<span class="sd">    ignore_keys</span>
+<span class="sd">        Set of keys to ignore for property/method. Should be given as</span>
+<span class="sd">        {property/method name: {field_to_ignore, ...}, ...}</span>
+<span class="sd">    test_methods</span>
+<span class="sd">        Whether to test get methods</span>
+<span class="sd">    skip_fields</span>
+<span class="sd">        Do not compare these fields</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        Whether the two sessions are equal to one another.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">ignore_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ignore_keys</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">skip_fields</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">skip_fields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="n">A_data_attrs_and_methods</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">list_data_attributes_and_methods</span><span class="p">()</span>
+    <span class="n">B_data_attrs_and_methods</span> <span class="o">=</span> <span class="n">B</span><span class="o">.</span><span class="n">list_data_attributes_and_methods</span><span class="p">()</span>
+    <span class="n">field_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">A_data_attrs_and_methods</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">B_data_attrs_and_methods</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Comparing the following fields: </span><span class="si">{</span><span class="n">field_set</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">field_set</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">skip_fields</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Comparing field: </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">field</span><span class="p">),</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">test_methods</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">Callable</span><span class="p">):</span>
+                    <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span><span class="p">()</span>
+                    <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">err_msg</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">A</span><span class="si">}</span><span class="s2"> did not equal </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> "</span>
+                       <span class="sa">f</span><span class="s2">"on </span><span class="si">{</span><span class="n">B</span><span class="si">}</span><span class="s2"> (</span><span class="se">\n</span><span class="si">{</span><span class="n">x1</span><span class="si">}</span><span class="s2"> vs</span><span class="se">\n</span><span class="si">{</span><span class="n">x2</span><span class="si">}</span><span class="se">\n</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">DataObject</span><span class="p">):</span>
+                <span class="n">x1</span> <span class="o">=</span> <span class="n">x1</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x2</span><span class="p">,</span> <span class="n">DataObject</span><span class="p">):</span>
+                <span class="n">x2</span> <span class="o">=</span> <span class="n">x2</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">compare_fields</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">err_msg</span><span class="p">,</span>
+                           <span class="n">ignore_keys</span><span class="o">=</span><span class="n">ignore_keys</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+        <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
+            <span class="n">A_implements_get_field</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span>
+                <span class="n">A</span><span class="o">.</span><span class="n">api</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">A</span><span class="p">),</span> <span class="n">field</span><span class="p">)</span><span class="o">.</span><span class="n">getter_name</span><span class="p">)</span>
+            <span class="n">B_implements_get_field</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span>
+                <span class="n">B</span><span class="o">.</span><span class="n">api</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">B</span><span class="p">),</span> <span class="n">field</span><span class="p">)</span><span class="o">.</span><span class="n">getter_name</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="p">((</span><span class="n">A_implements_get_field</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="p">(</span><span class="n">B_implements_get_field</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">))</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">reraise</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

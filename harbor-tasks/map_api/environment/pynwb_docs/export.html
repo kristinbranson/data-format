@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exporting NWB files &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon_96.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Documentation" href="api_docs.html" />
+    <link rel="prev" title="Validating NWB files" href="validation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            PyNWB
+              <img src="_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="validation.html">Validating NWB files</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Exporting NWB files</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i-create-a-copy-of-an-nwb-file-with-different-data-layouts-e-g-applying-compression">How do I create a copy of an NWB file with different data layouts (e.g., applying compression)?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i-create-a-copy-of-an-nwb-file-with-different-controls-over-how-links-are-treated-and-whether-copies-are-deep-or-shallow">How do I create a copy of an NWB file with different controls over how links are treated and whether copies are deep or shallow?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i-generate-new-object-ids-for-a-newly-exported-nwb-file">How do I generate new object IDs for a newly exported NWB file?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#my-nwb-file-contains-links-to-datasets-in-other-hdf5-files-how-do-i-create-a-new-nwb-file-with-copies-of-the-datasets">My NWB file contains links to datasets in other HDF5 files. How do I create a new NWB file with copies of the datasets?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-do-i-write-a-newly-instantiated-nwbfile-to-two-different-file-paths">How do I write a newly instantiated <code class="docutils literal notranslate"><span class="pre">NWBFile</span></code> to two different file paths?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Exporting NWB files</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/export.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="exporting-nwb-files">
+<span id="export"></span><h1>Exporting NWB files<a class="headerlink" href="#exporting-nwb-files" title="Link to this heading"></a></h1>
+<p>You can use the export feature of PyNWB to create a modified version of an existing NWB file, while preserving the
+original file.</p>
+<p>To do so, first open the NWB file using <a class="reference internal" href="pynwb.html#pynwb.NWBHDF5IO" title="pynwb.NWBHDF5IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBHDF5IO</span></code></a>. Then, read the NWB file into an
+<a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object, modify the <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object or its child objects, and
+export the modified <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> object to a new file path. The modifications will appear in the
+exported file and not the original file.</p>
+<p>These modifications can consist of removals of containers, additions of containers, and changes to container attributes.
+If container attributes are changed, then
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.set_modified" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBFile.set_modified()</span></code></a> must be called
+on the <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> before exporting.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="c1"># ...  # modify nwbfile</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">set_modified</span><span class="p">()</span>  <span class="c1"># this may be necessary if the modifications are changes to attributes</span>
+
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Modifications to <a class="reference external" href="https://docs.h5py.org/en/latest/high/dataset.html#h5py.Dataset" title="(in h5py v3.17)"><code class="xref py py-class docutils literal notranslate"><span class="pre">h5py.Dataset</span></code></a> objects act <em>directly</em> on the read file on disk.
+Changes are applied immediately and do not require exporting or writing the file. If you want to modify a dataset
+only in the new file, than you should replace the whole object with a new array holding the modified data. To
+prevent unintentional changes to the source file, the source file should be opened with <code class="docutils literal notranslate"><span class="pre">mode='r'</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Moving containers within the same file is currently not supported directly via export. See the following
+<a class="reference external" href="https://github.com/NeurodataWithoutBorders/helpdesk/discussions/21">discussion on the NWB Help Desk</a>
+for details.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After exporting an <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>, the object IDs of the <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and its
+child containers will be identical to the object IDs of the read <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and its child
+containers. The object ID of a container uniquely identifies the container within a file, but should <em>not</em> be
+used to distinguish between two different files.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>The tutorial <a class="reference internal" href="tutorials/general/add_remove_containers.html#modifying-data"><span class="std std-ref">Adding/Removing Containers from an NWB File</span></a> provides additional examples of adding and removing containers from an NWB file.</p>
+</div>
+<section id="how-do-i-create-a-copy-of-an-nwb-file-with-different-data-layouts-e-g-applying-compression">
+<h2>How do I create a copy of an NWB file with different data layouts (e.g., applying compression)?<a class="headerlink" href="#how-do-i-create-a-copy-of-an-nwb-file-with-different-data-layouts-e-g-applying-compression" title="Link to this heading"></a></h2>
+<p>Use the <a class="reference external" href="https://support.hdfgroup.org/documentation/hdf5/latest/_view_tools_edit.html#secViewToolsEditChange">h5repack</a> command line tool from the HDF5 Group.</p>
+</section>
+<section id="how-do-i-create-a-copy-of-an-nwb-file-with-different-controls-over-how-links-are-treated-and-whether-copies-are-deep-or-shallow">
+<h2>How do I create a copy of an NWB file with different controls over how links are treated and whether copies are deep or shallow?<a class="headerlink" href="#how-do-i-create-a-copy-of-an-nwb-file-with-different-controls-over-how-links-are-treated-and-whether-copies-are-deep-or-shallow" title="Link to this heading"></a></h2>
+<p>Use the <a class="reference external" href="https://support.hdfgroup.org/documentation/hdf5/latest/_view_tools_edit.html#secViewToolsEditCopy">h5copy</a> command line tool from the HDF5 Group.</p>
+</section>
+<section id="how-do-i-generate-new-object-ids-for-a-newly-exported-nwb-file">
+<h2>How do I generate new object IDs for a newly exported NWB file?<a class="headerlink" href="#how-do-i-generate-new-object-ids-for-a-newly-exported-nwb-file" title="Link to this heading"></a></h2>
+<p>Before calling <code class="docutils literal notranslate"><span class="pre">export</span></code>, call the method
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.AbstractContainer.generate_new_id" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate_new_id</span></code></a> on the <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>
+to generate a new set of object IDs for the <code class="docutils literal notranslate"><span class="pre">NWBFile</span></code> and all of its children, recursively. Then export the
+<a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a>. The original NWB file is preserved.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_path</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="n">manager</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="c1"># ...  # modify nwbfile if desired</span>
+    <span class="n">nwbfile</span><span class="o">.</span><span class="n">generate_new_id</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="my-nwb-file-contains-links-to-datasets-in-other-hdf5-files-how-do-i-create-a-new-nwb-file-with-copies-of-the-datasets">
+<h2>My NWB file contains links to datasets in other HDF5 files. How do I create a new NWB file with copies of the datasets?<a class="headerlink" href="#my-nwb-file-contains-links-to-datasets-in-other-hdf5-files-how-do-i-create-a-new-nwb-file-with-copies-of-the-datasets" title="Link to this heading"></a></h2>
+<p>Pass the keyword argument <code class="docutils literal notranslate"><span class="pre">write_args={'link_data':</span> <span class="pre">False}</span></code> to <a class="reference internal" href="pynwb.html#pynwb.NWBHDF5IO.export" title="pynwb.NWBHDF5IO.export"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO.export</span></code></a>.
+This is similar to passing the keyword argument <code class="docutils literal notranslate"><span class="pre">link_data=False</span></code> to
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.backends.hdf5.h5tools.html#hdmf.backends.hdf5.h5tools.HDF5IO.write" title="(in HDMF v6.2.0)"><code class="xref py py-meth docutils literal notranslate"><span class="pre">NWBHDF5IO.write</span></code></a> when writing a file with a
+copy of externally linked datasets.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="c1"># nwbfile contains a TimeSeries where the TimeSeries data array is a link to an external dataset</span>
+    <span class="c1"># in a different HDF5 file than self.read_path</span>
+
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">export_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">,</span> <span class="n">write_args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;link_data&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>  <span class="c1"># copy linked datasets</span>
+        <span class="c1"># the written file will contain no links to external datasets</span>
+</pre></div>
+</div>
+<p>You can also the <a class="reference external" href="https://support.hdfgroup.org/documentation/hdf5/latest/_view_tools_edit.html#secViewToolsEditCopy">h5copy</a> command line tool from the HDF5 Group.</p>
+</section>
+<section id="how-do-i-write-a-newly-instantiated-nwbfile-to-two-different-file-paths">
+<h2>How do I write a newly instantiated <code class="docutils literal notranslate"><span class="pre">NWBFile</span></code> to two different file paths?<a class="headerlink" href="#how-do-i-write-a-newly-instantiated-nwbfile-to-two-different-file-paths" title="Link to this heading"></a></h2>
+<p>PyNWB does not support writing an <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> that was not read from a file to two different files.
+For example, if you instantiate <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> A and write it to file path 1, you cannot also write it
+to file path 2. However, you can first write the <a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> to file path 1, read the
+<a class="reference internal" href="pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> from file path 1, and then export it to file path 2.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath1</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="n">manager</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">write_io</span><span class="p">:</span>
+    <span class="n">write_io</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">nwbfile</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath1</span><span class="p">,</span> <span class="n">manager</span><span class="o">=</span><span class="n">manager</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">read_io</span><span class="p">:</span>
+    <span class="n">read_nwbfile</span> <span class="o">=</span> <span class="n">read_io</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">NWBHDF5IO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filepath2</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">export_io</span><span class="p">:</span>
+        <span class="n">export_io</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">src_io</span><span class="o">=</span><span class="n">read_io</span><span class="p">,</span> <span class="n">nwbfile</span><span class="o">=</span><span class="n">nwbfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="validation.html" class="btn btn-neutral float-left" title="Validating NWB files" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api_docs.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.core.reference_space_cache &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.core.reference_space_cache</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2015-2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.warehouse_cache.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.queries.reference_space_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReferenceSpaceApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.api.queries.ontologies_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OntologiesApi</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.structure_tree</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructureTree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.reference_space</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReferenceSpace</span>
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReferenceSpaceCache</span><span class="p">(</span><span class="n">Cache</span><span class="p">):</span>
+
+    <span class="n">REFERENCE_SPACE_VERSION_KEY</span> <span class="o">=</span> <span class="s1">'REFERENCE_SPACE_VERSION'</span>
+    <span class="n">ANNOTATION_KEY</span> <span class="o">=</span> <span class="s1">'ANNOTATION'</span>
+    <span class="n">TEMPLATE_KEY</span> <span class="o">=</span> <span class="s1">'TEMPLATE'</span>
+    <span class="n">STRUCTURES_KEY</span> <span class="o">=</span> <span class="s1">'STRUCTURES'</span>
+    <span class="n">STRUCTURE_TREE_KEY</span> <span class="o">=</span> <span class="s1">'STRUCTURE_TREE'</span>
+    <span class="n">STRUCTURE_MASK_KEY</span> <span class="o">=</span> <span class="s1">'STRUCTURE_MASK'</span>
+    <span class="n">STRUCTURE_MESH_KEY</span> <span class="o">=</span> <span class="s1">'STRUCTURE_MESH'</span>
+
+    <span class="n">MANIFEST_VERSION</span> <span class="o">=</span> <span class="mf">1.2</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">resolution</span><span class="p">,</span> 
+                 <span class="n">reference_space_key</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="s1">'version'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">'version'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MANIFEST_VERSION</span>
+
+        <span class="k">if</span> <span class="s1">'base_uri'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">'base_uri'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">ReferenceSpaceCache</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span> <span class="o">=</span> <span class="n">reference_space_key</span>        
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">ReferenceSpaceApi</span><span class="p">(</span><span class="n">base_uri</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">'base_uri'</span><span class="p">])</span>
+
+        
+<div class="viewcode-block" id="ReferenceSpaceCache.get_annotation_volume">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_annotation_volume">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_annotation_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Read the annotation volume.  Download it first if it doesn't exist.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        file_name: string</span>
+<span class="sd">            File name to store the annotation volume.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ANNOTATION_KEY</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+
+        <span class="n">annotation</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">download_annotation_volume</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+            <span class="n">file_name</span><span class="p">,</span> 
+            <span class="n">strategy</span><span class="o">=</span><span class="s1">'lazy'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">annotation</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.get_template_volume">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_template_volume">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_template_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Read the template volume.  Download it first if it doesn't exist.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        file_name: string</span>
+<span class="sd">            File name to store the template volume.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">TEMPLATE_KEY</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
+
+        <span class="n">template</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">download_template_volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span> 
+                                                           <span class="n">file_name</span><span class="p">,</span> 
+                                                           <span class="n">strategy</span><span class="o">=</span><span class="s1">'lazy'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">template</span><span class="p">,</span> <span class="n">info</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.get_structure_tree">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_structure_tree">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_structure_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">structure_graph_id</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Read the list of adult mouse structures and return an StructureTree </span>
+<span class="sd">        instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        file_name: string</span>
+<span class="sd">            File name to save/read the structures table.  If file_name is None,</span>
+<span class="sd">            the file_name will be pulled out of the manifest.  If caching</span>
+<span class="sd">            is disabled, no file will be saved. Default is None.</span>
+<span class="sd">        structure_graph_id: int</span>
+<span class="sd">            Build a tree using structure only from the identified structure graph.</span>
+<span class="sd">        """</span>
+        
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_TREE_KEY</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">OntologiesApi</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">api_url</span><span class="p">)</span><span class="o">.</span><span class="n">get_structures_with_sets</span><span class="p">(</span>
+            <span class="n">strategy</span><span class="o">=</span><span class="s1">'lazy'</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">file_name</span><span class="p">,</span>
+            <span class="n">pre</span><span class="o">=</span><span class="n">StructureTree</span><span class="o">.</span><span class="n">clean_structures</span><span class="p">,</span>
+            <span class="n">post</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">StructureTree</span><span class="p">(</span><span class="n">StructureTree</span><span class="o">.</span><span class="n">clean_structures</span><span class="p">(</span><span class="n">x</span><span class="p">)),</span> 
+            <span class="n">structure_graph_ids</span><span class="o">=</span><span class="n">structure_graph_id</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">Cache</span><span class="o">.</span><span class="n">cache_json</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.get_reference_space">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_reference_space">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reference_space</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                            <span class="n">annotation_file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build a ReferenceSpace from this cache's annotation volume and </span>
+<span class="sd">        structure tree. The ReferenceSpace does operations that relate brain </span>
+<span class="sd">        structures to spatial domains.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        structure_file_name: string</span>
+<span class="sd">            File name to save/read the structures table.  If file_name is None,</span>
+<span class="sd">            the file_name will be pulled out of the manifest.  If caching</span>
+<span class="sd">            is disabled, no file will be saved. Default is None.</span>
+<span class="sd">            </span>
+<span class="sd">        annotation_file_name: string</span>
+<span class="sd">            File name to store the annotation volume.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+<span class="sd">        </span>
+<span class="sd">        """</span>
+        
+        <span class="k">return</span> <span class="n">ReferenceSpace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_structure_tree</span><span class="p">(</span><span class="n">structure_file_name</span><span class="p">),</span> 
+                              <span class="bp">self</span><span class="o">.</span><span class="n">get_annotation_volume</span><span class="p">(</span><span class="n">annotation_file_name</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> 
+                              <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.get_structure_mask">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_structure_mask">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_structure_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_id</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">annotation_file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Read a 3D numpy array shaped like the annotation volume that has non-zero values where</span>
+<span class="sd">        voxels belong to a particular structure.  This will take care of identifying substructures.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This method downloads structure masks from the Allen Institute. To make your own locally, see </span>
+<span class="sd">        ReferenceSpace.many_structure_masks.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        structure_id: int</span>
+<span class="sd">            ID of a structure.</span>
+
+<span class="sd">        file_name: string</span>
+<span class="sd">            File name to store the structure mask.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+
+<span class="sd">        annotation_file_name: string</span>
+<span class="sd">            File name to store the annotation volume.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+<span class="sd">        """</span>
+        <span class="n">structure_id</span> <span class="o">=</span> <span class="n">ReferenceSpaceCache</span><span class="o">.</span><span class="n">validate_structure_id</span><span class="p">(</span><span class="n">structure_id</span><span class="p">)</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_MASK_KEY</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span> <span class="n">structure_id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">download_structure_mask</span><span class="p">(</span><span class="n">structure_id</span><span class="p">,</span> 
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span>
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+                                                <span class="n">file_name</span><span class="p">,</span> 
+                                                <span class="n">strategy</span><span class="o">=</span><span class="s1">'lazy'</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.get_structure_mesh">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.get_structure_mesh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_structure_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure_id</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Obtain a 3D mesh specifying the surface of an annotated structure.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        structure_id: int</span>
+<span class="sd">            ID of a structure.</span>
+<span class="sd">        file_name: string</span>
+<span class="sd">            File name to store the structure mesh.  If it already exists,</span>
+<span class="sd">            it will be read from this file.  If file_name is None, the</span>
+<span class="sd">            file_name will be pulled out of the manifest.  Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        vertices : np.ndarray</span>
+<span class="sd">            Dimensions are (nSamples, nCoordinates=3). Locations in the reference space</span>
+<span class="sd">            of vertices</span>
+<span class="sd">        vertex_normals : np.ndarray</span>
+<span class="sd">            Dimensions are (nSample, nElements=3). Vectors normal to vertices.</span>
+<span class="sd">        face_vertices : np.ndarray</span>
+<span class="sd">            Dimensions are (sample, nVertices=3). References are given in indices </span>
+<span class="sd">            (0-indexed here, but 1-indexed in the file) of vertices that make up each face.</span>
+<span class="sd">        face_normals : np.ndarray</span>
+<span class="sd">            Dimensions are (sample, nNormals=3). References are given in indices </span>
+<span class="sd">            (0-indexed here, but 1-indexed in the file) of vertex normals that make up each face.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        These meshes are meant for 3D visualization and as such have been smoothed. </span>
+<span class="sd">        If you are interested in performing quantative analyses, we recommend that you </span>
+<span class="sd">        use the structure masks instead.</span>
+
+<span class="sd">        """</span>
+        <span class="n">structure_id</span> <span class="o">=</span> <span class="n">ReferenceSpaceCache</span><span class="o">.</span><span class="n">validate_structure_id</span><span class="p">(</span><span class="n">structure_id</span><span class="p">)</span>
+
+        <span class="n">file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cache_path</span><span class="p">(</span>
+            <span class="n">file_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_MESH_KEY</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span> <span class="n">structure_id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">download_structure_mesh</span><span class="p">(</span><span class="n">structure_id</span><span class="p">,</span> 
+                                                <span class="bp">self</span><span class="o">.</span><span class="n">reference_space_key</span><span class="p">,</span>
+                                                <span class="n">file_name</span><span class="p">,</span> 
+                                                <span class="n">strategy</span><span class="o">=</span><span class="s1">'lazy'</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.add_manifest_paths">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.add_manifest_paths">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_manifest_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">manifest_builder</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Construct a manifest for this Cache class and save it in a file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        file_name: string</span>
+<span class="sd">            File location to save the manifest.</span>
+
+<span class="sd">        """</span>
+
+        <span class="n">manifest_builder</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ReferenceSpaceCache</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">add_manifest_paths</span><span class="p">(</span><span class="n">manifest_builder</span><span class="p">)</span>
+                                  
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_TREE_KEY</span><span class="p">,</span>
+                                  <span class="s1">'structures.json'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">REFERENCE_SPACE_VERSION_KEY</span><span class="p">,</span>
+                                  <span class="s1">'</span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'dir'</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ANNOTATION_KEY</span><span class="p">,</span>
+                                  <span class="s1">'annotation_</span><span class="si">%d</span><span class="s1">.nrrd'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">REFERENCE_SPACE_VERSION_KEY</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TEMPLATE_KEY</span><span class="p">,</span>
+                                  <span class="s1">'average_template_</span><span class="si">%d</span><span class="s1">.nrrd'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="s1">'BASEDIR'</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_MASK_KEY</span><span class="p">,</span>
+                                  <span class="s1">'structure_masks/resolution_</span><span class="si">%d</span><span class="s1">/structure_</span><span class="si">%d</span><span class="s1">.nrrd'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">REFERENCE_SPACE_VERSION_KEY</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span><span class="p">)</span>
+
+        <span class="n">manifest_builder</span><span class="o">.</span><span class="n">add_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">STRUCTURE_MESH_KEY</span><span class="p">,</span>
+                                  <span class="s1">'structure_meshes/structure_</span><span class="si">%d</span><span class="s1">.obj'</span><span class="p">,</span>
+                                  <span class="n">parent_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">REFERENCE_SPACE_VERSION_KEY</span><span class="p">,</span>
+                                  <span class="n">typename</span><span class="o">=</span><span class="s1">'file'</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">manifest_builder</span></div>
+
+
+
+       
+ 
+<div class="viewcode-block" id="ReferenceSpaceCache.validate_structure_id">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.validate_structure_id">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_structure_id</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">structure_id</span><span class="p">):</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">structure_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">structure_id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid structure_id (</span><span class="si">%s</span><span class="s2">): could not convert to integer."</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">structure_id</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">structure_id</span></div>
+
+
+
+<div class="viewcode-block" id="ReferenceSpaceCache.validate_structure_ids">
+<a class="viewcode-back" href="../../../allensdk.core.reference_space_cache.html#allensdk.core.reference_space_cache.ReferenceSpaceCache.validate_structure_ids">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_structure_ids</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">structure_ids</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">sid</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">structure_ids</span><span class="p">):</span>
+            <span class="n">structure_ids</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">validate_structure_id</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">structure_ids</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

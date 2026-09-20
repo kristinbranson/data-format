@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to Configure Term Validations &mdash; PyNWB 4.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/theme_overrides.css?v=0c24fe83" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=3e0dd15f" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/nwb_assistant.css?v=b3a735e9" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon_96.png"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=42d1b3bd"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Object IDs in NWB" href="object_id.html" />
+    <link rel="prev" title="Extending NWB" href="extensions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #000000" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            PyNWB
+              <img src="../../_static/logo_pynwb_with_margin.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install_users.html">Installing PyNWB</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#general-tutorials">General tutorials</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="plot_file.html">NWB File Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_remove_containers.html">Adding/Removing Containers from an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_timeintervals.html">Annotating Time Intervals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scratch.html">Exploratory Data Analysis with NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="extensions.html">Extending NWB</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">How to Configure Term Validations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-make-a-configuration-file">How to make a Configuration File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-use-a-configuration-file">How to use a Configuration file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-see-the-configuration-file">How to see the Configuration file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-unload-the-configuration-file">How to unload the Configuration file</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="object_id.html">Object IDs in NWB</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_read_basics.html">Reading and Exploring an NWB File</a></li>
+<li class="toctree-l3"><a class="reference internal" href="plot_external_resources.html">Linking to External Resources (HERD)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resources_streaming.html">Annotating Multiple Streamed NWB Files with a Single HERD</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#domain-specific-tutorials">Domain-specific tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#advanced-i-o">Advanced I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_citing.html">Citing PyNWB</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../validation.html">Validating NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../export.html">Exporting NWB files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_docs.html">API Documentation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install_developers.html">Installing PyNWB for Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../overview_software_architecture.html">Software Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../software_process.html">Software Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_release.html">How to Make a Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../testing/index.html">Testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../make_a_tutorial.html">How to Make a Tutorial</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">How to contribute to NWB software and documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html#license">License</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #000000" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">PyNWB</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">How to Configure Term Validations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/tutorials/general/plot_configurator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-tutorials-general-plot-configurator-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="how-to-configure-term-validations">
+<span id="sphx-glr-tutorials-general-plot-configurator-py"></span><h1>How to Configure Term Validations<a class="headerlink" href="#how-to-configure-term-validations" title="Link to this heading"></a></h1>
+<p>This is a user guide for how to curate and take advantage of configuration files in
+order to more easily validate terms within datasets or attributes.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>Users will create a configuration YAML file that outlines the fields (within a neurodata type)
+they want to be validated against a set of allowed terms.
+After creating the configuration file, users will need to load the
+configuration file with the <a class="reference internal" href="../../pynwb.html#pynwb.load_type_config" title="pynwb.load_type_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_type_config</span></code></a> method.
+With the configuration loaded, every instance of the neurodata
+types defined in the configuration file will have the respective fields wrapped with a
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSetWrapper" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSetWrapper</span></code></a>.
+This automatic wrapping is what provides the term validation for the field value.
+For greater control on which datasets and attributes are validated
+against which sets of allowed terms, use the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSetWrapper" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSetWrapper</span></code></a> on individual datasets and attributes instead.
+You can follow the
+<a class="reference external" href="https://hdmf.readthedocs.io/en/stable/tutorials/plot_term_set.html#sphx-glr-tutorials-plot-term-set-py">TermSet tutorial in the HDMF documentation</a>
+for more information.</p>
+<p>To unload a configuration, simply call <a class="reference internal" href="../../pynwb.html#pynwb.unload_type_config" title="pynwb.unload_type_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">unload_type_config</span></code></a>.
+We also provide a helper method to see the configuration that has been loaded:
+<a class="reference internal" href="../../pynwb.html#pynwb.get_loaded_type_config" title="pynwb.get_loaded_type_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_loaded_type_config</span></code></a></p>
+</section>
+<section id="how-to-make-a-configuration-file">
+<h2>How to make a Configuration File<a class="headerlink" href="#how-to-make-a-configuration-file" title="Link to this heading"></a></h2>
+<p>To see an example of a configuration file, please refer to
+<a class="reference external" href="https://github.com/NeurodataWithoutBorders/pynwb/blob/dev/src/pynwb/config/nwb_config.yaml">https://github.com/NeurodataWithoutBorders/pynwb/blob/dev/src/pynwb/config/nwb_config.yaml</a>.
+The configuration file uses YAML syntax. The
+user will construct a series of nested dictionaries to encompass all the necessary information.</p>
+<ol class="arabic simple">
+<li><p>The user needs to define all the relevant namespaces. Recall that each neurodata type exists within
+a namespace, whether that is the core namespace in PyNWB or a namespace in an extension. As namespaces grow,
+we also require a version to be recorded in the configuration file to ensure proper functionality.</p></li>
+<li><p>Within a namespace dictionary, the user will have a list of data types they want to configure.</p></li>
+<li><p>Each data type will have a list of fields associated with a <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSet" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSet</span></code></a>.
+The user can use the same or unique TermSet instances for each field.</p></li>
+</ol>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">linkml_runtime</span>  <span class="c1"># noqa: F401</span>
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Please install linkml-runtime to run this example: pip install linkml-runtime&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dateutil</span><span class="w"> </span><span class="kn">import</span> <span class="n">tz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">,</span> <span class="n">get_loaded_type_config</span><span class="p">,</span> <span class="n">load_type_config</span><span class="p">,</span> <span class="n">unload_type_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb.file</span><span class="w"> </span><span class="kn">import</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a>
+</pre></div>
+</div>
+</section>
+<section id="how-to-use-a-configuration-file">
+<h2>How to use a Configuration file<a class="headerlink" href="#how-to-use-a-configuration-file" title="Link to this heading"></a></h2>
+<p>As mentioned prior, the first step after creating a configuration file is
+to load the file. In this configuration file, we have defined two fields
+we want to always be validated: <code class="docutils literal notranslate"><span class="pre">experimenter</span></code> and <code class="docutils literal notranslate"><span class="pre">species</span></code>. Each of these
+are from a different neurodata type, <a class="reference internal" href="../../pynwb.file.html#pynwb.file.NWBFile" title="pynwb.file.NWBFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">NWBFile</span></code></a> and
+<a class="reference internal" href="../../pynwb.file.html#pynwb.file.Subject" title="pynwb.file.Subject"><code class="xref py py-class docutils literal notranslate"><span class="pre">Subject</span></code></a> respectively, and each
+have a unique associated <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSet" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSet</span></code></a>.
+It is important to remember that with the configuration loaded, the fields
+are wrapped automatically, meaning the user should proceed with creating
+the instances normally, i.e., without wrapping directly. Once instantiated,
+the value of the fields are wrapped and then validated to see if it is a
+permissible value in their respective <a class="reference external" href="https://hdmf.readthedocs.io/en/stable/hdmf.term_set.html#hdmf.term_set.TermSet" title="(in HDMF v6.2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TermSet</span></code></a>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dir_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.dirname" title="os.path.dirname" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>  <span class="c1"># when running as a .py</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dir_path</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.dirname" title="os.path.dirname" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/os.path.html#os.path.abspath" title="os.path.abspath" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span></a><span class="p">(</span><span class="s2">&quot;__file__&quot;</span><span class="p">))</span>  <span class="c1"># when running as a script or notebook</span>
+<a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">yaml_file</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dir_path</span></a><span class="p">,</span> <span class="s1">&#39;nwb_gallery_config.yaml&#39;</span><span class="p">)</span>
+<span class="n">load_type_config</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><a href="https://docs.python.org/3.11/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">yaml_file</span></a><span class="p">)</span>
+
+<a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a> <span class="o">=</span> <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class"><span class="n">datetime</span></a><span class="p">(</span><span class="mi">2018</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">hour</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">tz</span><span class="o">.</span><span class="n">gettz</span><span class="p">(</span><span class="s2">&quot;US/Pacific&quot;</span><span class="p">))</span>
+
+<span class="n">nwbfile</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.HERDManager" title="hdmf.container.HERDManager" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">NWBFile</span></a><span class="p">(</span>
+    <span class="n">session_description</span><span class="o">=</span><span class="s2">&quot;Mouse exploring an open field&quot;</span><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">identifier</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><a href="https://docs.python.org/3.11/library/uuid.html#uuid.uuid4" title="uuid.uuid4" class="sphx-glr-backref-module-uuid sphx-glr-backref-type-py-function"><span class="n">uuid4</span></a><span class="p">()),</span>  <span class="c1"># required</span>
+    <a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a><span class="o">=</span><a href="https://docs.python.org/3.11/library/datetime.html#datetime.datetime" title="datetime.datetime" class="sphx-glr-backref-module-datetime sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">session_start_time</span></a><span class="p">,</span>  <span class="c1"># required</span>
+    <span class="n">session_id</span><span class="o">=</span><span class="s2">&quot;session_1234&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">experimenter</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;Bilbo Baggins&quot;</span><span class="p">,</span>
+    <span class="p">],</span>  <span class="c1"># optional</span>
+    <span class="n">lab</span><span class="o">=</span><span class="s2">&quot;Bag End Laboratory&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">institution</span><span class="o">=</span><span class="s2">&quot;University of My Institution&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">experiment_description</span><span class="o">=</span><span class="s2">&quot;I went on an adventure to reclaim vast treasures.&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+    <span class="n">related_publications</span><span class="o">=</span><span class="s2">&quot;DOI:10.1016/j.neuron.2016.12.011&quot;</span><span class="p">,</span>  <span class="c1"># optional</span>
+<span class="p">)</span>
+
+<span class="n">subject</span> <span class="o">=</span> <a href="https://hdmf.readthedocs.io/en/stable/hdmf.container.html#hdmf.container.Container" title="hdmf.container.Container" class="sphx-glr-backref-module-hdmf-container sphx-glr-backref-type-py-class"><span class="n">Subject</span></a><span class="p">(</span>
+    <span class="n">subject_id</span><span class="o">=</span><span class="s2">&quot;001&quot;</span><span class="p">,</span>
+    <span class="n">age</span><span class="o">=</span><span class="s2">&quot;P90D&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;mouse 5&quot;</span><span class="p">,</span>
+    <span class="n">species</span><span class="o">=</span><span class="s2">&quot;Mus musculus&quot;</span><span class="p">,</span>
+    <span class="n">sex</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">nwbfile</span><span class="o">.</span><span class="n">subject</span> <span class="o">=</span> <span class="n">subject</span>
+</pre></div>
+</div>
+</section>
+<section id="how-to-see-the-configuration-file">
+<h2>How to see the Configuration file<a class="headerlink" href="#how-to-see-the-configuration-file" title="Link to this heading"></a></h2>
+<p>Call <a class="reference internal" href="../../pynwb.html#pynwb.get_loaded_type_config" title="pynwb.get_loaded_type_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">get_loaded_type_config</span></code></a> to get a dictionary containing the
+current configuration.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3.11/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">config</span></a> <span class="o">=</span> <span class="n">get_loaded_type_config</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="how-to-unload-the-configuration-file">
+<h2>How to unload the Configuration file<a class="headerlink" href="#how-to-unload-the-configuration-file" title="Link to this heading"></a></h2>
+<p>Call <a class="reference internal" href="../../pynwb.html#pynwb.unload_type_config" title="pynwb.unload_type_config"><code class="xref py py-class docutils literal notranslate"><span class="pre">unload_type_config</span></code></a> to toggle off the automatic validation.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">unload_type_config</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-tutorials-general-plot-configurator-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/2761b4ab54eebc844f8375ea67ea4946/plot_configurator.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_configurator.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bafe52309f723b0acbb467edb6168891/plot_configurator.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_configurator.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bcbcaf4fcfa8530d4bc966a4ccb89b9e/plot_configurator.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_configurator.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="extensions.html" class="btn btn-neutral float-left" title="Extending NWB" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="object_id.html" class="btn btn-neutral float-right" title="Object IDs in NWB" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2026, Neurodata Without Borders.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

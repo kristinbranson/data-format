@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.receptive_field_analysis.eventdetection &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.receptive_field_analysis.eventdetection</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Allen Institute Software License - This software license is the 2-clause BSD</span>
+<span class="c1"># license plus a third clause that prohibits redistribution for commercial</span>
+<span class="c1"># purposes without further permission.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2017. Allen Institute. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Redistributions for commercial purposes are not permitted without the</span>
+<span class="c1"># Allen Institute's written permission.</span>
+<span class="c1"># For purposes of this license, commercial purposes is the incorporation of the</span>
+<span class="c1"># Allen Institute's software into anything for which you will charge fees or</span>
+<span class="c1"># other compensation. Contact terms@alleninstitute.org for commercial licensing</span>
+<span class="c1"># opportunities.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+<span class="c1">#</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sps</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">smooth</span>
+
+
+<div class="viewcode-block" id="detect_events">
+<a class="viewcode-back" href="../../../../allensdk.brain_observatory.receptive_field_analysis.eventdetection.html#allensdk.brain_observatory.receptive_field_analysis.eventdetection.detect_events">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">detect_events</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cell_index</span><span class="p">,</span> <span class="n">stimulus</span><span class="p">,</span> <span class="n">debug_plots</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">stimulus_table</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_stimulus_table</span><span class="p">(</span><span class="n">stimulus</span><span class="p">)</span>
+    <span class="n">dff_trace</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get_dff_traces</span><span class="p">()[</span><span class="mi">1</span><span class="p">][</span><span class="n">cell_index</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="n">k_min</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">k_max</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="n">dff_trace</span> <span class="o">=</span> <span class="n">smooth</span><span class="p">(</span><span class="n">dff_trace</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="n">var_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">debug_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">fi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stimulus_table</span><span class="p">[</span><span class="s2">"start"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">ii</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">stimulus_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">.</span><span class="n">start</span>
+            <span class="o">==</span> <span class="n">stimulus_table</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">ii</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">end</span>
+        <span class="p">):</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">fi</span> <span class="o">+</span> <span class="n">k_min</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">fi</span> <span class="o">+</span> <span class="n">k_max</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dff_trace</span><span class="p">):</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="n">dff_trace</span><span class="p">[</span>
+                <span class="n">fi</span> <span class="o">+</span> <span class="n">k_min</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">offset</span> <span class="p">:</span> <span class="n">fi</span> <span class="o">+</span> <span class="n">k_max</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">offset</span>
+            <span class="p">]</span>
+
+            <span class="n">xx</span> <span class="o">=</span> <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="n">delta</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">yy</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="n">delta</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">2</span><span class="p">],</span>
+                <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="n">delta</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">3</span><span class="p">],</span>
+                <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="n">delta</span> <span class="o">+</span> <span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">trace</span> <span class="o">-</span> <span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">4</span><span class="p">],</span>
+            <span class="p">)</span>
+
+            <span class="n">var_dict</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">trace</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">)</span>
+            <span class="n">debug_dict</span><span class="p">[</span><span class="n">fi</span> <span class="o">+</span> <span class="n">k_min</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">offset</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">trace</span><span class="p">)</span>
+
+    <span class="n">xx_list</span><span class="p">,</span> <span class="n">yy_list</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span> <span class="ow">in</span> <span class="n">var_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">xx_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xx</span><span class="p">)</span>
+        <span class="n">yy_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">yy</span><span class="p">)</span>
+
+    <span class="n">mu_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">xx_list</span><span class="p">)</span>
+    <span class="n">mu_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">yy_list</span><span class="p">)</span>
+
+    <span class="n">xx_centered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xx_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">mu_x</span>
+    <span class="n">yy_centered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">yy_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">mu_y</span>
+
+    <span class="n">std_factor</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">std_x</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">1.0</span>
+        <span class="o">/</span> <span class="n">std_factor</span>
+        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xx_centered</span><span class="p">),</span>
+            <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">sps</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">std_factor</span><span class="p">)))],</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">std_y</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">1.0</span>
+        <span class="o">/</span> <span class="n">std_factor</span>
+        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">yy_centered</span><span class="p">),</span>
+            <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">sps</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">std_factor</span><span class="p">)))],</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">curr_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">allowed_sigma</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">xx_centered</span><span class="p">,</span> <span class="n">yy_centered</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">xi</span><span class="p">)</span> <span class="o">/</span> <span class="n">std_x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">((</span><span class="n">yi</span><span class="p">)</span> <span class="o">/</span> <span class="n">std_y</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">allowed_sigma</span><span class="p">:</span>
+            <span class="n">curr_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">curr_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">curr_inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">curr_inds</span><span class="p">)</span>
+    <span class="n">data_x</span> <span class="o">=</span> <span class="n">xx_centered</span><span class="p">[</span><span class="n">curr_inds</span><span class="p">]</span>
+    <span class="n">data_y</span> <span class="o">=</span> <span class="n">yy_centered</span><span class="p">[</span><span class="n">curr_inds</span><span class="p">]</span>
+    <span class="n">Cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">data_x</span><span class="p">,</span> <span class="n">data_y</span><span class="p">)</span>
+    <span class="n">Cov_Factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">Cov</span><span class="p">)</span>
+    <span class="n">Cov_Factor_Inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">Cov_Factor</span><span class="p">)</span>
+
+    <span class="c1"># =========================================================================</span>
+
+    <span class="n">noise_threshold</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+        <span class="n">allowed_sigma</span> <span class="o">*</span> <span class="n">std_x</span> <span class="o">+</span> <span class="n">mu_x</span><span class="p">,</span> <span class="n">allowed_sigma</span> <span class="o">*</span> <span class="n">std_y</span> <span class="o">+</span> <span class="n">mu_y</span>
+    <span class="p">)</span>
+    <span class="n">mu_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mu_x</span><span class="p">,</span> <span class="n">mu_y</span><span class="p">])</span>
+    <span class="n">yes_set</span><span class="p">,</span> <span class="n">no_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="p">(</span><span class="n">t0</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">)</span> <span class="ow">in</span> <span class="n">var_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">xi_z</span><span class="p">,</span> <span class="n">yi_z</span> <span class="o">=</span> <span class="n">Cov_Factor_Inv</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">])</span> <span class="o">-</span> <span class="n">mu_array</span><span class="p">))</span>
+
+        <span class="c1"># Conditions in order:</span>
+        <span class="c1"># 1) Outside noise blob</span>
+        <span class="c1"># 2) Minimum change in df/f</span>
+        <span class="c1"># 3) Change evoked by this trial, not previous</span>
+        <span class="c1"># 4) At end of trace, ended up outside of noise floor</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">xi_z</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">yi_z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4</span>
+            <span class="ow">and</span> <span class="n">yy</span> <span class="o">&gt;</span> <span class="mf">0.05</span>
+            <span class="ow">and</span> <span class="n">xx</span> <span class="o">&lt;</span> <span class="n">yy</span>
+            <span class="ow">and</span> <span class="n">tf</span> <span class="o">&gt;</span> <span class="n">noise_threshold</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="p">):</span>
+            <span class="n">yes_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">no_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_dict</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">stimulus_table</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stimulus_table</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yes_set</span><span class="p">:</span>
+        <span class="n">b</span><span class="p">[</span><span class="n">yi</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">debug_plots</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># ax[0].plot(dff_trace)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">debug_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">ti</span><span class="p">,</span> <span class="n">trace</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="k">if</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">no_set</span><span class="p">:</span>
+                <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">key</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)),</span> <span class="n">trace</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">yes_set</span><span class="p">:</span>
+                <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">key</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">)),</span> <span class="n">trace</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span>
+
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">yes_set</span><span class="p">:</span>
+            <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">var_dict</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[</span><span class="n">var_dict</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">3</span><span class="p">]],</span> <span class="s2">"r."</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">no_set</span><span class="p">:</span>
+            <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">var_dict</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[</span><span class="n">var_dict</span><span class="p">[</span><span class="n">ii</span><span class="p">][</span><span class="mi">3</span><span class="p">]],</span> <span class="s2">"b."</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"number_of_events: </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">b</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">b</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

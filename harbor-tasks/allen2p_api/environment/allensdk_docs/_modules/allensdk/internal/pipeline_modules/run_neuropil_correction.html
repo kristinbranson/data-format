@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.pipeline_modules.run_neuropil_correction &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.pipeline_modules.run_neuropil_correction</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'agg'</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.r_neuropil</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_contamination_ratios</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">lu</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">h5py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.core.lims_pipeline_module</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineModule</span><span class="p">,</span> <span class="n">run_module</span>
+
+<div class="viewcode-block" id="debug">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_neuropil_correction.html#allensdk.internal.pipeline_modules.run_neuropil_correction.debug">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">debug</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">OUTPUT_DIRECTORY</span> <span class="o">=</span> <span class="s2">"/data/informatics/CAM/neuropil"</span>
+    <span class="n">SDK_PATH</span> <span class="o">=</span> <span class="s2">"/data/informatics/CAM/neuropil/allensdk"</span>
+    <span class="n">SCRIPT</span> <span class="o">=</span> <span class="s2">"/data/informatics/CAM/neuropil/allensdk/allensdk/internal/pipeline_modules/run_neuropil_correction.py"</span>
+
+    <span class="n">exp</span> <span class="o">=</span> <span class="n">lu</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"select * from ophys_experiments where id = </span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">experiment_id</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">sd</span> <span class="o">=</span> <span class="n">exp</span><span class="p">[</span><span class="s2">"storage_directory"</span><span class="p">]</span>
+
+    <span class="n">test_file</span> <span class="o">=</span> <span class="s2">"/data/informatics/CAM/demix/</span><span class="si">%d</span><span class="s2">/demixed_traces.h5"</span> <span class="o">%</span> <span class="n">experiment_id</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">test_file</span><span class="p">):</span>
+        <span class="n">roi_trace_file</span> <span class="o">=</span> <span class="n">test_file</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">roi_trace_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="s2">"demix"</span><span class="p">,</span> <span class="s2">"</span><span class="si">%d</span><span class="s2">_demixed_traces.h5"</span> <span class="o">%</span> <span class="n">experiment_id</span><span class="p">)</span>
+
+    <span class="n">exp_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">OUTPUT_DIRECTORY</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">experiment_id</span><span class="p">))</span>
+    <span class="n">input_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">roi_trace_file</span> <span class="o">=</span> <span class="n">roi_trace_file</span><span class="p">,</span>
+        <span class="n">neuropil_trace_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="s2">"processed"</span><span class="p">,</span> <span class="s2">"neuropil_traces.h5"</span><span class="p">),</span>
+        <span class="n">storage_directory</span> <span class="o">=</span> <span class="n">exp_dir</span>
+        <span class="p">)</span>
+
+    <span class="n">run_module</span><span class="p">(</span><span class="n">SCRIPT</span><span class="p">,</span> 
+               <span class="n">input_data</span><span class="p">,</span> 
+               <span class="n">exp_dir</span><span class="p">,</span>
+               <span class="n">sdk_path</span><span class="o">=</span><span class="n">SDK_PATH</span><span class="p">,</span>
+               <span class="n">pbs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">vmem</span><span class="o">=</span><span class="mi">160</span><span class="p">,</span>
+                        <span class="n">job_name</span><span class="o">=</span><span class="s2">"np_</span><span class="si">%d</span><span class="s2">"</span><span class="o">%</span> <span class="n">experiment_id</span><span class="p">,</span>
+                        <span class="n">walltime</span><span class="o">=</span><span class="s2">"36:00:00"</span><span class="p">),</span>
+               <span class="n">local</span><span class="o">=</span><span class="n">local</span><span class="p">,</span>
+               <span class="n">optional_args</span><span class="o">=</span><span class="p">[</span><span class="s1">'--log-level'</span><span class="p">,</span><span class="s1">'DEBUG'</span><span class="p">])</span></div>
+
+    
+
+<div class="viewcode-block" id="debug_plot">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_neuropil_correction.html#allensdk.internal.pipeline_modules.run_neuropil_correction.debug_plot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">debug_plot</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">roi_trace</span><span class="p">,</span> <span class="n">neuropil_trace</span><span class="p">,</span> <span class="n">corrected_trace</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">r_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err_vals</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">211</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">roi_trace</span><span class="p">,</span><span class="s1">'r'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">corrected_trace</span><span class="p">,</span><span class="s1">'b'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"fc"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">neuropil_trace</span><span class="p">,</span><span class="s1">'g'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"neuropil"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">roi_trace</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'raw(</span><span class="si">%.02f</span><span class="s1">, </span><span class="si">%.02f</span><span class="s1">) fc(</span><span class="si">%.02f</span><span class="s1">, </span><span class="si">%.02f</span><span class="s1">) r(</span><span class="si">%f</span><span class="s1">)'</span> <span class="o">%</span> <span class="p">(</span><span class="n">roi_trace</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">roi_trace</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">corrected_trace</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">corrected_trace</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">r</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="n">r_vals</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">212</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">r_vals</span><span class="p">,</span> <span class="n">err_vals</span><span class="p">,</span> <span class="s2">"o"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="adjust_r_for_negativity">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_neuropil_correction.html#allensdk.internal.pipeline_modules.run_neuropil_correction.adjust_r_for_negativity">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">adjust_r_for_negativity</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">F_C</span><span class="p">,</span> <span class="n">F_M</span><span class="p">,</span> <span class="n">F_N</span><span class="p">):</span>
+    <span class="c1"># this function is no longer used, but leaving it here just in case</span>
+    <span class="c1"># loop through all of the negative spots and pick r to fix them</span>
+    <span class="n">neg_is</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">F_C</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">neg_is</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Correcting for negative trace, starting with r = </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">neg_is</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">F_C</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="c1"># r_new = (F_C[i] + r_old * F_N[i]) / F_N[i]</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">F_M</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">F_N</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">F_C</span> <span class="o">=</span> <span class="n">F_M</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"  updated r to </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+
+        <span class="c1"># if there is still a negative spot, it's off by some tiny epsilon.</span>
+        <span class="c1"># step r down by delta_r increments until we find one that works.</span>
+        <span class="n">delta_r</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-5</span>
+        <span class="k">while</span> <span class="n">F_C</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">r</span> <span class="o">+=</span> <span class="n">delta_r</span>
+            <span class="n">F_C</span> <span class="o">=</span> <span class="n">F_M</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">F_N</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"  stepped r to </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"  finished with r = </span><span class="si">%f</span><span class="s2">"</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">r</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../allensdk.internal.pipeline_modules.run_neuropil_correction.html#allensdk.internal.pipeline_modules.run_neuropil_correction.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">PipelineModule</span><span class="p">()</span>
+
+    <span class="n">jin</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">input_data</span><span class="p">()</span>
+
+    <span class="c1">########################################################################</span>
+    <span class="c1"># prelude -- get processing metadata</span>
+
+    <span class="n">trace_file</span> <span class="o">=</span> <span class="n">jin</span><span class="p">[</span><span class="s2">"roi_trace_file"</span><span class="p">]</span>
+    <span class="n">neuropil_file</span> <span class="o">=</span> <span class="n">jin</span><span class="p">[</span><span class="s2">"neuropil_trace_file"</span><span class="p">]</span>
+    <span class="n">storage_dir</span> <span class="o">=</span> <span class="n">jin</span><span class="p">[</span><span class="s2">"storage_directory"</span><span class="p">]</span>
+
+    <span class="n">plot_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_dir</span><span class="p">,</span> <span class="s2">"neuropil_subtraction_plots"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">):</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Neuropil correcting '</span><span class="si">%s</span><span class="s2">'"</span><span class="p">,</span> <span class="n">trace_file</span><span class="p">)</span>
+
+    <span class="c1">########################################################################</span>
+    <span class="c1"># process data</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">roi_traces</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">trace_file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Error: unable to open ROI trace file '</span><span class="si">%s</span><span class="s2">'"</span><span class="p">,</span> <span class="n">trace_file</span><span class="p">)</span>
+        <span class="k">raise</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">neuropil_traces</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">neuropil_file</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Error: unable to open neuropil trace file '</span><span class="si">%s</span><span class="s2">'"</span><span class="p">,</span> <span class="n">neuropil_file</span><span class="p">)</span>
+        <span class="k">raise</span>
+
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    get number of traces, length, etc.</span>
+<span class="sd">    '''</span>
+    <span class="n">num_traces</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">roi_traces</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">T_orig</span> <span class="o">=</span> <span class="n">T</span>
+    <span class="n">T_cross_val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="n">T_cross_val</span> <span class="o">&gt;</span> <span class="n">T_cross_val</span><span class="p">):</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">T</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="c1"># make sure that ROI and neuropil trace files are organized the same</span>
+    <span class="n">n_id</span> <span class="o">=</span> <span class="n">neuropil_traces</span><span class="p">[</span><span class="s2">"roi_names"</span><span class="p">][:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">r_id</span> <span class="o">=</span> <span class="n">roi_traces</span><span class="p">[</span><span class="s2">"roi_names"</span><span class="p">][:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Processing </span><span class="si">%d</span><span class="s2"> traces"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_id</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_id</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_id</span><span class="p">),</span> <span class="s2">"Input trace files are not aligned (ROI count)"</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">n_id</span><span class="p">)):</span>
+        <span class="k">assert</span> <span class="n">n_id</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">r_id</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s2">"Input trace files are not aligned (ROI IDs)"</span>
+<span class="w">    </span><span class="sd">'''</span>
+<span class="sd">    initialize storage variables and analysis routine</span>
+<span class="sd">    '''</span>
+    <span class="n">r_list</span> <span class="o">=</span> <span class="p">[</span> <span class="kc">None</span> <span class="p">]</span> <span class="o">*</span> <span class="n">num_traces</span>
+    <span class="n">RMSE_list</span> <span class="o">=</span> <span class="p">[</span> <span class="o">-</span><span class="mi">1</span> <span class="p">]</span> <span class="o">*</span> <span class="n">num_traces</span>
+    <span class="n">roi_names</span> <span class="o">=</span> <span class="n">n_id</span>
+    <span class="n">corrected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_traces</span><span class="p">,</span> <span class="n">T_orig</span><span class="p">))</span>
+    <span class="n">r_vals</span> <span class="o">=</span> <span class="p">[</span> <span class="kc">None</span> <span class="p">]</span> <span class="o">*</span> <span class="n">num_traces</span>
+
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_traces</span><span class="p">):</span>
+        <span class="n">roi</span> <span class="o">=</span> <span class="n">roi_traces</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">neuropil</span> <span class="o">=</span> <span class="n">neuropil_traces</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>   
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">neuropil</span><span class="p">)):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"neuropil trace for roi </span><span class="si">%d</span><span class="s2"> contains NaNs, skipping"</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+            <span class="k">continue</span>
+            
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">roi</span><span class="p">)):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"roi trace for roi </span><span class="si">%d</span><span class="s2"> contains NaNs, skipping"</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+            <span class="k">continue</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Correcting trace </span><span class="si">%d</span><span class="s2"> (roi </span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">n_id</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+        <span class="n">results</span>  <span class="o">=</span> <span class="n">estimate_contamination_ratios</span><span class="p">(</span><span class="n">roi</span><span class="p">,</span> <span class="n">neuropil</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"r=</span><span class="si">%f</span><span class="s2"> err=</span><span class="si">%f</span><span class="s2"> it=</span><span class="si">%d</span><span class="s2">"</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">"r"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="s2">"err"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="s2">"it"</span><span class="p">])</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"r"</span><span class="p">]</span>
+        <span class="n">fc</span> <span class="o">=</span> <span class="n">roi</span> <span class="o">-</span> <span class="n">r</span> <span class="o">*</span> <span class="n">neuropil</span>
+        <span class="n">RMSE_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"err"</span><span class="p">]</span>
+        <span class="n">r_vals</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">"r_vals"</span><span class="p">]</span>
+        
+        <span class="n">debug_plot</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">,</span> <span class="s2">"initial_</span><span class="si">%04d</span><span class="s2">.png"</span> <span class="o">%</span> <span class="n">n</span><span class="p">),</span>
+                   <span class="n">roi</span><span class="p">,</span> <span class="n">neuropil</span><span class="p">,</span> <span class="n">fc</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">"r_vals"</span><span class="p">],</span> <span class="n">results</span><span class="p">[</span><span class="s2">"err_vals"</span><span class="p">])</span>
+
+        <span class="c1"># mean of the corrected trace must be positive</span>
+        <span class="k">if</span> <span class="n">fc</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">r_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span>
+            <span class="n">corrected</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">fc</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"fc has negative baseline, skipping this r value"</span><span class="p">)</span>
+
+    <span class="c1"># fill in empty r values</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_traces</span><span class="p">):</span>        
+        <span class="n">roi</span> <span class="o">=</span> <span class="n">roi_traces</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">neuropil</span> <span class="o">=</span> <span class="n">neuropil_traces</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">n</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">r_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Error estimated r for trace </span><span class="si">%d</span><span class="s2">. Setting to zero."</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+            <span class="n">r_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">corrected</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">roi</span>
+
+        <span class="c1"># save a debug plot</span>
+        <span class="n">debug_plot</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">plot_dir</span><span class="p">,</span> <span class="s2">"final_</span><span class="si">%04d</span><span class="s2">.png"</span> <span class="o">%</span> <span class="n">n</span><span class="p">),</span>
+                   <span class="n">roi</span><span class="p">,</span> <span class="n">neuropil</span><span class="p">,</span> <span class="n">corrected</span><span class="p">[</span><span class="n">n</span><span class="p">,:],</span> <span class="n">r_list</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+
+        <span class="c1"># one last sanity check</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.0001</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">corrected</span><span class="p">[</span><span class="n">n</span><span class="p">,:])</span> <span class="o">&lt;</span> <span class="n">eps</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Trace </span><span class="si">%d</span><span class="s2"> baseline is still negative value after correction"</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">r_list</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">"Trace </span><span class="si">%d</span><span class="s2"> ended with negative r"</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span>
+        
+
+    <span class="c1">########################################################################</span>
+    <span class="c1"># write out processed data</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">savefile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">storage_dir</span><span class="p">,</span> <span class="s2">"neuropil_correction.h5"</span><span class="p">)</span>
+        <span class="n">hf</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">savefile</span><span class="p">,</span> <span class="s1">'w'</span><span class="p">)</span>
+        <span class="n">hf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">r_list</span><span class="p">)</span>
+        <span class="n">hf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">"RMSE"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">RMSE_list</span><span class="p">)</span>
+        <span class="n">hf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">"FC"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">corrected</span><span class="p">,</span> <span class="n">compression</span><span class="o">=</span><span class="s2">"gzip"</span><span class="p">)</span>
+        <span class="n">hf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">"roi_names"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">roi_names</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bytes_</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_traces</span><span class="p">):</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">r_vals</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">hf</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">"r_vals/</span><span class="si">%d</span><span class="s2">"</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">hf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Error creating output h5 file"</span><span class="p">)</span>
+        <span class="k">raise</span>   
+    
+    <span class="n">roi_traces</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">neuropil_traces</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">jout</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">jin</span><span class="p">)</span>
+    <span class="n">jout</span><span class="p">[</span><span class="s2">"neuropil_correction"</span><span class="p">]</span> <span class="o">=</span> <span class="n">savefile</span>
+    <span class="n">module</span><span class="o">.</span><span class="n">write_output_data</span><span class="p">(</span><span class="n">jout</span><span class="p">)</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"finished"</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

@@ -41,17 +41,19 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 import shlex
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from submit_harbor_cluster import (  # noqa: E402
     CLUSTER_JOBS_DIR,
     CLUSTER_LOG_DIR,
+    REPO_ROOT,
     discover_tasks,
 )
 
@@ -60,6 +62,11 @@ DEFAULT_OUT = Path(__file__).resolve().parent.parent / "sweep_status.html"
 # Seconds to wait for login1. A sweep makes one call, not one per job, so this only has to
 # cover a single bjobs; the default ssh timeout would hang the whole page.
 BJOBS_TIMEOUT_SEC = 60
+
+# How far back discovery reaches for a job that has already finished. Long enough that a
+# sweep stays whole on the page after its last trial lands, short enough that arms retired
+# months ago do not come back with it.
+DISCOVERY_MAX_AGE = timedelta(days=3)
 
 # LSF prints times as "Sep 19 14:59:12 2026", in the cluster's local zone, which is this
 # machine's too. A field can also read "-" for a job that has not started.
@@ -77,6 +84,7 @@ STAGES = [
     "judging",
     "judged",
     "done",
+    "collected",
     "FAILED",
 ]
 STAGE_INDEX = {name: i for i, name in enumerate(STAGES)}
@@ -288,6 +296,51 @@ def final_reward(verifier: Path) -> tuple[dict, datetime] | None:
         return None
     stamp = mtime(path)
     return (data, stamp) if stamp else None
+
+
+def trial_started(trial: Path) -> datetime | None:
+    """When the run that produced a trial began, from the trial directory's name.
+
+    A collected trial is named `<timestamp>_trial<N>`; one still in raw/ is named
+    `<task>__<random>` and takes its time from the run directory above it. Either form is
+    a better clock than an mtime, which moves whenever anything inside is written.
+
+    Args:
+        trial: a trial directory, in either location.
+
+    Returns:
+        The parsed start time, or None if neither form yields one.
+    """
+    try:
+        return datetime.strptime(trial.name.split("_trial")[0],
+                                 "%Y-%m-%d__%H-%M-%S").astimezone()
+    except ValueError:
+        return run_started(trial.parent)
+
+
+def collected_trials(run_dir: Path | None) -> int:
+    """How many trials harbor recorded for a run, read from the run's own job record.
+
+    `collect_cluster_results.py` MOVES a finished trial into the analysis tree, so the job
+    directory keeps no trial of its own afterwards. What it does keep is
+    raw/<timestamp>/result.json, which the collector never touches, and which states how
+    many trials the run produced. That is the only way left to tell a job whose output was
+    filed away from one that finished having produced nothing.
+
+    Args:
+        run_dir: the run's `raw/<timestamp>` directory, or None.
+
+    Returns:
+        The number of trials the record claims, or 0 when there is no readable record.
+    """
+    if run_dir is None:
+        return 0
+    try:
+        data = json.loads((run_dir / "result.json").read_text())
+    except (OSError, ValueError):
+        return 0
+    stats = data.get("stats") or {}
+    return int(stats.get("n_trials") or 0)
 
 
 def trial_problems(trial: Path) -> str:
@@ -526,8 +579,176 @@ def phase_spans(trial: Path | None, run_dir: Path | None, job: dict | None,
     return spans
 
 
+def known_tasks() -> list[str]:
+    """Task directory names under harbor-tasks, longest first.
+
+    Returns:
+        Directory names sorted longest-first, so a prefix match against a job name
+        prefers `sosa2024_minimal` over the `sosa2024` that also matches.
+    """
+    tasks = (REPO_ROOT / "harbor-tasks")
+    names = [p.name for p in tasks.iterdir() if p.is_dir()] if tasks.is_dir() else []
+    return sorted(names, key=len, reverse=True)
+
+
+def parse_job_name(name: str) -> tuple[str, str, int] | None:
+    """Split a job name back into the task, agent and trial it was submitted for.
+
+    Names are `hb_<task>_<agent>_t<trial>` and task names contain underscores
+    (`sosa2024_api`, `allen2p_minimal`), so the task is matched against the directories
+    that actually exist rather than guessed from the separators.
+
+    Args:
+        name: a job name, e.g. "hb_sosa2024_api_claude_t1".
+
+    Returns:
+        (task, agent, trial), or None when the name does not fit the pattern or names a
+        task with no directory -- a job left over from a task since renamed or removed.
+    """
+    match = re.fullmatch(r"hb_(.+)_t(\d+)", name)
+    if match is None:
+        return None
+    body, trial = match.group(1), int(match.group(2))
+    for task in known_tasks():
+        if body.startswith(task + "_"):
+            return task, body[len(task) + 1:], trial
+    return None
+
+
+def discovered_job_names(jobs: dict[str, dict], now: datetime) -> set[str]:
+    """Out-of-scope jobs recent enough to belong on a status page.
+
+    `bjobs -a` keeps finished jobs for a long time -- measured: 540 of them, back to arms
+    retired in July -- so taking every name would bury the sweep being watched under
+    historical ones. Live jobs always qualify; finished jobs qualify only while they are
+    younger than DISCOVERY_MAX_AGE, which keeps a trial visible through the end of the
+    sweep it belongs to without carrying previous months along.
+
+    Args:
+        jobs: the bjobs_rows map, keyed by job name.
+        now: the moment the page is being rendered.
+
+    Returns:
+        Job names to add to the expected grid. Anything older is still reachable by
+        naming its task and agent explicitly.
+    """
+    cutoff = now - DISCOVERY_MAX_AGE
+    return {name for name, job in jobs.items()
+            if job["stat"] in ("PEND", "RUN")
+            or (job["submit"] is not None and job["submit"] >= cutoff)}
+
+
+def build_row(name: str, task: str, agent: str, trial: int,
+              job: dict | None, now: datetime, discovered: bool) -> dict:
+    """Assemble one table row from a job's LSF record and its output tree.
+
+    Args:
+        name: the job name, `hb_<task>_<agent>_t<trial>`.
+        task, agent, trial: what that name decodes to.
+        job: the job's bjobs row, or None if LSF has never heard of it.
+        now: the moment the page is being rendered, for open-ended spans.
+        discovered: True when the job was found rather than expected, i.e. it falls
+            outside the task/agent/trial scope the page was asked for.
+
+    Returns:
+        A row dict: name, task, agent, trial, lsf, stage, detail, elapsed, spans, the
+        score fields, problems, discovered and the three paths.
+    """
+    lsf = job["stat"] if job else ""
+    job_dir = CLUSTER_JOBS_DIR / name
+    run_dir = newest_run_dir(job_dir)
+    trial_dir = newest_trial_dir(job_dir)
+
+    # Output on disk belongs to the job that WROTE it, not to the one holding
+    # the name now. A job name carries no date, so a resubmit reuses the whole
+    # tree: without this, a pending job inherits its dead predecessor's run --
+    # and since a stale run has no end, its build span ran to `now`, which for
+    # a directory left over from July is fifty-three days. One such row set the
+    # shared axis and squeezed every real bar to a sliver.
+    started = job.get("start") if job else None
+    if started is not None:
+        if run_dir is not None:
+            begun = run_started(run_dir)
+            if begun is not None and begun < started:
+                run_dir = None
+        # The trial is aged separately from the run. Once a trial has been collected away,
+        # newest_trial_dir falls back to whatever else the job directory holds -- for many
+        # of these names that is a 2026-07-28 trial nobody ever collected, which would then
+        # be read as this job's output and, having no metrics, reported as a failure of a
+        # job that in fact succeeded.
+        if trial_dir is not None:
+            trial_began = trial_started(trial_dir)
+            if trial_began is not None and trial_began < started:
+                trial_dir = None
+    elif job and job["stat"] == "PEND":
+        run_dir = trial_dir = None
+
+    if run_dir is not None or trial_dir is not None:
+        stage, detail, since = trial_stage(trial_dir, run_dir)
+    else:
+        stage, detail, since = "starting", "no run directory yet", None
+
+    # LSF outranks the filesystem for the two states the filesystem cannot see:
+    # a job that never ran leaves nothing, and a job killed mid-stage leaves its
+    # last stage looking current forever.
+    if not job and run_dir is None and trial_dir is None:
+        stage, detail, since = "not launched", "not in bjobs, no output", None
+    elif lsf == "PEND":
+        stage, detail = "pending", "queued"
+        since = job["submit"] if job else None
+    elif lsf in LSF_FINISHED and stage != "done":
+        # A finished job with no trial on disk has two very different explanations, and
+        # calling both FAILED made every collected trial look like a disaster once
+        # collect_cluster_results.py had run -- it MOVES a trial into the analysis tree
+        # rather than copying it, so the job directory it came from is left with none.
+        #
+        # harbor's own job record stays behind in raw/<timestamp>/result.json, because only
+        # the trial directory moves. A record saying the job produced a trial is proof the
+        # work was done and has since been filed away; no record, and the job really did
+        # finish without producing anything.
+        if trial_dir is None and collected_trials(run_dir):
+            stage, detail = "collected", "moved into the analysis tree"
+            since = None
+        else:
+            stage, detail = "FAILED", f"LSF {lsf} before a reward was written"
+
+    # The three parts the reward is the mean of, kept separate because they
+    # answer different questions: whether every check passed, how many passed,
+    # and what the judges made of the decisions behind them.
+    final = final_reward(trial_dir / "verifier") if trial_dir else None
+    scores = final[0] if final else {}
+    problems = trial_problems(trial_dir) if trial_dir else ""
+    if stage == "FAILED" and not problems:
+        problems = detail
+
+    return {
+        "name": name, "task": task, "agent": agent, "trial": trial,
+        "lsf": lsf or "-", "stage": stage, "detail": detail,
+        # Time in the CURRENT stage, and only while there is one. On a
+        # finished trial this would otherwise count up forever from the moment
+        # it completed, which is time the job was not running.
+        "elapsed": (human((now - since).total_seconds())
+                    if since and stage not in ("done", "FAILED") else ""),
+        "spans": phase_spans(trial_dir, run_dir, job, now),
+        "reward": scores.get("reward"),
+        "outcome_all": scores.get("outcome_all"),
+        "categories": scores.get("outcome_mean_per_category"),
+        "process": scores.get("process"),
+        "problems": problems,
+        "discovered": discovered,
+        "log": str(CLUSTER_LOG_DIR / f"{name}.log"),
+        "job_dir": str(job_dir),
+        "trial_dir": str(trial_dir) if trial_dir else "",
+    }
+
+
 def job_rows(tasks: list[str], agents: list[str], trials: int) -> tuple[list[dict], str | None]:
-    """Build one row per expected job, whether or not it was ever submitted.
+    """Build one row per expected job, plus one per job found outside that scope.
+
+    The expected grid is what makes a job that was never submitted visible: it has no LSF
+    record and no output, so only an expectation can put it on the page. Discovery covers
+    the other direction -- a job submitted outside the sweep scope, such as an
+    experimental task with no `_minimal` twin, which `discover_tasks` never returns.
 
     Args:
         tasks: task directory names.
@@ -535,79 +756,27 @@ def job_rows(tasks: list[str], agents: list[str], trials: int) -> tuple[list[dic
         trials: how many trials per (task, agent).
 
     Returns:
-        (rows, bjobs error or None). Each row has name, task, agent, trial, lsf, stage,
-        detail, elapsed, phases and log.
+        (rows, bjobs error or None). Expected rows come first, in scope order; discovered
+        rows follow, sorted by name and flagged with `discovered`.
     """
     jobs, error = bjobs_rows()
     now = datetime.now().astimezone()
-    rows = []
-    for task in tasks:
-        for agent in agents:
-            for trial in range(1, trials + 1):
-                name = f"hb_{task}_{agent}_t{trial}"
-                job = jobs.get(name)
-                lsf = job["stat"] if job else ""
-                job_dir = CLUSTER_JOBS_DIR / name
-                run_dir = newest_run_dir(job_dir)
-                trial_dir = newest_trial_dir(job_dir)
 
-                # Output on disk belongs to the job that WROTE it, not to the one holding
-                # the name now. A job name carries no date, so a resubmit reuses the whole
-                # tree: without this, a pending job inherits its dead predecessor's run --
-                # and since a stale run has no end, its build span ran to `now`, which for
-                # a directory left over from July is fifty-three days. One such row set the
-                # shared axis and squeezed every real bar to a sliver.
-                started = job.get("start") if job else None
-                if started is not None and run_dir is not None:
-                    begun = run_started(run_dir)
-                    if begun is not None and begun < started:
-                        run_dir = trial_dir = None
-                elif job and job["stat"] == "PEND":
-                    run_dir = trial_dir = None
+    planned = [(f"hb_{task}_{agent}_t{trial}", task, agent, trial)
+               for task in tasks for agent in agents
+               for trial in range(1, trials + 1)]
 
-                if run_dir is not None or trial_dir is not None:
-                    stage, detail, since = trial_stage(trial_dir, run_dir)
-                else:
-                    stage, detail, since = "starting", "no run directory yet", None
+    # A name that does not decode is skipped rather than shown: it names a task with no
+    # directory, so there is nothing to group it under and no log worth linking.
+    expected = {entry[0] for entry in planned}
+    extra = [(name, *parsed)
+             for name in sorted(discovered_job_names(jobs, now) - expected)
+             if (parsed := parse_job_name(name)) is not None]
 
-                # LSF outranks the filesystem for the two states the filesystem cannot see:
-                # a job that never ran leaves nothing, and a job killed mid-stage leaves its
-                # last stage looking current forever.
-                if not job and run_dir is None and trial_dir is None:
-                    stage, detail, since = "not launched", "not in bjobs, no output", None
-                elif lsf == "PEND":
-                    stage, detail = "pending", "queued"
-                    since = job["submit"] if job else None
-                elif lsf in LSF_FINISHED and stage != "done":
-                    stage, detail = "FAILED", f"LSF {lsf} before a reward was written"
-
-                # The three parts the reward is the mean of, kept separate because they
-                # answer different questions: whether every check passed, how many passed,
-                # and what the judges made of the decisions behind them.
-                final = final_reward(trial_dir / "verifier") if trial_dir else None
-                scores = final[0] if final else {}
-                problems = trial_problems(trial_dir) if trial_dir else ""
-                if stage == "FAILED" and not problems:
-                    problems = detail
-
-                rows.append({
-                    "name": name, "task": task, "agent": agent, "trial": trial,
-                    "lsf": lsf or "-", "stage": stage, "detail": detail,
-                    # Time in the CURRENT stage, and only while there is one. On a
-                    # finished trial this would otherwise count up forever from the moment
-                    # it completed, which is time the job was not running.
-                    "elapsed": (human((now - since).total_seconds())
-                                if since and stage not in ("done", "FAILED") else ""),
-                    "spans": phase_spans(trial_dir, run_dir, job, now),
-                    "reward": scores.get("reward"),
-                    "outcome_all": scores.get("outcome_all"),
-                    "categories": scores.get("outcome_mean_per_category"),
-                    "process": scores.get("process"),
-                    "problems": problems,
-                    "log": str(CLUSTER_LOG_DIR / f"{name}.log"),
-                    "job_dir": str(job_dir),
-                    "trial_dir": str(trial_dir) if trial_dir else "",
-                })
+    rows = [build_row(name, task, agent, trial, jobs.get(name), now, False)
+            for name, task, agent, trial in planned]
+    rows += [build_row(name, task, agent, trial, jobs.get(name), now, True)
+             for name, task, agent, trial in extra]
     return rows, error
 
 
@@ -626,6 +795,15 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
     for row in rows:
         counts[row["stage"]] = counts.get(row["stage"], 0) + 1
     summary = " · ".join(f"{counts[s]} {s}" for s in STAGES if s in counts)
+
+    # A collected trial has left the job directory for the analysis tree, so the page can
+    # no longer read its stage, its phases or its scores -- every column would be blank.
+    # It is finished business rather than something to watch, so it is counted in the
+    # summary above and then dropped, leaving only what is still in flight or still
+    # waiting to be collected. When everything has been collected the table is empty,
+    # which is the honest report: nothing is in flight.
+    n_collected = counts.get("collected", 0)
+    rows = [row for row in rows if row["stage"] != "collected"]
 
     # One shared time axis across every bar, so a row's length is comparable to its
     # neighbours' and a slow job is visible without reading a number. Guard the empty
@@ -667,9 +845,13 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
             return f'<td class="num sc {klass}">{value:.2f}</td>'
 
         classes = "s-" + row["stage"].replace(" ", "-") + (" err" if row["problems"] else "")
+        # Marks a row the page was not asked for: the job exists on the cluster but its
+        # task, agent or trial falls outside the requested scope.
+        found = ('<span class="found" title="found on the cluster, outside the requested '
+                 'scope">+</span>') if row.get("discovered") else ""
         body.append(
             f'<tr class="{classes}">'
-            f'<td class="mono">{html.escape(row["task"])}</td>'
+            f'<td class="mono">{html.escape(row["task"])}{found}</td>'
             f'<td>{html.escape(row["agent"])}</td>'
             f'<td class="num">{row["trial"]}</td>'
             f'<td class="num">{html.escape(row["lsf"])}</td>'
@@ -697,6 +879,7 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     refresh_note = f" &middot; refreshing every {refresh}s" if refresh else ""
     log_dir = html.escape(str(CLUSTER_LOG_DIR))
+    collected_note = (f", {n_collected} collected and hidden" if n_collected else "")
 
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">{meta}
@@ -718,6 +901,7 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
  .num {{ text-align:right; }}
  .for {{ font-variant-numeric:tabular-nums; font-weight:600; }}
  .mono {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }}
+ .found {{ opacity:.55; font-weight:600; margin-left:3px; cursor:help; }}
  .log a {{ color:inherit; }}
  .log a:hover {{ text-decoration:underline; }}
  .cp {{ margin-left:8px; font:inherit; font-size:11px; padding:0 5px; cursor:pointer;
@@ -754,11 +938,14 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
  .s-verifying    .stage {{ color:#6b46c1; }}
  .s-judging,.s-judged .stage {{ color:#8a5a00; }}
  .s-done         .stage {{ color:#1a7f37; }}
+ /* Collected: the work succeeded and its trial now lives in the analysis tree. Muted
+    rather than green, because the page can no longer read its scores. */
+ .s-collected    .stage {{ color:var(--muted); }}
  .s-FAILED       .stage {{ color:#b00; }}
  @media (max-width:900px) {{ .log,th:last-child {{ display:none; }} }}
 </style></head><body>
 <h1>Sweep status</h1>
-<p class="sub">{len(rows)} jobs &middot; {html.escape(summary)}<br>
+<p class="sub">{len(rows)} shown{collected_note} &middot; {html.escape(summary)}<br>
 generated {now}{refresh_note}<br>
 logs in <span class="mono">{log_dir}</span></p>
 <p>{legend}<span class="key"><i style="background-image:repeating-linear-gradient(45deg,

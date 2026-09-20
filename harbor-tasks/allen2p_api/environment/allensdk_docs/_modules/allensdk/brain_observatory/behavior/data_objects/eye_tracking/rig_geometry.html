@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">pynwb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pynwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">NWBFile</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataObject</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">LimsReadableInterface</span><span class="p">,</span> <span class="n">JsonReadableInterface</span><span class="p">,</span> <span class="n">NwbReadableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.core</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">NwbWritableInterface</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.behavior.schemas</span><span class="w"> </span><span class="kn">import</span> \
+    <span class="n">OphysEyeTrackingRigMetadataSchema</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.nwb</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_pynwb_extension</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresQueryMixin</span>
+
+
+<div class="viewcode-block" id="Coordinates">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.Coordinates">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Coordinates</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Represents coordinates in 3d space"""</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_z</span> <span class="o">=</span> <span class="n">z</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">z</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_z</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_z</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Do not know how to compare with type '</span>
+                             <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">==</span> <span class="n">other</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">==</span> <span class="n">other</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">_z</span> <span class="o">==</span> <span class="n">other</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">x</span> <span class="ow">and</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">_y</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">y</span> <span class="ow">and</span> \
+                   <span class="bp">self</span><span class="o">.</span><span class="n">_z</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">z</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">'[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_z</span><span class="si">}</span><span class="s1">]'</span></div>
+
+
+
+<div class="viewcode-block" id="RigGeometry">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.RigGeometry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RigGeometry</span><span class="p">(</span><span class="n">DataObject</span><span class="p">,</span> <span class="n">LimsReadableInterface</span><span class="p">,</span> <span class="n">JsonReadableInterface</span><span class="p">,</span>
+                  <span class="n">NwbReadableInterface</span><span class="p">,</span> <span class="n">NwbWritableInterface</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">equipment</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">monitor_position_mm</span><span class="p">:</span> <span class="n">Coordinates</span><span class="p">,</span>
+                 <span class="n">monitor_rotation_deg</span><span class="p">:</span> <span class="n">Coordinates</span><span class="p">,</span>
+                 <span class="n">camera_position_mm</span><span class="p">:</span> <span class="n">Coordinates</span><span class="p">,</span>
+                 <span class="n">camera_rotation_deg</span><span class="p">:</span> <span class="n">Coordinates</span><span class="p">,</span>
+                 <span class="n">led_position</span><span class="p">:</span> <span class="n">Coordinates</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'rig_geometry'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">is_value_self</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_position_mm</span> <span class="o">=</span> <span class="n">monitor_position_mm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_rotation_deg</span> <span class="o">=</span> <span class="n">monitor_rotation_deg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_camera_position_mm</span> <span class="o">=</span> <span class="n">camera_position_mm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_camera_rotation_deg</span> <span class="o">=</span> <span class="n">camera_rotation_deg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_led_position</span> <span class="o">=</span> <span class="n">led_position</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_equipment</span> <span class="o">=</span> <span class="n">equipment</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor_position_mm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_position_mm</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor_rotation_deg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_rotation_deg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">camera_position_mm</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_camera_position_mm</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">camera_rotation_deg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_camera_rotation_deg</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">led_position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_led_position</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">equipment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_equipment</span>
+
+<div class="viewcode-block" id="RigGeometry.to_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.RigGeometry.to_nwb">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_nwb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NWBFile</span><span class="p">:</span>
+        <span class="n">eye_tracking_rig_mod</span> <span class="o">=</span> <span class="n">pynwb</span><span class="o">.</span><span class="n">ProcessingModule</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s1">'eye_tracking_rig_metadata'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">'Eye tracking rig metadata module'</span><span class="p">)</span>
+
+        <span class="n">nwb_extension</span> <span class="o">=</span> <span class="n">load_pynwb_extension</span><span class="p">(</span>
+            <span class="n">OphysEyeTrackingRigMetadataSchema</span><span class="p">,</span> <span class="s1">'ndx-aibs-behavior-ophys'</span><span class="p">)</span>
+
+        <span class="n">rig_metadata</span> <span class="o">=</span> <span class="n">nwb_extension</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">"eye_tracking_rig_metadata"</span><span class="p">,</span>
+            <span class="n">equipment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_equipment</span><span class="p">,</span>
+            <span class="n">monitor_position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_position_mm</span><span class="p">),</span>
+            <span class="n">monitor_position__unit_of_measurement</span><span class="o">=</span><span class="s2">"mm"</span><span class="p">,</span>
+            <span class="n">camera_position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_camera_position_mm</span><span class="p">),</span>
+            <span class="n">camera_position__unit_of_measurement</span><span class="o">=</span><span class="s2">"mm"</span><span class="p">,</span>
+            <span class="n">led_position</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_led_position</span><span class="p">),</span>
+            <span class="n">led_position__unit_of_measurement</span><span class="o">=</span><span class="s2">"mm"</span><span class="p">,</span>
+            <span class="n">monitor_rotation</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_rotation_deg</span><span class="p">),</span>
+            <span class="n">monitor_rotation__unit_of_measurement</span><span class="o">=</span><span class="s2">"deg"</span><span class="p">,</span>
+            <span class="n">camera_rotation</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_camera_rotation_deg</span><span class="p">),</span>
+            <span class="n">camera_rotation__unit_of_measurement</span><span class="o">=</span><span class="s2">"deg"</span>
+        <span class="p">)</span>
+
+        <span class="n">eye_tracking_rig_mod</span><span class="o">.</span><span class="n">add_data_interface</span><span class="p">(</span><span class="n">rig_metadata</span><span class="p">)</span>
+        <span class="n">nwbfile</span><span class="o">.</span><span class="n">add_processing_module</span><span class="p">(</span><span class="n">eye_tracking_rig_mod</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nwbfile</span></div>
+
+
+<div class="viewcode-block" id="RigGeometry.from_nwb">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.RigGeometry.from_nwb">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_nwb</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nwbfile</span><span class="p">:</span> <span class="n">NWBFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"RigGeometry"</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">et_mod</span> <span class="o">=</span> \
+                <span class="n">nwbfile</span><span class="o">.</span><span class="n">get_processing_module</span><span class="p">(</span><span class="s2">"eye_tracking_rig_metadata"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"This nwb file with identifier "</span>
+                          <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">nwbfile</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span><span class="si">}</span><span class="s2">' has no eye "</span>
+                          <span class="sa">f</span><span class="s2">"tracking rig metadata. (NWB error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">meta</span> <span class="o">=</span> <span class="n">et_mod</span><span class="o">.</span><span class="n">get_data_interface</span><span class="p">(</span><span class="s2">"eye_tracking_rig_metadata"</span><span class="p">)</span>
+
+        <span class="n">monitor_position</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">monitor_position</span><span class="p">[:]</span>
+        <span class="n">monitor_position</span> <span class="o">=</span> <span class="p">(</span><span class="n">monitor_position</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">monitor_position</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                            <span class="k">else</span> <span class="n">monitor_position</span><span class="p">)</span>
+
+        <span class="n">monitor_rotation</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">monitor_rotation</span><span class="p">[:]</span>
+        <span class="n">monitor_rotation</span> <span class="o">=</span> <span class="p">(</span><span class="n">monitor_rotation</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">monitor_rotation</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                            <span class="k">else</span> <span class="n">monitor_rotation</span><span class="p">)</span>
+
+        <span class="n">camera_position</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">camera_position</span><span class="p">[:]</span>
+        <span class="n">camera_position</span> <span class="o">=</span> <span class="p">(</span><span class="n">camera_position</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                           <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera_position</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                           <span class="k">else</span> <span class="n">camera_position</span><span class="p">)</span>
+
+        <span class="n">camera_rotation</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">camera_rotation</span><span class="p">[:]</span>
+        <span class="n">camera_rotation</span> <span class="o">=</span> <span class="p">(</span><span class="n">camera_rotation</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                           <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera_rotation</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                           <span class="k">else</span> <span class="n">camera_rotation</span><span class="p">)</span>
+
+        <span class="n">led_position</span> <span class="o">=</span> <span class="n">meta</span><span class="o">.</span><span class="n">led_position</span><span class="p">[:]</span>
+        <span class="n">led_position</span> <span class="o">=</span> <span class="p">(</span><span class="n">led_position</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">led_position</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="n">led_position</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">RigGeometry</span><span class="p">(</span>
+            <span class="n">equipment</span><span class="o">=</span><span class="n">meta</span><span class="o">.</span><span class="n">equipment</span><span class="p">,</span>
+            <span class="n">monitor_position_mm</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">monitor_position</span><span class="p">),</span>
+            <span class="n">camera_position_mm</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">camera_position</span><span class="p">),</span>
+            <span class="n">led_position</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">led_position</span><span class="p">),</span>
+            <span class="n">monitor_rotation_deg</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">monitor_rotation</span><span class="p">),</span>
+            <span class="n">camera_rotation_deg</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">camera_rotation</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RigGeometry.from_json">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.RigGeometry.from_json">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dict_repr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"RigGeometry"</span><span class="p">:</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">dict_repr</span><span class="p">[</span><span class="s1">'eye_tracking_rig_geometry'</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">RigGeometry</span><span class="p">(</span>
+            <span class="n">equipment</span><span class="o">=</span><span class="n">rg</span><span class="p">[</span><span class="s1">'equipment'</span><span class="p">],</span>
+            <span class="n">monitor_position_mm</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">rg</span><span class="p">[</span><span class="s1">'monitor_position_mm'</span><span class="p">]),</span>
+            <span class="n">monitor_rotation_deg</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">rg</span><span class="p">[</span><span class="s1">'monitor_rotation_deg'</span><span class="p">]),</span>
+            <span class="n">camera_position_mm</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">rg</span><span class="p">[</span><span class="s1">'camera_position_mm'</span><span class="p">]),</span>
+            <span class="n">camera_rotation_deg</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">rg</span><span class="p">[</span><span class="s1">'camera_rotation_deg'</span><span class="p">]),</span>
+            <span class="n">led_position</span><span class="o">=</span><span class="n">Coordinates</span><span class="p">(</span><span class="o">*</span><span class="n">rg</span><span class="p">[</span><span class="s1">'led_position'</span><span class="p">])</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RigGeometry.from_lims">
+<a class="viewcode-back" href="../../../../../../allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.html#allensdk.brain_observatory.behavior.data_objects.eye_tracking.rig_geometry.RigGeometry.from_lims">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_lims</span><span class="p">(</span>
+            <span class="bp">cls</span><span class="p">,</span>
+            <span class="n">lims_db</span><span class="p">:</span> <span class="n">PostgresQueryMixin</span><span class="p">,</span>
+            <span class="n">behavior_session_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">ophys_experiment_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"RigGeometry"</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">behavior_session_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ophys_experiment_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Must provide either behavior_session_id or '</span>
+                             <span class="s1">'ophys_experiment_id'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">behavior_session_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ophys_experiment_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Supply either ophys_experiment_id or '</span>
+                             <span class="s1">'behavior_session_id'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ophys_experiment_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'''</span>
+<span class="s1">                SELECT oec.*, oect.name as config_type, equipment.name as </span>
+<span class="s1">                equipment_name</span>
+<span class="s1">                FROM ophys_experiments oe</span>
+<span class="s1">                JOIN ophys_sessions os ON oe.ophys_session_id = os.id</span>
+<span class="s1">                JOIN observatory_experiment_configs oec ON oec.equipment_id = </span>
+<span class="s1">                os.equipment_id</span>
+<span class="s1">                JOIN observatory_experiment_config_types oect ON oect.id = </span>
+<span class="s1">                oec.observatory_experiment_config_type_id</span>
+<span class="s1">                JOIN equipment ON equipment.id = oec.equipment_id</span>
+<span class="s1">                WHERE oe.id = </span><span class="si">{</span><span class="n">ophys_experiment_id</span><span class="si">}</span><span class="s1"> AND </span>
+<span class="s1">                    oec.active_date &lt;= os.date_of_acquisition AND</span>
+<span class="s1">                    oect.name IN ('eye camera position', 'led position', 'screen position')</span>
+<span class="s1">            '''</span>  <span class="c1"># noqa E501</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'''</span>
+<span class="s1">                SELECT oec.*, oect.name as config_type, equipment.name as </span>
+<span class="s1">                equipment_name</span>
+<span class="s1">                FROM behavior_sessions bs</span>
+<span class="s1">                JOIN ophys_sessions os ON os.id = bs.ophys_session_id</span>
+<span class="s1">                JOIN observatory_experiment_configs oec ON oec.equipment_id = </span>
+<span class="s1">                os.equipment_id</span>
+<span class="s1">                JOIN observatory_experiment_config_types oect ON oect.id = </span>
+<span class="s1">                oec.observatory_experiment_config_type_id</span>
+<span class="s1">                JOIN ophys_experiments oe ON oe.ophys_session_id = os.id</span>
+<span class="s1">                JOIN equipment ON equipment.id = oec.equipment_id</span>
+<span class="s1">                WHERE bs.id = </span><span class="si">{</span><span class="n">behavior_session_id</span><span class="si">}</span><span class="s1"> AND </span>
+<span class="s1">                    oec.active_date &lt;= os.date_of_acquisition AND</span>
+<span class="s1">                    oect.name IN ('eye camera position', 'led position', 'screen position')</span>
+<span class="s1">            '''</span>  <span class="c1"># noqa E501</span>
+        <span class="c1"># Get the raw data</span>
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_sql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">lims_db</span><span class="o">.</span><span class="n">get_connection</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">rig_geometry</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="c1"># There is no rig geometry for this experiment</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Map the config types to new names</span>
+        <span class="n">rig_geometry_config_type_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">'eye camera position'</span><span class="p">:</span> <span class="s1">'camera'</span><span class="p">,</span>
+            <span class="s1">'screen position'</span><span class="p">:</span> <span class="s1">'monitor'</span><span class="p">,</span>
+            <span class="s1">'led position'</span><span class="p">:</span> <span class="s1">'led'</span>
+        <span class="p">}</span>
+        <span class="n">rig_geometry</span><span class="p">[</span><span class="s1">'config_type'</span><span class="p">]</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="p">[</span><span class="s1">'config_type'</span><span class="p">]</span> \
+            <span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">rig_geometry_config_type_map</span><span class="p">)</span>
+
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_select_most_recent_geometry</span><span class="p">(</span>
+            <span class="n">rig_geometry</span><span class="o">=</span><span class="n">rig_geometry</span><span class="p">)</span>
+
+        <span class="c1"># Construct dictionary for positions</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="p">[[</span><span class="s1">'center_x_mm'</span><span class="p">,</span> <span class="s1">'center_y_mm'</span><span class="p">,</span> <span class="s1">'center_z_mm'</span><span class="p">]]</span>
+        <span class="n">position</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">_position_mm'</span> <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="s1">'led'</span>
+            <span class="k">else</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">_position'</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">position</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">config_type</span><span class="p">:</span>
+                <span class="n">Coordinates</span><span class="p">(</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'center_x_mm'</span><span class="p">],</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'center_y_mm'</span><span class="p">],</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'center_z_mm'</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">config_type</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">position</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Construct dictionary for rotations</span>
+        <span class="n">rotation</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="p">[[</span><span class="s1">'rotation_x_deg'</span><span class="p">,</span> <span class="s1">'rotation_y_deg'</span><span class="p">,</span>
+                                 <span class="s1">'rotation_z_deg'</span><span class="p">]]</span>
+        <span class="n">rotation</span> <span class="o">=</span> <span class="n">rotation</span><span class="p">[</span><span class="n">rotation</span><span class="o">.</span><span class="n">index</span> <span class="o">!=</span> <span class="s1">'led'</span><span class="p">]</span>
+        <span class="n">rotation</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s1">_rotation_deg'</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rotation</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">rotation</span> <span class="o">=</span> <span class="n">rotation</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">'index'</span><span class="p">)</span>
+        <span class="n">rotation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">config_type</span><span class="p">:</span>
+                <span class="n">Coordinates</span><span class="p">(</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'rotation_x_deg'</span><span class="p">],</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'rotation_y_deg'</span><span class="p">],</span>
+                    <span class="n">values</span><span class="p">[</span><span class="s1">'rotation_z_deg'</span><span class="p">]</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">config_type</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">rotation</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Combine the dictionaries</span>
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="n">position</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">rotation</span><span class="p">,</span>
+            <span class="s1">'equipment'</span><span class="p">:</span> <span class="n">rig_geometry</span><span class="p">[</span><span class="s1">'equipment_name'</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">RigGeometry</span><span class="p">(</span><span class="o">**</span><span class="n">rig_geometry</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_select_most_recent_geometry</span><span class="p">(</span><span class="n">rig_geometry</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""There can be multiple geometry entries in LIMS for a rig.</span>
+<span class="sd">        Select most recent one.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rig_geometry</span>
+<span class="sd">            Table of geometries for rig as returned by LIMS</span>
+
+<span class="sd">         Notes</span>
+<span class="sd">         ----------</span>
+<span class="sd">         The geometries in rig_geometry are assumed to precede the</span>
+<span class="sd">         date_of_acquisition of the session</span>
+<span class="sd">        (only relevant for retrieving from LIMS)</span>
+<span class="sd">        """</span>
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">'active_date'</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">rig_geometry</span> <span class="o">=</span> <span class="n">rig_geometry</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">'config_type'</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">rig_geometry</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

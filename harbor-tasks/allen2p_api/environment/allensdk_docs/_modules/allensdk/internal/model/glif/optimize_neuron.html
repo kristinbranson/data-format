@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.model.glif.optimize_neuron &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.model.glif.optimize_neuron</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.core.json_utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ju</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_sweeps</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">fs</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.glif_optimizer_neuron</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlifOptimizerNeuron</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.glif_experiment</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlifExperiment</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.glif_optimizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlifOptimizer</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.data_access</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_sweeps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.find_spikes</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_spikes_list</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">allensdk.internal.model.glif.preprocess_neuron</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pn</span>
+
+<div class="viewcode-block" id="get_optimize_sweep_numbers">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.optimize_neuron.html#allensdk.internal.model.glif.optimize_neuron.get_optimize_sweep_numbers">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_optimize_sweep_numbers</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">):</span> 
+    <span class="c1">#TODO: why is this here--why are sweep indicies being fed to a find_noise_sweeps sweeps and specifying</span>
+    <span class="c1">#noise?--shouldn't the sweeps already be provided?   </span>
+    <span class="k">return</span> <span class="n">fs</span><span class="o">.</span><span class="n">find_noise_sweeps</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)[</span><span class="s1">'noise1'</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="optimize_neuron">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.optimize_neuron.html#allensdk.internal.model.glif.optimize_neuron.optimize_neuron">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">optimize_neuron</span><span class="p">(</span><span class="n">model_config</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">,</span> <span class="n">nwb_file</span><span class="p">,</span> <span class="n">save_callback</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Optimizes a neuron.  </span>
+<span class="sd">    1. Loads optimizer and neuron configuration data.</span>
+<span class="sd">    2. Loads the voltage trace sweeps that will be optimized</span>
+<span class="sd">    3. Configures the experiment and optimizer</span>
+<span class="sd">    4. Runs the optimizer</span>
+<span class="sd">    5. TODO: where is data saved</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_config : dictionary</span>
+<span class="sd">        contains values of neuron and optimizer parameters</span>
+<span class="sd">    sweep_index : list of integers</span>
+<span class="sd">        indices (as labeled in the data configuration file) of sweeps that will be optimized</span>
+<span class="sd">    save_callback : module</span>
+<span class="sd">        saves output</span>
+<span class="sd">    '''</span>
+    <span class="c1"># define the neuron and optimizer dictionaries from the model configuration</span>
+    <span class="n">neuron_config</span> <span class="o">=</span> <span class="n">model_config</span><span class="p">[</span><span class="s1">'neuron'</span><span class="p">]</span>
+    <span class="n">optimizer_config</span> <span class="o">=</span> <span class="n">model_config</span><span class="p">[</span><span class="s1">'optimizer'</span><span class="p">]</span>
+
+    <span class="c1"># load the neuron with along with the methods needed for optimization</span>
+    <span class="n">neuron</span> <span class="o">=</span> <span class="n">GlifOptimizerNeuron</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">neuron_config</span><span class="p">)</span>
+
+    <span class="c1"># TODO: not sure what this is doing</span>
+    <span class="n">optimize_sweeps</span> <span class="o">=</span> <span class="n">get_optimize_sweep_numbers</span><span class="p">(</span><span class="n">sweep_index</span><span class="p">)</span>
+    
+    <span class="c1"># load the sweeps to be optimized</span>
+    <span class="n">optimize_data</span> <span class="o">=</span> <span class="n">load_sweeps</span><span class="p">(</span><span class="n">nwb_file</span><span class="p">,</span> <span class="n">optimize_sweeps</span><span class="p">,</span> <span class="n">neuron</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> 
+                                <span class="n">optimizer_config</span><span class="p">[</span><span class="s2">"cut"</span><span class="p">],</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s2">"bessel"</span><span class="p">])</span>
+
+    <span class="c1"># needed to offset all voltages by El_reference</span>
+    <span class="n">El_reference</span> <span class="o">=</span> <span class="n">neuron_config</span><span class="p">[</span><span class="s1">'El_reference'</span><span class="p">]</span>
+
+    <span class="c1"># get indicies of spikes and voltage at those spikes</span>
+    <span class="n">spike_ind</span><span class="p">,</span> <span class="n">spike_v</span> <span class="o">=</span> <span class="n">find_spikes_list</span><span class="p">(</span><span class="n">optimize_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">],</span> <span class="n">neuron_config</span><span class="p">[</span><span class="s1">'dt'</span><span class="p">])</span>
+
+    <span class="c1"># get times of spikes </span>
+    <span class="n">grid_spike_times</span> <span class="o">=</span> <span class="p">[</span> <span class="n">si</span><span class="o">*</span><span class="n">neuron_config</span><span class="p">[</span><span class="s1">'dt'</span><span class="p">]</span> <span class="k">for</span> <span class="n">si</span> <span class="ow">in</span> <span class="n">spike_ind</span> <span class="p">]</span>
+    
+    <span class="c1"># convert voltage at spikes into reference frame of El</span>
+    <span class="n">grid_spike_voltages_in_ref_to_zero</span> <span class="o">=</span> <span class="p">[</span> <span class="n">sv</span> <span class="o">-</span> <span class="n">El_reference</span> <span class="k">for</span> <span class="n">sv</span> <span class="ow">in</span> <span class="n">spike_v</span> <span class="p">]</span>
+
+    <span class="c1"># convert voltage into reference frame of El </span>
+    <span class="n">resp_list</span> <span class="o">=</span> <span class="p">[</span> <span class="n">d</span> <span class="o">-</span> <span class="n">El_reference</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">optimize_data</span><span class="p">[</span><span class="s1">'voltage'</span><span class="p">]</span> <span class="p">]</span>  
+
+    <span class="c1"># configure experiment</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">GlifExperiment</span><span class="p">(</span><span class="n">neuron</span> <span class="o">=</span> <span class="n">neuron</span><span class="p">,</span> 
+                                <span class="n">dt</span> <span class="o">=</span> <span class="n">neuron</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+                                <span class="n">stim_list</span> <span class="o">=</span> <span class="n">optimize_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">],</span>
+                                <span class="n">resp_list</span> <span class="o">=</span> <span class="n">resp_list</span><span class="p">,</span>
+                                <span class="n">spike_time_steps</span> <span class="o">=</span> <span class="n">spike_ind</span><span class="p">,</span> 
+                                <span class="n">grid_spike_times</span> <span class="o">=</span> <span class="n">grid_spike_times</span><span class="p">,</span>
+                                <span class="n">grid_spike_voltages</span> <span class="o">=</span> <span class="n">grid_spike_voltages_in_ref_to_zero</span><span class="p">,</span>
+                                <span class="n">param_fit_names</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'param_fit_names'</span><span class="p">])</span>
+
+    <span class="c1"># configure optimizer</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">GlifOptimizer</span><span class="p">(</span><span class="n">experiment</span> <span class="o">=</span> <span class="n">experiment</span><span class="p">,</span> 
+                              <span class="n">dt</span> <span class="o">=</span> <span class="n">neuron</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>              
+                              <span class="n">outer_iterations</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'outer_iterations'</span><span class="p">],</span>
+                              <span class="n">inner_iterations</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'inner_iterations'</span><span class="p">],</span>
+                              <span class="n">sigma_inner</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'sigma_inner'</span><span class="p">],</span>
+                              <span class="n">sigma_outer</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'sigma_outer'</span><span class="p">],</span>
+                              <span class="n">param_fit_names</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'param_fit_names'</span><span class="p">],</span>
+                              <span class="n">stim</span> <span class="o">=</span> <span class="n">optimize_data</span><span class="p">[</span><span class="s1">'current'</span><span class="p">],</span>
+                              <span class="n">error_function_data</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'error_function_data'</span><span class="p">],</span>
+                              <span class="n">xtol</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'xtol'</span><span class="p">],</span>
+                              <span class="n">ftol</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'ftol'</span><span class="p">],</span>
+                              <span class="n">internal_iterations</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'internal_iterations'</span><span class="p">],</span>
+                              <span class="n">init_params</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'init_params'</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                              <span class="n">bessel</span> <span class="o">=</span> <span class="n">optimizer_config</span><span class="p">[</span><span class="s1">'bessel'</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">outer</span><span class="p">,</span> <span class="n">inner</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'finished outer: </span><span class="si">%d</span><span class="s1"> inner: </span><span class="si">%d</span><span class="s1">'</span> <span class="o">%</span> <span class="p">(</span><span class="n">outer</span><span class="p">,</span> <span class="n">inner</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">save_callback</span><span class="p">:</span>
+            <span class="n">save_callback</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">outer</span><span class="p">,</span> <span class="n">inner</span><span class="p">)</span>
+    
+    <span class="c1"># run the optimizer</span>
+    <span class="n">best_param</span><span class="p">,</span> <span class="n">begin_param</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">run_many</span><span class="p">(</span><span class="n">save</span><span class="p">)</span> 
+
+    <span class="c1"># over write the the initial experiment parameters with the best found parameters</span>
+    <span class="c1"># TODO: but why do this since it is not being returned</span>
+    <span class="n">experiment</span><span class="o">.</span><span class="n">set_neuron_parameters</span><span class="p">(</span><span class="n">best_param</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">best_param</span><span class="p">,</span> <span class="n">begin_param</span></div>
+
+        
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../../../allensdk.internal.model.glif.optimize_neuron.html#allensdk.internal.model.glif.optimize_neuron.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'model_config_file'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'sweeps_file'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'output_file'</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--dt"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">pn</span><span class="o">.</span><span class="n">DEFAULT_DT</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--bessel"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">pn</span><span class="o">.</span><span class="n">DEFAULT_BESSEL</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">"--cut"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">pn</span><span class="o">.</span><span class="n">DEFAULT_CUT</span><span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">model_config_file</span><span class="p">)</span>
+    <span class="n">sweep_list</span> <span class="o">=</span> <span class="n">ju</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">sweeps_file</span><span class="p">)</span>
+
+    <span class="n">sweep_index</span> <span class="o">=</span> <span class="p">{</span> <span class="n">s</span><span class="p">[</span><span class="s1">'sweep_number'</span><span class="p">]:</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sweep_list</span> <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">neuron</span><span class="p">,</span> <span class="n">best_param</span><span class="p">,</span> <span class="n">begin_param</span> <span class="o">=</span> <span class="n">optimize_neuron</span><span class="p">(</span><span class="n">model_config</span><span class="p">,</span> <span class="n">sweep_index</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">bessel</span><span class="p">)</span>
+        <span class="n">ju</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">output_file</span><span class="p">,</span> <span class="n">neuron</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>

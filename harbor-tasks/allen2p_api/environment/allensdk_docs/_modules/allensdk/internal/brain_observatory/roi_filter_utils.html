@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>allensdk.internal.brain_observatory.roi_filter_utils &#8212; Allen SDK dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/aibs_sphinx.css?v=b2c5c072" />
+    <script src="../../../../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+<link href="https://www.brain-map.org/assets/stylesheets/portal.css" media="screen" rel="stylesheet" type="text/css" />
+<script src="https://www.brain-map.org/assets/javascripts/portal.js" type="text/javascript"></script>
+<script src="https://www.brain-map.org/assets/javascripts/ga.js" type="text/javascript"></script>
+<script type="text/javascript">
+    var _pSupressBrowserFlashWarning = true;
+    var _pTabId = "pHome";
+    var _pMoreProjectsId = "pMoreProjects";
+    var _pImagePath = "https://www.brain-map.org/assets/images/";
+    var _pSiteWarnings = function() {
+        this.show_warning() = {};
+    }
+</script>
+<script type="text/javascript">
+    function initialize() {
+        /*** do your stuff, then initialize the portal plugin ***/
+        _pPortalOnLoad();
+    }
+</script>
+<style>
+  #header_content > a {
+  display: inline-block;
+  width: 250px;
+  height: 75px;
+  background-image:url("_static/external_assets/images/Brain_Atlas_Logotype_SDK.png") !important;
+  background-size: 235px 37px;
+  background-position: 0px 20px;
+  background-repeat: no-repeat;
+  }
+</style>
+
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalHeader.js"></script>
+<link rel="stylesheet" type="text/css" href="_static/external_assets/stylesheets/common_layout.css" />
+
+
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for allensdk.internal.brain_observatory.roi_filter_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.ndimage.measurements</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">measurements</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial</span><span class="w"> </span><span class="kn">import</span> <span class="n">cKDTree</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">allensdk.brain_observatory.roi_masks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_roi_mask</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">CRITERIA_FILE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)),</span>
+                             <span class="s2">"resources"</span><span class="p">,</span>
+                             <span class="s2">"roi_filter_training_criteria.json"</span><span class="p">)</span>
+<span class="n">_CRITERIA</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="CRITERIA">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.CRITERIA">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">CRITERIA</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">_CRITERIA</span>
+    <span class="k">if</span> <span class="n">_CRITERIA</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">CRITERIA_FILE</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">_CRITERIA</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_CRITERIA</span></div>
+
+
+
+<div class="viewcode-block" id="TrainingLabelClassifier">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.TrainingLabelClassifier">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrainingLabelClassifier</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Very basic threshold_based classifier.</span>
+
+<span class="sd">    Has a decision function that is just the number of distinct</span>
+<span class="sd">    criteria met by the classifier. Criteria are defined as a list</span>
+<span class="sd">    of strings used with pandas.DataFrame.eval.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    criteria : list</span>
+<span class="sd">        List of evaluation strings.</span>
+<span class="sd">    '''</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">criteria</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Constructor.'''</span>
+        <span class="k">if</span> <span class="n">criteria</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">criteria</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">criteria</span> <span class="o">=</span> <span class="n">criteria</span>
+
+<div class="viewcode-block" id="TrainingLabelClassifier.decision_function">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.TrainingLabelClassifier.decision_function">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decision_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get the distance from the decision boundary.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : array-like</span>
+<span class="sd">            Features for each ROI.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        T : array-like</span>
+<span class="sd">            Distance for each sample from the decision boundary.</span>
+<span class="sd">        '''</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">crit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">criteria</span><span class="p">:</span>
+            <span class="n">T</span><span class="p">[</span><span class="n">X</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">crit</span><span class="p">)</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">T</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TrainingMultiLabelClassifier">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.TrainingMultiLabelClassifier">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TrainingMultiLabelClassifier</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Multilabel classifier using groups of TrainingLabelClassifiers.</span>
+
+<span class="sd">    This was used to generate labeling for training the original SVM</span>
+<span class="sd">    for classification.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    criteria : dictionary</span>
+<span class="sd">        Label names and criteria for each label.</span>
+<span class="sd">    '''</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">criteria</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Constructor.'''</span>
+        <span class="k">if</span> <span class="n">criteria</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">criteria</span> <span class="o">=</span> <span class="n">CRITERIA</span><span class="p">()</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">criteria</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_codes</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_classifiers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+            <span class="n">label_criteria</span> <span class="o">=</span> <span class="n">criteria</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_codes</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="n">i</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_classifiers</span><span class="p">[</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">TrainingLabelClassifier</span><span class="p">(</span><span class="n">label_criteria</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_labels_as_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label_codes</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Convert label series to boolean columns for each label.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        label_codes : pandas.Series</span>
+<span class="sd">            Label codes.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame</span>
+<span class="sd">            Dataframe where each column is a label, and values are</span>
+<span class="sd">            True for labeled or False otherwise.</span>
+<span class="sd">        '''</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_codes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">label_codes</span> <span class="o">&amp;</span> <span class="n">number</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_map_code_to_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label_code</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+            <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_codes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">label_code</span> <span class="o">&amp;</span> <span class="n">number</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">output</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+
+<div class="viewcode-block" id="TrainingMultiLabelClassifier.get_eXcluded">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.TrainingMultiLabelClassifier.get_eXcluded">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_eXcluded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Get the calculated value of the eXcluded column.</span>
+
+<span class="sd">        This is useful for comparison with the original classifier</span>
+<span class="sd">        implementation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : pandas.DataFrame</span>
+<span class="sd">            Object features from the object list file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray</span>
+<span class="sd">            Calculated eXcluded score from the classifier.</span>
+<span class="sd">        '''</span>
+        <span class="n">eXcluded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">X</span><span class="p">[</span><span class="s2">"eXcluded"</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">classifier</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classifiers</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">eXcluded</span> <span class="o">+=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="c1"># match the object list values</span>
+        <span class="n">eXcluded</span><span class="p">[</span><span class="n">eXcluded</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">10</span>
+        <span class="n">eXcluded</span><span class="p">[</span><span class="n">X</span><span class="p">[</span><span class="s2">"eXcluded"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">eXcluded</span><span class="p">[</span><span class="n">X</span><span class="p">[</span><span class="s2">"eXcluded"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">eXcluded</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TrainingMultiLabelClassifier.label_data">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.TrainingMultiLabelClassifier.label_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">label_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">as_columns</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">'''Generate labels for each row in X.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : pandas.DataFrame</span>
+<span class="sd">            Object features from the object list file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray</span>
+<span class="sd">            Array of label codes representing the combination of labels</span>
+<span class="sd">            found for each row.</span>
+<span class="sd">        '''</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">classifier</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classifiers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">labels</span><span class="p">[</span><span class="n">classifier</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">label</span>
+        <span class="k">if</span> <span class="n">as_columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels_as_columns</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_map_code_to_list</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="calculate_max_border">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.calculate_max_border">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_max_border</span><span class="p">(</span><span class="n">motion_df</span><span class="p">,</span> <span class="n">max_shift</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Calculate motion boundary from frame offsets.</span>
+
+<span class="sd">    When the motion correction algorithm fails to find sufficient</span>
+<span class="sd">    matches, it generates very large frame offsets. The use of</span>
+<span class="sd">    `max_shift` avoids filtering too many cells due to the large</span>
+<span class="sd">    offsets, with the tradeoff that those frames will be noise.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    motion_df : pandas.DataFrame</span>
+<span class="sd">        Dataframe containing the x, y offsets from motion correction.</span>
+<span class="sd">    max_shift : float</span>
+<span class="sd">        Maximum shift to allow when considering motion correction. Any</span>
+<span class="sd">        larger shifts are considered outliers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        [right_shift, left_shift, down_shift, up_shift]</span>
+<span class="sd">    '''</span>
+    <span class="c1"># strip outliers</span>
+    <span class="n">x_no_outliers</span> <span class="o">=</span> <span class="n">motion_df</span><span class="p">[</span><span class="s2">"x"</span><span class="p">][(</span><span class="n">motion_df</span><span class="p">[</span><span class="s2">"x"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="n">max_shift</span><span class="p">)</span>
+                                   <span class="o">&amp;</span> <span class="p">(</span><span class="n">motion_df</span><span class="p">[</span><span class="s2">"x"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">max_shift</span><span class="p">)]</span>
+    <span class="n">y_no_outliers</span> <span class="o">=</span> <span class="n">motion_df</span><span class="p">[</span><span class="s2">"y"</span><span class="p">][(</span><span class="n">motion_df</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="n">max_shift</span><span class="p">)</span>
+                                   <span class="o">&amp;</span> <span class="p">(</span><span class="n">motion_df</span><span class="p">[</span><span class="s2">"y"</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">max_shift</span><span class="p">)]</span>
+
+    <span class="n">right_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">x_no_outliers</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">left_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">x_no_outliers</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">down_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">y_no_outliers</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">up_shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y_no_outliers</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">border</span> <span class="o">=</span> <span class="p">[</span><span class="n">right_shift</span><span class="p">,</span> <span class="n">left_shift</span><span class="p">,</span> <span class="n">down_shift</span><span class="p">,</span> <span class="n">up_shift</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">border</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Motion correction failed."</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">border</span></div>
+
+
+
+<div class="viewcode-block" id="order_rois_by_object_list">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.order_rois_by_object_list">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">order_rois_by_object_list</span><span class="p">(</span><span class="n">object_data</span><span class="p">,</span> <span class="n">rois</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Reorder rois by matching bounding boxes to object list.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    object_data : pandas.DataFrame</span>
+<span class="sd">        Object list data.</span>
+<span class="sd">    rois : list</span>
+<span class="sd">        List of RoiMasks.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        The list of rois reordered to index the same as object_data.</span>
+<span class="sd">    '''</span>
+    <span class="n">object_points</span> <span class="o">=</span> <span class="n">object_data</span><span class="p">[[</span><span class="s2">"minx"</span><span class="p">,</span>
+                                 <span class="s2">"miny"</span><span class="p">,</span>
+                                 <span class="s2">"maxx"</span><span class="p">,</span>
+                                 <span class="s2">"maxy"</span><span class="p">,</span>
+                                 <span class="s2">"area"</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">object_points</span><span class="p">[</span><span class="s2">"maxx"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">object_points</span><span class="p">[</span><span class="s2">"maxy"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">roi_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">roi</span> <span class="ow">in</span> <span class="n">rois</span><span class="p">:</span>
+        <span class="n">roi_points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">roi</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">roi</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">roi</span><span class="o">.</span><span class="n">x</span><span class="o">+</span><span class="n">roi</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">roi</span><span class="o">.</span><span class="n">y</span><span class="o">+</span><span class="n">roi</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+                           <span class="n">roi</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()])</span>
+    <span class="n">reorder_index</span> <span class="o">=</span> <span class="n">get_indices_by_distance</span><span class="p">(</span><span class="n">object_points</span><span class="p">,</span>
+                                            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">roi_points</span><span class="p">))</span>
+    <span class="n">multi_mapped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">reorder_index</span><span class="p">))</span> <span class="o">!=</span> <span class="n">reorder_index</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">unique</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">reorder_index</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">multi_mapped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">unique</span><span class="p">[</span><span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">not_mapped</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">setdiff1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">reorder_index</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                                      <span class="n">reorder_index</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"ROIs don't uniquely map to object_list"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">(</span><span class="n">multi_mapped</span> <span class="o">|</span> <span class="n">not_mapped</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> has ambiguous mapping to object list"</span> <span class="o">%</span> <span class="n">rois</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+    <span class="n">out_rois</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">reorder_index</span><span class="p">:</span>
+        <span class="n">roi</span> <span class="o">=</span> <span class="n">rois</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">multi_mapped</span><span class="p">:</span>
+            <span class="n">roi</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"duplicate"</span><span class="p">)</span>
+        <span class="n">out_rois</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">roi</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_rois</span></div>
+
+
+
+<div class="viewcode-block" id="get_rois">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.get_rois">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_rois</span><span class="p">(</span><span class="n">segmentation_stack</span><span class="p">,</span> <span class="n">border</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Extract a list of rois from the segmentation data array.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    segmentation_stack : numpy.ndarray</span>
+<span class="sd">        The array from the maxInt_masks file showing the object masks.</span>
+<span class="sd">    border : list</span>
+<span class="sd">        [right_shift, left_shift, down_shift, up_shift] bounding box</span>
+<span class="sd">        determined from motion correction.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        List of RoiMask objects.</span>
+<span class="sd">    '''</span>
+    <span class="n">rois</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">border</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">border</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">segmentation_stack</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">segmentation_stack</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">segmentation_stack</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">page</span> <span class="o">=</span> <span class="n">segmentation_stack</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+        <span class="n">label_mask</span><span class="p">,</span> <span class="n">num_labels</span> <span class="o">=</span> <span class="n">measurements</span><span class="o">.</span><span class="n">label</span><span class="p">(</span>
+            <span class="n">page</span><span class="p">,</span> <span class="n">structure</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_labels</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">img_mask</span> <span class="o">=</span> <span class="n">label_mask</span> <span class="o">==</span> <span class="n">label</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">create_roi_mask</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">border</span><span class="p">,</span>
+                                   <span class="n">roi_mask</span><span class="o">=</span><span class="n">img_mask</span><span class="p">,</span>
+                                   <span class="n">label</span><span class="o">=</span><span class="s2">"ROI </span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">label</span><span class="p">),</span>
+                                   <span class="n">mask_group</span><span class="o">=</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">mask</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">overlaps_motion_border</span><span class="p">:</span>
+                <span class="n">mask</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"motion_border"</span><span class="p">)</span>
+            <span class="n">rois</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rois</span></div>
+
+
+
+<div class="viewcode-block" id="get_indices_by_distance">
+<a class="viewcode-back" href="../../../../allensdk.internal.brain_observatory.roi_filter_utils.html#allensdk.internal.brain_observatory.roi_filter_utils.get_indices_by_distance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_indices_by_distance</span><span class="p">(</span><span class="n">object_list_points</span><span class="p">,</span> <span class="n">mask_points</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">'''Find indices of nearest neighbor matches.</span>
+
+<span class="sd">    Require a distance of 0 (perfect match) and a unique match between</span>
+<span class="sd">    masks and object_list entries.</span>
+<span class="sd">    '''</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mask_points</span><span class="p">)</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"number of dimensions is incorrect. Expected 2 "</span>
+                         <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mask_points</span><span class="p">)</span><span class="o">.</span><span class="n">ndim</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">tree</span> <span class="o">=</span> <span class="n">cKDTree</span><span class="p">(</span><span class="n">mask_points</span><span class="p">)</span>
+    <span class="n">distance</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">object_list_points</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">distance</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"An ROI did not match object list exactly."</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">"Max match distance greater than 0"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">indices</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Install Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../data_resources.html">Data Resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../brain_observatory.html">Brain Observatory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../cell_types.html">Cell Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../connectivity.html">Mouse Connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../reference_space.html">Reference Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../data_api_client.html">API Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_coding_neuropixels.html">Visual Coding – Neuropixels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html">GETTING STARTED</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#tutorials">TUTORIALS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#documentation">DOCUMENTATION</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#visual-behavior-optical-physiology-datasets">VISUAL BEHAVIOR OPTICAL PHYSIOLOGY DATASETS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#behavioral-training">BEHAVIORAL TRAINING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#photon-imaging-during-behavior">2-PHOTON IMAGING DURING BEHAVIOR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#session-structure">SESSION STRUCTURE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-processing">DATA PROCESSING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#quality-control">QUALITY CONTROL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#summary-of-available-data">SUMMARY OF AVAILABLE DATA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../visual_behavior_optical_physiology.html#data-file-changelog">DATA FILE CHANGELOG</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../glif_models.html">Generalized LIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../biophysical_models.html">Biophysical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../authors.html">Authors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../allensdk.html">Source Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.api.html">allensdk.api package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.brain_observatory.html">allensdk.brain_observatory package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.config.html">allensdk.config package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.core.html">allensdk.core package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.ephys.html">allensdk.ephys package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.internal.html">allensdk.internal package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.model.html">allensdk.model package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.morphology.html">allensdk.morphology package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.mouse_connectivity.html">allensdk.mouse_connectivity package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.test_utilities.html">allensdk.test_utilities package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../allensdk.deprecated.html">allensdk.deprecated module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/AllenInstitute/AllenSDK">Github Profile</a></li>
+</ul>
+
+<h3> Questions </h3>
+<p class="questions">
+  For help with problems or questions using the AllenSDK, please create an issue on <a href="https://github.com/alleninstitute/allensdk/issues/">Github's issue tracker</a> or submit your question to <a href="https://stackoverflow.com/">StackOverflow</a> with the 'allen-sdk' tag.
+</p>
+<p class="questions">
+    For any other questions, search the <a href="https://community.brain-map.org/">Community Forum</a> or start a new topic.
+</p>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    <div class="footer" role="contentinfo">
+    </div>
+<script type="text/javascript" src="https://www.brain-map.org/external_assets/javascripts/portalFooter.js"></script>
+
+
+  </body>
+</html>
