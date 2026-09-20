@@ -489,6 +489,17 @@ read_judge_model() {  # $1 = judge key, $2 = fallback
 CLAUDE_JUDGE_MODEL=$(read_judge_model claude claude-opus-4-6)
 CODEX_JUDGE_MODEL=$(read_judge_model codex gpt-5.4)
 echo "judge models: claude=$CLAUDE_JUDGE_MODEL codex=$CODEX_JUDGE_MODEL"
+
+# The CLI version each judge runs, recorded with its model in metrics.json. Mirrors
+# tests/test.sh; without it a rerun writes null over whatever the original run recorded,
+# leaving a trial that cannot say what judged it. No fallback: an empty value is recorded
+# as empty rather than guessed at.
+read_judge_harness() {  # $1 = judge key
+  jq -r --arg k "$1" '"'"'.tools[$k].harness_version // ""'"'"' /tests/versions.json 2>/dev/null || echo ""
+}
+CLAUDE_JUDGE_HARNESS=$(read_judge_harness claude)
+CODEX_JUDGE_HARNESS=$(read_judge_harness codex)
+echo "judge harnesses: claude=$CLAUDE_JUDGE_HARNESS codex=$CODEX_JUDGE_HARNESS"
 '
 
     if [ "$RUN_CLAUDE_JUDGE" = true ]; then
@@ -518,6 +529,8 @@ cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
   --model-name claude \
+  --judge-model "$CLAUDE_JUDGE_MODEL" \
+  --judge-harness "$CLAUDE_JUDGE_HARNESS" \
   --metrics-json /logs/verifier/metrics.json 2>&1 || true
 '
     fi
@@ -560,6 +573,8 @@ cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CODEX_DIR/llm_judge_eval.json" \
   --model-name codex \
+  --judge-model "$CODEX_JUDGE_MODEL" \
+  --judge-harness "$CODEX_JUDGE_HARNESS" \
   --metrics-json /logs/verifier/metrics.json 2>&1 || true
 '
     fi

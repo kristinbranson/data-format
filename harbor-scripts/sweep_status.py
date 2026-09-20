@@ -605,6 +605,8 @@ def job_rows(tasks: list[str], agents: list[str], trials: int) -> tuple[list[dic
                     "process": scores.get("process"),
                     "problems": problems,
                     "log": str(CLUSTER_LOG_DIR / f"{name}.log"),
+                    "job_dir": str(job_dir),
+                    "trial_dir": str(trial_dir) if trial_dir else "",
                 })
     return rows, error
 
@@ -641,6 +643,22 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
                 f'title="{html.escape(label)}"></i>')
         total = human(sum(s for _, s, _ in row["spans"])) if row["spans"] else ""
 
+        def link(path: str, label: str) -> str:
+            """Render one path as a clickable link plus a button that copies it.
+
+            Args:
+                path: absolute path on this filesystem.
+                label: the visible text; the full path goes in the tooltip, because
+                    repeating it on every row is what forced the column to truncate.
+
+            Returns:
+                HTML for the link and its copy button.
+            """
+            safe = html.escape(path)
+            return (f'<a href="file://{safe}" title="{safe}">{html.escape(label)}</a>'
+                    f'<button class="cp" data-p="{safe}" title="copy {html.escape(label)} path">'
+                    f'copy</button>')
+
         def score(key: str, klass: str = "") -> str:
             value = row[key]
             if not isinstance(value, (int, float)):
@@ -663,7 +681,9 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
             + score("process")
             + f'<td class="problems">{html.escape(row["problems"])}</td>'
             f'<td class="detail">{html.escape(row["detail"])}</td>'
-            f'<td class="mono log">{html.escape(row["log"])}</td></tr>')
+            f'<td class="mono log">{link(row["log"], Path(row["log"]).name)}</td>'
+            f'<td class="mono log">{link(row["job_dir"], "job")}'
+            f'{link(row["trial_dir"], "trial") if row["trial_dir"] else ""}</td></tr>')
 
     legend = "".join(f'<span class="key"><i class="p-{p}"></i>{p}</span>'
                      for p in PHASE_COLOR)
@@ -676,6 +696,7 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
     warn = f'<p class="error">{html.escape(error)}</p>' if error else ""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     refresh_note = f" &middot; refreshing every {refresh}s" if refresh else ""
+    log_dir = html.escape(str(CLUSTER_LOG_DIR))
 
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">{meta}
@@ -697,7 +718,12 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
  .num {{ text-align:right; }}
  .for {{ font-variant-numeric:tabular-nums; font-weight:600; }}
  .mono {{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }}
- .log {{ color:var(--muted); max-width:340px; overflow:hidden; text-overflow:ellipsis; }}
+ .log a {{ color:inherit; }}
+ .log a:hover {{ text-decoration:underline; }}
+ .cp {{ margin-left:8px; font:inherit; font-size:11px; padding:0 5px; cursor:pointer;
+   color:var(--muted); background:transparent; border:1px solid var(--line);
+   border-radius:3px; }}
+ .cp:hover {{ color:var(--fg); }}
  .detail {{ color:var(--muted); }}
  .stage {{ font-weight:600; }}
  .total {{ font-variant-numeric:tabular-nums; color:var(--muted); }}
@@ -733,7 +759,8 @@ def render(rows: list[dict], error: str | None, refresh: int) -> str:
 </style></head><body>
 <h1>Sweep status</h1>
 <p class="sub">{len(rows)} jobs &middot; {html.escape(summary)}<br>
-generated {now}{refresh_note}</p>
+generated {now}{refresh_note}<br>
+logs in <span class="mono">{log_dir}</span></p>
 <p>{legend}<span class="key"><i style="background-image:repeating-linear-gradient(45deg,
  var(--muted) 0 3px,transparent 3px 6px);background-color:var(--line)"></i>still
  running</span></p>
@@ -744,8 +771,33 @@ generated {now}{refresh_note}</p>
 <th class="num" title="1 only if every check passed">outcome</th>
 <th class="num" title="mean over the outcome categories">categories</th>
 <th class="num" title="mean of the judges' scores">process</th>
-<th>problem</th><th>detail</th><th>log</th></tr></thead>
+<th>problem</th><th>detail</th><th>log</th><th>files</th></tr></thead>
 <tbody>{''.join(body)}</tbody></table>
+<script>
+document.addEventListener('click', function (event) {{
+  var button = event.target.closest('.cp');
+  if (!button) return;
+  var path = button.dataset.p;
+  var done = function () {{
+    var was = button.textContent;
+    button.textContent = 'copied';
+    setTimeout(function () {{ button.textContent = was; }}, 1200);
+  }};
+  if (navigator.clipboard && navigator.clipboard.writeText) {{
+    navigator.clipboard.writeText(path).then(done, fallback);
+  }} else {{
+    fallback();
+  }}
+  function fallback() {{
+    var box = document.createElement('textarea');
+    box.value = path;
+    document.body.appendChild(box);
+    box.select();
+    try {{ document.execCommand('copy'); done(); }} catch (e) {{ button.textContent = 'select it'; }}
+    document.body.removeChild(box);
+  }}
+}});
+</script>
 </body></html>
 """
 

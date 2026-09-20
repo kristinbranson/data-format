@@ -86,12 +86,21 @@ def queue_geometry(queue: str, slots: int | None = None) -> tuple[int, int]:
     return (ratio_slots if slots is None else slots), ram_per_slot_gb
 
 
-# Observed agent+verify time: 1.25 h median, 6.06 h max (mouseland). The two LLM
-# judges add roughly another hour on top of that (measured: ~25 min for the Claude
-# judge alone on sosa2024), which left almost no headroom at the previous 8:00.
-# LSF kills at the wall clock, so an overrun loses a trial that has already been
-# paid for in full. gpu_* queues allow up to 14 days.
-WALL = "24:00"
+# Long enough that every per-phase timeout in task.toml can expire inside it:
+# build_timeout_sec 0.5 h, [agent] timeout_sec 24 h, [verifier] timeout_sec 4 h, which is
+# 28.5 h, plus headroom.
+#
+# The two kinds of timeout are not interchangeable. harbor's agent timeout stops the agent
+# and still runs the verifier, so the trial is graded and records that the agent ran out of
+# time -- a result. LSF's wall clock kills the job outright: no verifier, no judges, no
+# reward file, and the whole trial is lost after being paid for in full. At 24:00 the wall
+# was no longer than the agent's own limit, so the agent timeout could never fire first and
+# every runaway became the second kind.
+#
+# For scale, observed agent+verify is 1.25 h median and 6.06 h max (mouseland), and the two
+# judges add roughly another hour. Nothing approaches these limits; the point is which
+# failure you get when something does. gpu_* queues allow up to 14 days.
+WALL = "29:00"
 
 # Must resolve identically on the workstation and on compute nodes, so /groups
 # rather than $HOME (workstation /home/<user>@hhmi.org vs cluster

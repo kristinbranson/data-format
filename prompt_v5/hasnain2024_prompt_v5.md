@@ -219,7 +219,6 @@ You will be assessed on whether the decisions you make on how to load, filter, p
 1. **FIRST**: Create `/app/CONVERSION_NOTES.md` with the template structure shown at the end of this document
 2. Verify you can run `python3` and import key packages (numpy, torch)
 3. List the contents of this directory to understand what files are available
-4. **REMINDER**: Do NOT look at any files outside this directory
 
 **Done when**: 
 - `/app/CONVERSION_NOTES.md` exists with the proper template structure

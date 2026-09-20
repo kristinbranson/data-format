@@ -10,46 +10,60 @@
 
 2. **FOLLOW STEPS IN ORDER**: Do not skip steps. Do not proceed to step N+1 until step N is complete. Each step has "Done when" criteria — verify them before moving on.
 
-3. **MATCH THE REFERENCE PROCESSING WHEN APPLICABLE**: Your processing must match what's described in the reference papers and code, except where the decoder input and output specifications or training a neural decoder require otherwise. You will be assessed on the statistics and decoder accuracy of your converted data, and on whether an expert would consider each of your decisions well justified.
+3. **MATCH THE REFERENCE PROCESSING WHEN APPLICABLE**: Your processing must match what's described in the reference paper and code, except where the decoder input and output specifications or training a neural decoder require otherwise. You will be assessed on the statistics and decoder accuracy of your converted data, and on whether an expert would consider each of your decisions well justified.
 
+4. **USE THE `PYNWB` API**: The data are stored in the **NWB** file format. You **must use `pynwb` API to load, read, and manipulate the data**. Do **NOT** use `h5py` to load the data. 
 ---
 
 ## Project Context
 
 - You are a computational neuroscientist. Your goal is to load and reformat data from a neuroscience paper into a specified structure suitable for downstream analysis.
-- You need to use the **SAME** processing of the data described in the provided reference papers and code repository when applicable. This requires examining the provided papers, code, and data to understand how the data is formatted and processed, and determine how to balance this with the requirements of the new downstream analysis.
+- You need to use the **SAME** processing of the data described in the provided reference paper and code repository when applicable. This requires examining the provided paper, code, and data to understand how the data is formatted and processed, and determine how to balance this with the requirements of the new downstream analysis.
 - To test that you have done this successfully, you will use provided code to train a neural decoder that **inputs neural activity** and **predicts experimental and behavioral variables**. 
 - We will assess your work in two ways. First, statistics of the converted data and decoder accuracy will be compared to those of an expert-written solution. Second, each decision you make about how to load, filter, process, align, and save the data will be compared with the decision made by an expert. A decision that differs from the expert's is acceptable if it is equally well justified; decisions that are poorly justified will be flagged as concerning or incorrect.
 
 ## Reference Information
 
-- Reference **papers**:
-  - The whitepaper about the dataset, "Allen Brain Observatory: Visual Behavior 2P Technical Whitepaper", is in the file `/app/whitepaper.pdf`.
-  - A paper using this dataset, "Behavioral strategy shapes activation of the Vip-Sst disinhibitory circuit in visual cortex", is in the file `/app/paper.pdf`.
+- The reference **paper** "A flexible hippocampal population code for experience relative to reward" is in the file `/app/paper.pdf`.
 - Some parts of the paper that describe the experiment and processing have been copied to the file `/app/methods.txt`. 
-- **Code**:
-  - The Allen data **SDK** is in the directory `/app/code`.
-  - Tutorials about using the data are in the directory `/app/tutorials`.
+- **Code** from the paper are in the directory `/app/code`.
 - **Data** from the paper are in the directory `/app/data`.
-- **Documentation** on using this dataset is at https://allensdk.readthedocs.io/en/latest/visual_behavior_optical_physiology.html
+- **Documentation** on **NWB** file format is at https://nwb-schema.readthedocs.io/en/latest/. Documentation about `pynwb` is at https://pynwb.readthedocs.io/en/stable/. `pynwb` documentation is also downloaded to `/app/pynwb_docs/`.
 
 ## Decoder Task
 
-- Collect and convert data under the "Visual Behavior" task.
-- Temporally align based on ophys timestamp.
-- Segment each recording session into individual trials based on how they are defined in the experiment. Include both the "Go" and "Catch" trials, but exclude the "Aborted" and "Auto-rewarded" trials.
+Temporally align based on start of the trial. 
 
 ### Decoder Inputs:
-
-No inputs for this task.
+- Time from start of trial in seconds (continuous, time-varying)
+- Environment type (binary, ENV1 vs ENV2, per trial)
+- Trial number (continuous, per trial)
+- Previous trial outcome (binary, omitted = 0, rewarded = 1, per trial)
 
 ### Decoder Outputs
-
-- Image identity (of the image presented during the non-grey screen), categorical variable. Time-varying.
-- Image change, binary variable. Have value of 1 right after a change in image identity, otherwise 0. Time-varying.
-- Running speed, discretized into five equal percentile bins. Time-varying.
-- Pupil diameter, discretized into five equal percentile bins.  Time-varying.
-- Trial outcome. Static per-trial.
+- Distance to any location in the reward zone, time-varying. Discretization bins:
+  - 0:  < -50 cm
+  - 1: -50 to -10 cm
+  - 2: -10 cm to < 0 cm
+  - 3: 0 cm
+  - 4: >0 cm to +10 cm
+  - 5: +10 to +50 cm
+  - 6: > +50 cm
+- Absolute position in corridor, time-varying. Discretized into 5 equal-sized bins spanning the 450 cm track:
+  - 0: < 90 cm
+  - 1: 90 to 180 cm
+  - 2: 180 to 270 cm
+  - 3: 270 to 360 cm
+  - 4: > 360 cm
+- Speed, time-varying. Discretized into bins:
+  - 0: < 2 cm/s
+  - 1: 2-10 cm/s
+  - 2: 10-20 cm/s
+  - 3: 20-40 cm/s
+  - 4: > 40 cm/s
+- Lick, time-varying. 0 = no, 1 = yes
+- Reward zone location, per-trial. 0 = A, 1 = B, 2 = C
+- Reward outcome, per-trial. 0 = no, 1 = yes
 
 ## Target Data Format
 
@@ -184,21 +198,21 @@ These functions will be used during the validation phase to ensure:
 
 ### Consistency requirements
 
-Your processing and formatting must **match the reference papers and code** with respect to:
+Your processing and formatting must **match the reference paper and code** with respect to:
 - Loading of data
 - Temporal alignment of different time series streams (neural, inputs, outputs)
 - Processing of neural, input, and output data streams
 - Curation of data: filtering of low-quality neurons, trials, sessions, and mice.
 
-To check consistency, you must compare statistics available in the reference papers and your converted dataset. 
+To check consistency, you must compare statistics available in the reference paper and your converted dataset. 
 
-Whenever possible, invent **SANITY CHECKS** that your loading and processing matches the reference papers and code. 
+Whenever possible, invent **SANITY CHECKS** that your loading and processing matches the reference paper and code. 
 
 Discrepancies are only allowed if required by the Decoder Input and Decoder Output specifications above, or the task of training a neural decoder.
 
 Carefully verify your work after every step. When you find mistakes, document and fix them immediately. Be critical of results **after every step of processing**. 
 
-You will be assessed on whether the decisions you make on how to load, filter, process, align, reformat, and save the data are reasonable and match the reference papers and code and these instructions. During testing, the reference version of `/app/train_decoder.py` will be run on your converted data. Data statistics and decoder accuracy will be compared to those achieved by human-written conversion code. 
+You will be assessed on whether the decisions you make on how to load, filter, process, align, reformat, and save the data are reasonable and match the reference paper and code and these instructions. During testing, the reference version of `/app/train_decoder.py` will be run on your converted data. Data statistics and decoder accuracy will be compared to those achieved by human-written conversion code. 
 
 ---
 
@@ -236,7 +250,7 @@ You will be assessed on whether the decisions you make on how to load, filter, p
 
 **Actions**:
 - Look for documentation or README files in the `/app/code` directory
-- Read the provided reference code bases to see how the reference papers loaded and manipulated the data
+- Read the provided reference code bases to see how the reference paper loaded and manipulated the data
 - Understand which functions are being called to read, curate, process, and manipulate the data
 - For neural imaging data, does delta F over F need to be computed? 
 - For electrophysiology neural data, do cells need to be filtered based on quality? 
@@ -270,7 +284,7 @@ You will be assessed on whether the decisions you make on how to load, filter, p
 
 ### Step 3: Reference Text Reading
 
-**Goal**: Extract key information from the papers and methods.
+**Goal**: Extract key information from the paper and methods.
 
 **Actions**:
 - Scan the reference papers and methods.txt for important details about the data
@@ -281,7 +295,7 @@ You will be assessed on whether the decisions you make on how to load, filter, p
   - Variables important to experiments
   - Temporal alignment
   - Temporal binning
-- Read the reference papers to find information about expected decoder accuracy.
+- Read the reference paper to find information about expected decoder accuracy.
 
 **Done when**: You have documented expected dataset statistics and processing details in CONVERSION_NOTES.md under "Step 3".
 
@@ -355,6 +369,7 @@ You will be assessed on whether the decisions you make on how to load, filter, p
   - `--sample`: Process only 2 sessions for testing
   - `--show-processing`: Plot visualizations of EVERY processing step for up to 2 sessions. Save plots as `processing_<session_id>.png`.
 - Reuse code from reference code bases where appropriate
+- Use `pynwb` to interface with the data. Do not directly load and parse the `hdf5` files. 
 - Write efficient code:
   - Vectorize loops
   - Avoid unnecessary file I/O
@@ -475,7 +490,7 @@ Read through `/app/verification_full_out.txt` to find and fix **all errors**. Ad
 - Explain your reasoning for any differences in `/app/CONVERSION_NOTES.md`.
 
 **Check 4: Key statistics comparison**
-- Verify that key statistics (number of animals, sessions, trials, neurons, input and output ranges, output distributions) match information available in the reference papers. 
+- Verify that key statistics (number of animals, sessions, trials, neurons, input and output ranges, output distributions) match information available in the reference paper. 
 - Write code to investigate any discrepancies. 
 - Fix any discovered issues. 
 - Document your comparisons in `/app/CONVERSION_NOTES.md`. 
@@ -506,7 +521,7 @@ Write a report to CONVERSION_NOTES.md describing **every** check you did, to hel
 1. Run `python -u /app/train_decoder.py /app/converted_data.pkl --plot-samples 2>&1 | tee /app/train_decoder_full_out.txt`. If the GPU does not have sufficient RAM for the network training, use the flag `--cpu` to specify to use the CPU to train. 
 2. **Wait for complete execution** — this may take significant time for large datasets
 3. **Check training**: Verify loss decreases over epochs
-4. **Check accuracy**: High accuracy is an indicator that data conversion has been done correctly. Accuracy near chance is a sign that there might be issues in temporal alignment of signals, choice of data streams, or filtering or processing of data. Compare accuracy to expectations based on the papers. 
+4. **Check accuracy**: High accuracy is an indicator that data conversion has been done correctly. Accuracy near chance is a sign that there might be issues in temporal alignment of signals, choice of data streams, or filtering or processing of data. Compare accuracy to expectations based on the paper. 
 
 **Done when**: 
 1. Full decoder training completes (the script finishes running)
@@ -523,9 +538,9 @@ Write a report to CONVERSION_NOTES.md describing **every** check you did, to hel
 - Accuracy below chance indicates a bug, investigate and fix conversion issues to improve this. 
 - Accuracy below 1.5x chance may also indicate a bug, investigate whether changes in conversion logic could improve accuracy. 
 
-**Check 2: Accuracy comparison to papers**
-- Find every decoding accuracy reported in the reference papers
-- Create a table comparing your accuracy to the papers' accuracy for each variable
+**Check 2: Accuracy comparison to paper**
+- Find every decoding accuracy reported in the reference paper
+- Create a table comparing your accuracy to the paper's accuracy for each variable
 - If your accuracy is lower than the reported accuracy, this may indicate a bug in your conversion that you must fix. 
 - Differences in algorithm/architecture should be relatively small because of the data dimensionality and size. Do not use this as an excuse to dismiss differences, investigate them completely before moving on. 
 
@@ -537,7 +552,7 @@ Write a report to CONVERSION_NOTES.md describing **every** check you did, to hel
 2. Check temporal alignment — plot neural + output for a single trial to verify they're synchronized
 3. Check whether the output has enough variation (not 99% one class)
 4. Check that filtering steps for neural activity streams are followed. 
-5. Check that processing of the data matches the reference code and papers. 
+5. Check that processing of the data matches the reference code and paper. 
 
 **Iteration protocol**: If ANY check above reveals an issue:
 1. Fix the issue in convert_data.py
@@ -627,7 +642,7 @@ Directory contents:
 ## Step 3: Reference Text Reading
 **Status**: [NOT STARTED | IN PROGRESS | COMPLETE]
 
-### Expected Statistics (from papers/methods)
+### Expected Statistics (from paper/methods)
 | Statistic | Value | Source Quote |
 |-----------|-------|--------------|
 | Neurons (total) | | | 
@@ -665,7 +680,7 @@ Directory contents:
 **Status**: [NOT STARTED | IN PROGRESS | COMPLETE]
 
 ### Discrepancies Found
-| Topic | Code says | Data shows | Papers say | Resolution |
+| Topic | Code says | Data shows | Paper says | Resolution |
 |-------|-----------|------------|------------|------------|
 | | | | | |
 
@@ -757,7 +772,7 @@ Code speedups added:
 - `verification_full_out.txt`: created
 
 ### Consistency Check
-| Statistic | Reference Papers | Reference Code | Reference Data | Converted Data | Match? |
+| Statistic | Reference Paper | Reference Code | Reference Data | Converted Data | Match? |
 |-----------|-----------------|----------------|----------------|----------------|--------|
 | Total neurons | | | | | |
 | Mean neurons/session | | | | | |
@@ -803,7 +818,7 @@ Code speedups added:
 
 ### Accuracy Analysis
 
-| Variable | Achieved Accuracy | Expectation from Papers |
+| Variable | Achieved Accuracy | Expectation from Paper |
 | | |
 
 [Analysis of any low accuracies]
@@ -841,13 +856,14 @@ Code speedups added:
 ## Success Criteria
 
 A successful conversion should:
-1. Match the target data structure exactly
-2. Preserve all relevant information from the source
-3. Have consistent dimensions across trials/sessions
-4. Match information provided in the reference texts
-5. Include complete and accurate metadata
-6. Be reproducible with documented code
-7. All required files must be created:
+1. Use `pynwb` to load data files.
+2. Match the target data structure exactly
+3. Preserve all relevant information from the source
+4. Have consistent dimensions across trials/sessions
+5. Match information provided in the reference texts
+6. Include complete and accurate metadata
+7. Be reproducible with documented code
+8. All required files must be created:
   - `/app/CONVERSION_NOTES.md`
   - `/app/convert_data.py`
   - `/app/converted_data.pkl`
@@ -859,14 +875,14 @@ A successful conversion should:
   - `/app/train_decoder_sample_out.txt`
   - `/app/conversion_full_out.txt`
   - `/app/verification_full_out.txt`
-8. **Pass all validation checks**:
+9. **Pass all validation checks**:
   - Data summary shows correct structure
   - Visual inspection reveals no artifacts
   - Dataset size and distribution statistics match reference texts
   - Decoder achieves good accuracy
   - Any validation failures are investigated and resolved
-9. Include comprehensive CONVERSION_NOTES.md documenting all decisions and validation results
-10. Outputs must match expert-written conversion code in:
+10. Include comprehensive CONVERSION_NOTES.md documenting all decisions and validation results
+11. Outputs must match expert-written conversion code in:
   - Dataset size and distribution statistics
   - Decoder accuracy
-11. Each decision about how to load, filter, process, align, and save the data will be compared with the decision made by an expert. Decisions do not need to match the expert's: a different decision that is equally well justified is acceptable, while poorly justified decisions will be flagged as concerning or incorrect. Your code must implement the decisions as you describe them.
+12. Each decision about how to load, filter, process, align, and save the data will be compared with the decision made by an expert. Decisions do not need to match the expert's: a different decision that is equally well justified is acceptable, while poorly justified decisions will be flagged as concerning or incorrect. Your code must implement the decisions as you describe them.

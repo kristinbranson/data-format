@@ -130,6 +130,29 @@ about 1.25h of agent plus verifier with mouseland at 6h, and the two judges add 
 hour on top. Each job rebuilds its image from scratch, because `PODMAN_PRIVATE_STORAGE`
 gives it an empty store, so a few minutes of every job is the build.
 
+**Rerun the codex judge where the provider refused.** On `hb_map_codex_t1` the codex judge
+read the task, both implementations and the reference decisions, then the turn failed with
+
+    {"type":"error","message":"Selected model is at capacity. Please try a different model."}
+
+so no `llm_judge_eval.json` was written. That is gpt-5.6-sol being unavailable for a moment,
+not the agent's doing and not reproducible, and it is the case `write_reward_file.py` was
+built for: `process` becomes the mean over the judge that did answer rather than counting the
+failure as zero. The trial still records which judge was meant to run, because
+`compute_reward.py` writes the model and harness before its early return.
+
+It still costs a judge. Those trials' `process` scores rest on one rater where every other
+trial has two, so they should be re-judged before the scores are pooled.
+
+Find them by `llm_judge_<name>_error` being non-empty in `metrics.json`;
+`harbor-scripts/sweep_status.py` flags them as a problem on the page, in red. Fix them with
+
+    harbor-scripts/submit_rerun_verifier.sh --queue gpu_t4 --judges-only <trial dir>
+
+which re-runs only the judges and takes the pytest outcome from the reward file already in
+place, so no decoder is retrained. Do it once when the sweeps finish rather than per trial:
+the failure is transient, so more of them are likely, and one pass catches the lot.
+
 **Effort is an unrecorded variable.** Claude Code runs at whatever its default is: the
 invocation is `claude --verbose --output-format=stream-json --permission-mode=bypassPermissions
 --print`, with no effort flag, and its own init event reports `model` and `fast_mode_state`
