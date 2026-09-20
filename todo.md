@@ -1,24 +1,8 @@
 # What is left to do
 
-State as of 2026-09-19. Everything in `harbor-tasks/changes_since_preprint.md` is committed
-through `583fe2a`; the preprint's version is tagged `v2`.
-
-**All eight tasks have reference statistics on the full data**, mouseland included, and all 54
-graded output variables carry a 20-replicate mean and standard deviation. What is left is
-rerunning agents, not computing references.
-
-**The 48-job sweep on the newest agents is done** -- every task's maximal prompt on claude-code
-2.1.278 with `claude-opus-5` and codex 0.155.1 with `gpt-5.6-sol`. Read its results from
-`sweep_status.html`, which `harbor-scripts/sweep_status.py` renders from each trial's own
-`result.json`; do not grep the LSF logs, which are appended across reused job names so the
-first match may be from an earlier sweep.
-
-**harbor 0.23.0 is available and is now the default.** `run_harbor.sh --harbor` selects it or
-0.1.45; see section 2.
-
 ---
 
-## 1. Rerun the agents on four tasks
+## 1. Rerun the old agents on four tasks
 
 `map`, `hasnain2024`, `majnik2025` and `sosa2024`, **every variant** -- maximal, `_minimal`
 and, where one exists, `_datalimit`. Their existing trials were run against a prompt that
@@ -30,81 +14,15 @@ The other four need no rerun. `lee2025`, `zhang2025`, `mouseland` and `allen2p` 
 only in typos and wording -- "positon", an unclosed backtick, "circle1, leaf2" for
 "circle, leaf" -- none of which alters what the agent is asked to produce.
 
-Two different reasons, and the difference matters for what the reruns can be compared to:
-
-**The prompt was wrong, the reference solution was not.** `map`'s prompt listed 2 choice
-classes and 3 tongue-position classes where the reference produces 3 and 4;
-`hasnain2024`'s said "two bins" for four output variables that the reference gives three.
-Agents that followed the prompt were marked down for it. A terminal-bench-science agent
-on map scored 0.45 and then 1.00 on a rerun after only the class lists were corrected --
-the whole gap was the prompt. These reruns are comparable to the old ones: the task is
-unchanged and the instructions merely stopped misdescribing it.
-
-**The prompt and the reference solution changed together.** `majnik2025` now states
-60-second trials, motion-energy percentiles per session rather than pooled, and time from
-session start in seconds (section 3.3); `sosa2024` now lists 5 position bins spanning the
-450 cm track (section 3.1). The task itself is different, so the old trials are not a
-baseline for the new ones -- they answer a different question, and a rerun measures the
-new task rather than a correction to the old.
-
-Sections 4.4 and 3 of `changes_since_preprint.md` have the wording before and after.
-
-**Partly covered by the 2026-09-19 sweep, which is done.** It ran the maximal prompt of all
-eight tasks, so the maximal variant of these four is collected. What remains is their
-`_minimal` variants, and `_datalimit` for `map` and `sosa2024`:
-
-    --tasks map_minimal map_datalimit hasnain2024_minimal majnik2025_minimal \
-            sosa2024_minimal sosa2024_datalimit
-
-**But decide first what they are compared against.** Those reruns would use the 2026-09-19
-pins, so a trial differing from its predecessor differs in two ways at once -- the prompt
-and the agent -- and neither can be credited. Reading a prompt fix as a prompt fix needs the
-old pins, which `VERSIONS_FILE=harbor-scripts/config_20260728.json` still provides. Running
-both is the only way to have it both ways, at twice the cost.
-
-## 2. Run the maximal prompt on the newest agents
-
-Every task's maximal prompt, on the newest harnesses and models. The pinned versions date
-from 2026-07-28 and are two model generations behind. Two steps, because the CLI arms and
-the terminus arms are blocked on different things.
-
-### Step 1: claude-code and codex -- done
-
-Ran 2026-09-19 on the pins in `harbor-scripts/config_20260919.json`: claude-code 2.1.278 with
-`claude-opus-5`, codex 0.155.1 with `gpt-5.6-sol`. Both arms build, run and judge; results are
-in `sweep_status.html`. `apply_versions.py` generates each task's `environment/Dockerfile` and
-`tests/versions.json` from that config -- edit the config, never the generated files.
-
-`submit_harbor_cluster.py` takes its default arms from the config's `tools` keys, which names
-four, so a bare sweep would also submit the two terminus arms. Pass `--agents claude codex`
-until the terminus sweep is wanted, or give the config a way to mark an arm not-yet-runnable.
-
-**Effort is still unrecorded.** Claude Code runs at whatever its default is -- nothing passes
-`max_thinking_tokens`, `MAX_THINKING_TOKENS` is unset, and `config_*.json` has no effort field
--- so no trial records what effort produced it. Plumbing it through belongs to a NEW dated
-config, since changing effort partway makes trials incomparable.
-
-### Step 2: terminus -- harbor upgraded, sweep not yet run
+## 2. Run the maximal prompt on new terminus agents
 
 terminus-2 is harbor's own code, so its version is the harbor version and there is nothing to
 pin per task. Moving from 0.1.45 to 0.23.0 changes it by +633/-287 across four files
 (`terminus_2.py` 1939 -> 2101 lines). The fork never touched those files, so what ran before
 was plain upstream terminus of 2026-03-05.
 
-**Upstream added podman, so the fork is nearly retirable.** v0.23.0 has
-`PodmanEnvironment` selected by `-e podman`, with dialect differences on a `ContainerRuntime`
-object rather than `if use_podman:` branches. `codepacks/harbor-rebase`, branch
-`podman-v0.23.0`, is upstream v0.23.0 plus six commits carrying what upstream lacks: a
-detection fix, the codex trajectory step numbering, `--use-podman` on `admin upload-images`
-and `cache clean`, `shm_mb`, GPU device and pool support, and the `hpc/` scripts. Everything
-else the fork carried is now upstream's own. `codepacks/harbor-kai` is untouched at `fd10a3a`
-and remains the 0.1.45 fallback.
-
-Validated 2026-09-19: a `majnik2025_minimal` terminus-opus trial on 0.23.0 scored 0.9973 with
-both judges and the decoder on the GPU.
-
-**What remains: run the terminus sweep.** `--agents terminus-gpt terminus-opus`, eight tasks,
-three trials. Not started.
+**The terminus sweep is running**, submitted 2026-09-19: the eight maximal tasks on
+`terminus-gpt` and `terminus-opus`, three trials each.
 
 Open, none blocking:
 
@@ -116,12 +34,6 @@ Open, none blocking:
 - **`reverify` or `regrade`?** The fork's `harbor trials reverify` was not carried; upstream's
   `trials regrade` differs in that it never modifies the source trial. Nothing here calls
   either -- `rerun_verifier.sh` runs its container directly.
-- **The terminus arms cannot record their version.** A CLI arm's `metrics.json` carries
-  `llm_judge_*_harness_version`; terminus has no CLI, so nothing in a trial says which harbor
-  produced it. Once trials from two harbors coexist in one collection that becomes
-  unanswerable after the fact. Writing the harbor version into `metrics.json` would fix it.
-- **`submit_harbor_cluster.py` has no `--harbor` passthrough**, so a sweep cannot pin the
-  harbor or record which it used.
 - **Upstream's upload path ignores `supports_compose_cp`** where the download path honours it,
   so every upload under podman-compose makes one doomed `cp` call before falling back to a tar
   stream. Harmless, noisy in logs, a candidate for the same PR.
@@ -142,23 +54,6 @@ older pair.
 
 Nothing further is needed to make it happen; `apply_versions.py` rewrites all 48 generated
 files.
-
-**Which judge graded a trial is now recorded, as of 2026-09-19.** `tests/test.sh` reads
-`harness_version` from `/tests/versions.json` the way it already read `model`, and passes
-both to `compute_reward.py`, which writes `llm_judge_<name>_model` and
-`llm_judge_<name>_harness_version` into `metrics.json`. They are written before the
-early return on an unreadable eval, so a judge that failed still records what was meant to
-run, and they are `null` on a trial graded by a `test.sh` predating the flags.
-
-It had to happen before this sweep, because a trial that did not record its judge cannot be
-fixed afterwards: nothing else in a trial carries it. The Claude CLI happens to name its
-model in its own transcript; the Codex CLI does not, so for half the judges it was
-unrecoverable.
-
-What is recorded is the pinned version rather than a runtime `--version` probe. The
-Dockerfile installs exactly that pin -- `apply_versions.py` writes both files from one
-config -- so the pin describes what graded the trial, and a probe would add failure modes to
-the grading path for no extra truth.
 
 **What a rerun measures.** Harness, model, judges and -- for the four tasks in section 1 --
 the prompt all move at once, so it answers "how do current agents do on the current
@@ -191,8 +86,7 @@ documents at its own reset path.
 timeout covers the build. On expiry harbor cancels the await but does not kill the
 process, leaving `podman build` running: `cleanup_podman_job` removes containers and the
 pause process, and a build is neither, so it survives and LSF holds the job in RUN until
-someone kills it. Raising the timeout to 1800 s makes the overrun unlikely rather than
-impossible. The cleanup could also kill processes whose root or cwd is under
+someone kills it. The timeout is now 1800 s, which makes the overrun unlikely rather than impossible. The cleanup could also kill processes whose root or cwd is under
 `$PODMAN_JOB_DIR` before removing it -- scoped to the job's own directory, so a sibling
 is never touched, and by pid rather than by name.
 
@@ -204,26 +98,43 @@ corruption risk, and nothing for a timeout to interrupt.
 
 ## 4. Python embedded in shell scripts
 
-`harbor-scripts/` holds 33 standalone Python helpers and one shell script that embeds
-Python in a heredoc instead: `merge_rerun_verifier.sh` (14 lines). It would read better as
-a script beside the others, invoked the way `check_data_mounts.py` is.
+`merge_rerun_verifier.sh` embeds 14 lines of Python in a heredoc; every other helper in
+`harbor-scripts/` is a script of its own. It is the last one: `rerun_verifier.sh`'s
+`--reuse-accuracy` check became `check_reuse_accuracy.py`.
 
-`rerun_verifier.sh`'s 33-line `--reuse-accuracy` check is now
-`harbor-scripts/check_reuse_accuracy.py`, whose five exit paths -- reused, trained anyway,
-per-variable disagreement, no accuracy recorded, unreadable file -- can be exercised
-without a container.
+A heredoc cannot be unit tested, is opaque to `ruff` and an editor, survives `bash -n` while
+broken, and names `File "<stdin>", line 12` in a traceback, which locates nothing in a
+cluster log.
 
-What the heredoc form costs:
+## 5. Finish the `_api` variant
 
-- A traceback names `File "<stdin>", line 12`, which does not locate anything in a
-  cluster log.
-- It cannot be unit tested. `test_write_reward_file.py` is the precedent for testing a
-  helper directly.
-- Editors and linters see an opaque string: no highlighting, no `ruff`.
-- `bash -n` passes a file whose embedded Python is broken, since it only checks the
-  shell around it.
+`sosa2024_api` has run: six trials, every one scoring 1.00 on `outcome_all` where plain
+`sosa2024` managed 0.67 and 0.00. They are deliberately **not collected**, so that the whole
+`_api` set is collected in one pass. `allen2p_api`, `map_api` and `zhang2025_api` exist but
+are still being written.
 
-## 5. Decisions waiting
+Submitting them is `--api --agents claude codex`. The arms are not optional: the submitter
+takes its default arms from the config's `tools` keys, which names four, so omitting them
+turns 24 jobs into 48 and sends terminus work that cannot run yet.
+
+Two of the three places that need to know about `_api` are done -- `submit_harbor_cluster.py`
+has the scope, and `trial_metrics.py` strips the suffix so a trial reads as dataset
+`sosa2024` in condition `api` rather than as a ninth dataset. What is left is
+`evaluation/eval/utils.py`:
+
+- **`PROMPT_LABEL` has no `api` entry, and that is a crash rather than a gap.**
+  `lesion_analysis.py` indexes it directly at lines 718 and 1235, so the first api arm added
+  to `ARM_COLUMNS` raises `KeyError`. Nothing reaches it today only because no api arm is
+  listed there yet.
+- `ARM_COLUMNS` and `AGENT_KEYS` need api arms once there are results to name them from, and
+  the label has to say what the condition IS -- that the agent was required to read the files
+  through the format's own library -- which no reader infers from "api".
+
+A naming wart to settle at the same time: the field is called `prompt` but now carries
+`datalimit` and `api`, neither of which is a property of the prompt. It reads as the
+condition. Renaming touches every consumer.
+
+## 6. Decisions waiting
 
 - **Push the fork commits?** Each `~/tb-science-*` clone now has three unpushed commits on
   `neurodata-reuse-<name>`, and those branches have open pull requests. The third carries the
@@ -245,7 +156,7 @@ What the heredoc form costs:
   not fire, but a check would fail at the point of the mistake. It would have to go into the
   terminal-bench-science copy too, to keep that one file shared.
 
-## 6. Known gaps, not yet scheduled
+## 7. Known gaps, not yet scheduled
 
 - **The forks are behind on grading code.** `check_forks_match.py --worktree` reports
   `tests/test_outputs.py`, `write_reward_file.py` and `train_decoder.py` as differing: the
