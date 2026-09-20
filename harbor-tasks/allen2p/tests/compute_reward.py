@@ -58,6 +58,10 @@ def main():
     parser.add_argument("--judge-harness", default=None,
                         help="Judge CLI version, as pinned in tests/versions.json. Recorded "
                              "in metrics.json; omitted means it was not supplied.")
+    parser.add_argument("--harbor-version", default=None,
+                        help="The harbor that ran the trial, from tests/versions.json. For the "
+                             "terminus arms this is the agent version, since terminus-2 is "
+                             "harbor's own code and has no CLI to pin.")
     args = parser.parse_args()
 
     # Load existing metrics.json (written by pytest)
@@ -82,6 +86,9 @@ def main():
     # predating these flags reads.
     metrics[f"llm_judge_{args.model_name}_model"] = args.judge_model
     metrics[f"llm_judge_{args.model_name}_harness_version"] = args.judge_harness
+    # Not per judge: one fact about the run. Both judge invocations write the same value.
+    if args.harbor_version:
+        metrics["harbor_version"] = args.harbor_version
 
     # Read LLM judge evaluation
     try:

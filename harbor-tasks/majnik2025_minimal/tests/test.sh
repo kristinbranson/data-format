@@ -126,6 +126,13 @@ CLAUDE_JUDGE_HARNESS=$(read_judge_harness claude)
 CODEX_JUDGE_HARNESS=$(read_judge_harness codex)
 echo "judge harnesses: claude=$CLAUDE_JUDGE_HARNESS codex=$CODEX_JUDGE_HARNESS"
 
+# The harbor that ran this trial. Recorded because for the terminus arms it is the agent
+# version -- terminus-2 is harbor's own code and has no CLI to pin -- so without it a
+# terminus trial says nothing about what produced it. Empty for a task whose versions.json
+# predates the field.
+HARBOR_VERSION=$(jq -r '.harbor_version // ""' "$JUDGE_VERSIONS" 2>/dev/null || echo "")
+echo "harbor: ${HARBOR_VERSION:-<unrecorded>}"
+
 if [ "$RUN_LLM_JUDGE" = "true" ]; then
   echo "=== [5/6] Claude judge ==="
   CLAUDE_DIR="$JUDGE_DIR/claude"
@@ -185,6 +192,7 @@ EOF
     --model-name claude \
     --judge-model "$CLAUDE_JUDGE_MODEL" \
     --judge-harness "$CLAUDE_JUDGE_HARNESS" \
+    --harbor-version "$HARBOR_VERSION" \
     --metrics-json /logs/verifier/metrics.json 2>&1 || true
 
   python3 /tests/compute_reward.py \
@@ -192,6 +200,7 @@ EOF
     --model-name codex \
     --judge-model "$CODEX_JUDGE_MODEL" \
     --judge-harness "$CODEX_JUDGE_HARNESS" \
+    --harbor-version "$HARBOR_VERSION" \
     --metrics-json /logs/verifier/metrics.json 2>&1 || true
 fi
 

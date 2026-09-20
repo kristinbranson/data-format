@@ -12,13 +12,14 @@ JOBS_ROOT=""
 # Which conda env supplies harbor. Overridable so an alternate harbor checkout can
 # be tested without touching the default -- the cluster has its own conda root and
 # only has this env, so changing the default here breaks every LSF job.
-# Which harbor to run. The two are not interchangeable at the command line, so this
-# choice decides several flags below rather than just an environment name: 0.1.45 has
+# Which harbor to run, taken from the versions config unless --harbor overrides it. The two
+# are not interchangeable at the command line, so this decides several flags below rather
+# than just an environment name: 0.1.45 has
 # neither --yes nor --include-task-name and no podman environment type, and 0.23.0
 # discards an unrecognised --ek without complaint, so a flag meant for the other one
 # fails silently rather than loudly. terminus-2 is harbor's own code, so this also
 # chooses the terminus the terminus arms run.
-HARBOR_VERSION="0.23.0"
+HARBOR_VERSION=""
 # Set by the version gate below unless --conda-env overrides it.
 CONDA_ENV=""
 # Pinned harness/model versions. Dated configs; newest wins unless --versions
@@ -59,6 +60,32 @@ done
 JOBS_ROOT="${JOBS_ROOT:-$HOME/harbor-tasks/data-format/jobs}"
 JOBS_DIR="$JOBS_ROOT/raw"
 REORG_BASE="$JOBS_ROOT"
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Resolve the versions config: explicit --versions, else the newest dated one.
+# Defaulting to newest keeps existing callers working, but the file used is
+# echoed so a run log always records which pins were in force.
+if [ -z "$VERSIONS_FILE" ]; then
+  VERSIONS_FILE=$(ls -1 "$SCRIPT_DIR"/config_*.json 2>/dev/null | sort | tail -1)
+fi
+if [ ! -f "$VERSIONS_FILE" ]; then
+  echo "ERROR: no versions config found (looked for $SCRIPT_DIR/config_*.json)."
+  echo "       Pass one with --versions FILE."
+  exit 1
+fi
+echo "versions: $VERSIONS_FILE"
+
+# The harbor version comes from the config, so a run records it the way it records the
+# harness pins, and a config and a harbor cannot drift apart. --harbor overrides it for a
+# one-off. A config written before the field existed predates 0.23.0, so it means 0.1.45.
+if [ -z "$HARBOR_VERSION" ]; then
+  HARBOR_VERSION=$(jq -r '.harbor_version // empty' "$VERSIONS_FILE")
+  if [ -z "$HARBOR_VERSION" ]; then
+    HARBOR_VERSION="0.1.45"
+    echo "harbor: $(basename "$VERSIONS_FILE") names no harbor_version, so reading it as 0.1.45"
+  fi
+fi
 
 # One place decides everything that differs between the two harbors.
 case "$HARBOR_VERSION" in
@@ -127,7 +154,6 @@ if [ "$USE_PODMAN" = true ]; then
   PODMAN_FLAG="$PODMAN_OPT"
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HARBOR_TASKS="$(cd "$SCRIPT_DIR/../harbor-tasks" && pwd)"
 
 # Name the GPU the job was actually given, for both harbors.
@@ -200,19 +226,6 @@ if ! python3 "$SCRIPT_DIR/check_data_mounts.py" $TASK; then
   echo "ERROR: data mounts are not usable -- refusing to start."
   exit 1
 fi
-
-# Resolve the versions config: explicit --versions, else the newest dated one.
-# Defaulting to newest keeps existing callers working, but the file used is
-# echoed so a run log always records which pins were in force.
-if [ -z "$VERSIONS_FILE" ]; then
-  VERSIONS_FILE=$(ls -1 "$SCRIPT_DIR"/config_*.json 2>/dev/null | sort | tail -1)
-fi
-if [ ! -f "$VERSIONS_FILE" ]; then
-  echo "ERROR: no versions config found (looked for $SCRIPT_DIR/config_*.json)."
-  echo "       Pass one with --versions FILE."
-  exit 1
-fi
-echo "versions: $VERSIONS_FILE"
 
 # Keep the generated files in step with the config automatically -- the task
 # Dockerfiles and tests/versions.json cannot read it at runtime, so a bumped

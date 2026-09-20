@@ -25,7 +25,9 @@ explicitly (--tasks debug) to run it.
 
 import argparse
 import json
+import re
 import os
+import json
 import shlex
 import shutil
 import signal
@@ -105,6 +107,41 @@ WALL = "29:00"
 # Must resolve identically on the workstation and on compute nodes, so /groups
 # rather than $HOME (workstation /home/<user>@hhmi.org vs cluster
 # /groups/branson/home/<user>).
+# Which harbor a run uses, and so which conda env, comes from the versions config rather
+# than from here; run_harbor.sh reads the same field. Kept in step with its gate.
+HARBOR_CONDA_ENVS = {
+    "0.23.0": "eval-data-format-podman-023",
+    "0.1.45": "eval-data-format-podman",
+}
+DEFAULT_HARBOR_VERSION = "0.1.45"  # a config predating the field predates 0.23.0
+
+
+def harbor_version_from_config(versions: Path | None) -> str:
+    """Return the harbor version a run with this config would use.
+
+    Args:
+        versions: explicit config path, or None to take the newest dated one.
+
+    Returns:
+        The config's harbor_version, or DEFAULT_HARBOR_VERSION when it names none.
+    """
+    if versions is None:
+        found = sorted((REPO_ROOT / "harbor-scripts").glob("config_*.json"))
+        if not found:
+            return DEFAULT_HARBOR_VERSION
+        versions = found[-1]
+    try:
+        return json.loads(Path(versions).read_text()).get(
+            "harbor_version", DEFAULT_HARBOR_VERSION)
+    except Exception:
+        return DEFAULT_HARBOR_VERSION
+
+
+def conda_env_for_harbor(harbor_version: str) -> str:
+    """Return the conda env that carries a given harbor, or the 0.1.45 env if unknown."""
+    return HARBOR_CONDA_ENVS.get(harbor_version, HARBOR_CONDA_ENVS[DEFAULT_HARBOR_VERSION])
+
+
 CLUSTER_LOG_DIR = Path("/groups/branson/home/bransonk/cluster_logs/harbor")
 CLUSTER_JOBS_DIR = Path("/groups/branson/home/bransonk/harbor-cluster-jobs")
 
@@ -316,9 +353,19 @@ def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
         detail = ""
         if ok:
             # the host side of the bind mount must exist, or the container starts empty
-            mounts = [ln.strip()[2:].split(":")[0].strip()
-                      for ln in compose.read_text().splitlines()
-                      if ln.strip().startswith("- ") and ":/app/" in ln]
+            # Split on the container side, not the first colon: the host side is
+            # "${DATA_ROOT:?message}/<dataset>", whose :? default carries a colon of its
+            # own, so splitting on the first one yields the literal "${DATA_ROOT and every
+            # task reports a mount that does not exist. Expand DATA_ROOT the way
+            # run_harbor.sh does, from the repository root, so the path checked is the one
+            # a run would bind.
+            data_root = str(REPO_ROOT / "data")
+            mounts = [
+                re.sub(r"\$\{DATA_ROOT[^}]*\}", data_root,
+                       ln.strip()[2:].strip('"').rsplit(":/app/", 1)[0])
+                for ln in compose.read_text().splitlines()
+                if ln.strip().startswith("- ") and ":/app/" in ln
+            ]
             # Existence here proves nothing about a compute node: only /groups,
             # /nrs and /misc are mounted on both. /nearline in particular is
             # visible from the workstation but NOT from compute nodes, so a
@@ -341,8 +388,12 @@ def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
     elif shutil.which("ssh") is None:
         report(False, "neither bsub nor ssh available")
     else:
+        # Check the env the run will actually use, not a fixed name: run_harbor.sh picks it
+        # from the config's harbor_version, so a hardcoded check would pass while the env the
+        # sweep needs was missing -- which is the one thing this check exists to catch.
+        env_name = conda_env_for_harbor(harbor_version_from_config(None))
         probe = ("command -v bsub >/dev/null && echo BSUB_OK; "
-                 "[ -x $HOME/miniforge3/envs/eval-data-format-podman/bin/harbor ] && echo ENV_OK; "
+                 f"[ -x $HOME/miniforge3/envs/{env_name}/bin/harbor ] && echo ENV_OK; "
                  "[ -d /groups/branson ] && echo GROUPS_OK; [ -d /nrs/branson ] && echo NRS_OK")
         try:
             out = subprocess.run(["ssh", "-o", "BatchMode=yes", "login1",
@@ -354,7 +405,7 @@ def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
             print(f"  [FAIL] ssh login1 failed: {e}")
             errs.append("ssh login1")
         report("BSUB_OK" in out, "bsub available on login1")
-        report("ENV_OK" in out, "conda env eval-data-format-podman on the cluster")
+        report("ENV_OK" in out, f"conda env {env_name} on the cluster")
         report("GROUPS_OK" in out, "/groups mounted on login1")
         report("NRS_OK" in out, "/nrs mounted on login1 (mouseland, zhang2025 data)")
 

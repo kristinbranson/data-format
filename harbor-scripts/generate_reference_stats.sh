@@ -31,9 +31,10 @@
 
 USE_PODMAN=false
 TASK=""
-# Which harbor to run, matching run_harbor.sh's --harbor. The two differ at the command
-# line, so this picks several flags below rather than only an environment.
-HARBOR_VERSION="0.23.0"
+# Which harbor to run, matching run_harbor.sh's --harbor. Taken from the newest versions
+# config below unless --harbor overrides it, so this script and run_harbor.sh cannot
+# disagree about which harbor a round of work used.
+HARBOR_VERSION=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --podman) USE_PODMAN=true; shift ;;
@@ -44,6 +45,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 JOBS_DIR="${JOBS_DIR:-$HOME/harbor-tasks/data-format/jobs/oracle}"
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -z "$HARBOR_VERSION" ]; then
+    CFG=$(ls -1 "$SCRIPT_DIR"/config_*.json 2>/dev/null | sort | tail -1)
+    [ -n "$CFG" ] && HARBOR_VERSION=$(jq -r '.harbor_version // empty' "$CFG")
+    if [ -z "$HARBOR_VERSION" ]; then
+        HARBOR_VERSION="0.1.45"
+        echo "harbor: no harbor_version in ${CFG:-any config}, reading it as 0.1.45"
+    fi
+fi
 
 # Kept in step with run_harbor.sh's gate; the comments there say why each flag differs.
 case "$HARBOR_VERSION" in

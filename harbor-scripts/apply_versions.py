@@ -112,8 +112,15 @@ def render_versions_json(cfg: dict, source_name: str) -> str:
             "construction, since they share /root/.local/bin in the trial container.",
             "run_llm_judge: false makes test.sh skip both judges; the reward is then the",
             "mean of outcome_all and outcome_mean_per_category.",
+            "harbor_version is the harbor that ran the trial, which for the terminus arms is",
+            "the agent version itself. null means a config predating the field, i.e. 0.1.45.",
         ],
         "run_llm_judge": run_llm_judge,
+        # For the terminus arms this IS the agent version: terminus-2 is harbor's own code
+        # with no CLI to pin, so nothing else in a trial says what ran it. Shipped so
+        # compute_reward.py can record it, because the container cannot see the host config.
+        # null means a source config written before the field existed, i.e. harbor 0.1.45.
+        "harbor_version": cfg.get("harbor_version"),
         "tools": judges,
     }
     return json.dumps(out, indent=2) + "\n"
