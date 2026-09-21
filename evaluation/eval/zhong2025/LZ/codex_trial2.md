@@ -140,9 +140,9 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **What this does:** Trials with zero retained running frames are skipped (`continue`). No other quality-control filters at the trial level; running-only frame filtering implicitly drops trials with no movement.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

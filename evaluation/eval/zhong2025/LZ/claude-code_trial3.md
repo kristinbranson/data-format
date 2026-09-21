@@ -150,7 +150,7 @@ if len(neural_trials) < 2:
 
 **Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

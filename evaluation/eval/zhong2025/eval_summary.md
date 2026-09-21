@@ -69,8 +69,8 @@
 | claude-code / trial1 | concerning | ok | match | match |
 | claude-code / trial2 | concerning | ok | match | match |
 | claude-code / trial3 | concerning | ok | concerning | incorrect |
-| codex / trial1 | ok | ok | concerning | concerning |
-| codex / trial2 | match | ok | match | match |
+| codex / trial1 | match | ok | concerning | concerning |
+| codex / trial2 | concerning | ok | match | match |
 | codex / trial3 | match | ok | match | match |
 
 **Overall comment:** _(no overall comment)_
