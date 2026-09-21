@@ -3,7 +3,7 @@
 
 Cluster results arrive one bsub job per trial:
 
-    harbor-cluster-jobs/hb_<task>_<arm>_t<N>/<task>/<agent>/<timestamp>_trial1/
+    harbor-cluster-jobs/<JOB_PREFIX>_<task>_<arm>_t<N>/<task>/<agent>/<timestamp>_trial1/
 
 so every trial is called trial1 and the trials of one arm are scattered across N
 job directories. This regroups them:
@@ -29,6 +29,13 @@ Usage:
     python collect_cluster_results.py --apply          # do it
     python collect_cluster_results.py --tasks sosa2024_minimal --apply
     python collect_cluster_results.py --include-failed --apply
+
+A second sweep run beside the default one (see JOB_PREFIX in submit_harbor_cluster.py)
+is collected with the same environment it was submitted with, so the job names match:
+
+    HARBOR_JOB_PREFIX=hb728v5 python collect_cluster_results.py \
+        --source /groups/branson/home/bransonk/harbor-cluster-jobs-config_20260728-prompt_v5 \
+        --versions harbor-scripts/config_20260728.json --prompt-version v5
 """
 
 from __future__ import annotations
@@ -43,16 +50,22 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SOURCE = Path("/groups/branson/home/bransonk/harbor-cluster-jobs")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from submit_harbor_cluster import CLUSTER_JOBS_DIR, JOB_PREFIX  # noqa: E402
+
+# Taken from the submit script, so a sweep submitted under HARBOR_JOB_PREFIX and
+# HARBOR_CLUSTER_JOBS_DIR is collected under the same two values.
+DEFAULT_SOURCE = CLUSTER_JOBS_DIR
 DEFAULT_DEST = REPO_ROOT / "harbor-jobs-new"
 
-# Job directory names are hb_<task>_<arm>_t<N>. Task names contain underscores
-# (sosa2024_minimal) and arm names contain hyphens (terminus-opus), so the trial
-# suffix is the only reliable anchor -- match it from the end.
-JOB_DIR_RE = re.compile(r"^hb_(?P<rest>.+)_t(?P<trial>\d+)$")
+# Job directory names are <JOB_PREFIX>_<task>_<arm>_t<N>. Task names contain
+# underscores (sosa2024_minimal) and arm names contain hyphens (terminus-opus), so
+# the trial suffix is the only reliable anchor -- match it from the end.
+JOB_DIR_RE = re.compile(rf"^{re.escape(JOB_PREFIX)}_(?P<rest>.+)_t(?P<trial>\d+)$")
 
 
-def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
+def arm_to_agent_dir(versions_path: Path | None,
+                     prompt_version: str | None = None) -> dict[str, str]:
     """Map each arm name to the directory name its trials should be filed under.
 
     An arm is an agent plus a model (claude, codex, terminus-opus, terminus-gpt);
@@ -69,6 +82,10 @@ def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
     The config filename is then appended to whichever was chosen, so 
     claude -> claude-code-config_20260919
 
+    and a prompt version, when given, after that, so a sweep that ran the v5 prompts
+    on the July pins reads claude -> claude-code-config_20260728-prompt_v5. The
+    config alone says which agents ran, not which instructions they were given.
+
     trial_metrics.py splits that suffix back off before applying AGENT_ALIASES and
     SKIP_AGENTS, so those keep matching the bare harbor name; the suffixed form is the
     arm identity, and what evaluation/eval/utils.py AGENT_KEYS is keyed by.
@@ -77,6 +94,8 @@ def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
         versions_path: dated config defining the arms, or None to use the newest
             harbor-scripts/config_*.json. Missing or unreadable yields {}, in
             which case callers fall back to the on-disk agent directory name.
+        prompt_version: prompt version label such as "v5", appended as
+            -prompt_<version>; None appends nothing.
 
     Returns:
         {arm name: directory name}. Empty if no config could be read.
@@ -101,6 +120,8 @@ def arm_to_agent_dir(versions_path: Path | None) -> dict[str, str]:
     # model versions produced the trials in it. A directory with no suffix is one 
     # collected before this existed, i.e. config_20260728.
     config_suffix = f"-{versions_path.stem}"
+    if prompt_version:
+        config_suffix += f"-prompt_{prompt_version}"
     return {
         arm: (harbor_agent if len(arms) == 1 else arm) + config_suffix
         for harbor_agent, arms in arms_per_agent.items()
@@ -112,7 +133,7 @@ def find_trials(source: Path) -> list[dict]:
     """Find every reorganised trial directory under a cluster jobs root.
 
     Args:
-        source: directory holding hb_<task>_<arm>_t<N> job directories.
+        source: directory holding <JOB_PREFIX>_<task>_<arm>_t<N> job directories.
 
     Returns:
         One dict per trial, with keys:
@@ -267,12 +288,15 @@ def main() -> None:
     parser.add_argument("--versions", type=Path, default=None,
                         help="arm config for agent-dir naming (default: newest "
                              "harbor-scripts/config_*.json)")
+    parser.add_argument("--prompt-version", default=None, metavar="VERSION",
+                        help="prompt version the trials ran, e.g. v5; appended to "
+                             "the agent dir as -prompt_<VERSION> (default: none)")
     args = parser.parse_args()
 
     if not args.source.is_dir():
         sys.exit(f"source not found: {args.source}")
 
-    agent_dir_for_arm = arm_to_agent_dir(args.versions)
+    agent_dir_for_arm = arm_to_agent_dir(args.versions, args.prompt_version)
     trials = find_trials(args.source)
     if args.tasks:
         trials = [t for t in trials if t["task"] in args.tasks]

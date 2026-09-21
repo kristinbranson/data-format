@@ -142,8 +142,21 @@ def conda_env_for_harbor(harbor_version: str) -> str:
     return HARBOR_CONDA_ENVS.get(harbor_version, HARBOR_CONDA_ENVS[DEFAULT_HARBOR_VERSION])
 
 
-CLUSTER_LOG_DIR = Path("/groups/branson/home/bransonk/cluster_logs/harbor")
-CLUSTER_JOBS_DIR = Path("/groups/branson/home/bransonk/harbor-cluster-jobs")
+# Where a sweep's jobs are named and written. The defaults are the one-sweep setup; a
+# second sweep running at the same time -- typically on another versions config, from
+# another checkout -- sets all three in its environment so the two cannot collide.
+#
+# The job name is the one that matters most. It is what `bjobs -J` resolves, what
+# check_stuck_trials.py refuses to kill when more than one running job answers to it,
+# and what every finished trial records in its config.json `trials_dir`, so two sweeps
+# sharing names cannot be told apart afterwards. sweep_status.py and
+# collect_cluster_results.py select jobs by `<JOB_PREFIX>_`, so a second sweep's prefix
+# must not itself begin with "hb_" or the first sweep's tools will pick its jobs up.
+JOB_PREFIX = os.environ.get("HARBOR_JOB_PREFIX", "hb")
+CLUSTER_LOG_DIR = Path(os.environ.get(
+    "HARBOR_CLUSTER_LOG_DIR", "/groups/branson/home/bransonk/cluster_logs/harbor"))
+CLUSTER_JOBS_DIR = Path(os.environ.get(
+    "HARBOR_CLUSTER_JOBS_DIR", "/groups/branson/home/bransonk/harbor-cluster-jobs"))
 
 # Default arms come from the versions config rather than being hardcoded, so adding
 # an arm there (a new agent, or the same agent on a different model) is enough to
@@ -261,7 +274,7 @@ def build_job(task: str, agent: str, trial: int,
             frees it and hands it the next pending job, one bad host can eat a
             whole sweep in minutes (h06u02 took out 29 of 48 on 2026-07-28).
     """
-    job_name = f"hb_{task}_{agent}_t{trial}"
+    job_name = f"{JOB_PREFIX}_{task}_{agent}_t{trial}"
     log_path = CLUSTER_LOG_DIR / f"{job_name}.log"
     jobs_dir = CLUSTER_JOBS_DIR / job_name
 
@@ -314,7 +327,23 @@ def submit(bsub_cmd: str, login_host: str = "login1") -> int:
 
 
 def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
-          slots: int | None = None) -> bool:
+          slots: int | None = None, versions: Path | None = None) -> bool:
+    """Validate that a sweep could be submitted, printing one line per check.
+
+    Args:
+        scope: task scope whose task directories and data mounts are checked
+            ("all", "minimal", "maximal", "datalimit" or "api").
+        queue: LSF GPU queue the sweep would go to; sets the reported slot count.
+        slots: explicit slot count overriding the queue's ratio, or None.
+        versions: the versions config the sweep would run, or None for the newest.
+            It decides which conda env, and so which harbor, must exist on the
+            cluster, so checking a different config than the one submitted would
+            vouch for the wrong env.
+
+    Returns:
+        True when every check passed. Side effects: ssh to login1 for the
+        cluster-side checks.
+    """
     errs = []
     if not RUN_HARBOR.is_file():
         errs.append(f"missing {RUN_HARBOR}")
@@ -329,8 +358,8 @@ def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
 
     # --- local ---
     report(RUN_HARBOR.is_file(), "run_harbor.sh present", str(RUN_HARBOR))
-    cfg = newest_versions_config()
-    report(cfg is not None, "harness/model pin config present",
+    cfg = versions or newest_versions_config()
+    report(cfg is not None and Path(cfg).is_file(), "harness/model pin config present",
            str(cfg) if cfg else "(none: versions would be unpinned)")
     report("--jobs-dir" in RUN_HARBOR.read_text() if RUN_HARBOR.is_file() else False,
            "run_harbor.sh supports --jobs-dir",
@@ -391,7 +420,7 @@ def check(scope: str = "all", queue: str = DEFAULT_QUEUE,
         # Check the env the run will actually use, not a fixed name: run_harbor.sh picks it
         # from the config's harbor_version, so a hardcoded check would pass while the env the
         # sweep needs was missing -- which is the one thing this check exists to catch.
-        env_name = conda_env_for_harbor(harbor_version_from_config(None))
+        env_name = conda_env_for_harbor(harbor_version_from_config(cfg))
         probe = ("command -v bsub >/dev/null && echo BSUB_OK; "
                  f"[ -x $HOME/miniforge3/envs/{env_name}/bin/harbor ] && echo ENV_OK; "
                  "[ -d /groups/branson ] && echo GROUPS_OK; [ -d /nrs/branson ] && echo NRS_OK")
@@ -456,7 +485,8 @@ def main():
                              "/scratch, which otherwise fails every job in ~13s "
                              "and burns through the whole pending queue)")
     parser.add_argument("--jobs", nargs="*", default=None, metavar="JOB_NAME",
-                        help="submit only these job names (hb_<task>_<arm>_t<N>); "
+                        help=f"submit only these job names "
+                             f"({JOB_PREFIX}_<task>_<arm>_t<N>); "
                              "use to resubmit an exact failed set without "
                              "colliding with trials that are still running")
     arms = config_arms()
@@ -473,7 +503,7 @@ def main():
     args = parser.parse_args()
 
     if args.check:
-        sys.exit(0 if check(args.scope, args.queue, args.slots) else 1)
+        sys.exit(0 if check(args.scope, args.queue, args.slots, args.versions) else 1)
 
     # Resolve once so every job in this sweep gets the same pins, even if a
     # newer config lands while the sweep is still submitting.
@@ -499,8 +529,9 @@ def main():
         # Match on the job name build_job() would produce, so the names copied
         # out of a failure report can be pasted straight back in.
         wanted = set(args.jobs)
-        jobs = [(t, a, i) for t, a, i in jobs if f"hb_{t}_{a}_t{i}" in wanted]
-        missing = wanted - {f"hb_{t}_{a}_t{i}" for t, a, i in jobs}
+        jobs = [(t, a, i) for t, a, i in jobs
+                if f"{JOB_PREFIX}_{t}_{a}_t{i}" in wanted]
+        missing = wanted - {f"{JOB_PREFIX}_{t}_{a}_t{i}" for t, a, i in jobs}
         if missing:
             sys.exit(f"--jobs named {len(missing)} job(s) outside the selected "
                      f"tasks/agents/trials: {sorted(missing)}")
@@ -530,7 +561,7 @@ def main():
             print(f"  FAILED ({rc}): {job_name}", file=sys.stderr)
 
     if not args.dry_run:
-        print(f'\nTrack with: ssh login1 \'bash -l -c "bjobs -J \\"hb_*\\""\'')
+        print(f'\nTrack with: ssh login1 \'bash -l -c "bjobs -J \\"{JOB_PREFIX}_*\\""\'')
         if failed:
             print(f"{failed} submission(s) failed", file=sys.stderr)
             sys.exit(1)

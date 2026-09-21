@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from submit_harbor_cluster import (  # noqa: E402
     CLUSTER_JOBS_DIR,
     CLUSTER_LOG_DIR,
+    JOB_PREFIX,
     REPO_ROOT,
     discover_tasks,
 )
@@ -169,7 +170,7 @@ def human(seconds: float | None) -> str:
 
 
 def bjobs_rows() -> tuple[dict[str, dict], str | None]:
-    """Read every hb_* job's LSF state and times from login1.
+    """Read every <JOB_PREFIX>_* job's LSF state and times from login1.
 
     Uses `bjobs -a` so finished jobs are included; a plain `bjobs` lists only unfinished
     ones, which would make a completed sweep look as though it had never run. The fields are
@@ -198,9 +199,11 @@ def bjobs_rows() -> tuple[dict[str, dict], str | None]:
     jobs: dict[str, dict] = {}
     for line in out.stdout.splitlines():
         # The login shell prints its own banner ("bashrc: initializing conda"), which has no
-        # pipes; skip anything that is not a delimited row naming an hb_ job.
+        # pipes; skip anything that is not a delimited row naming one of this sweep's
+        # jobs. The trailing underscore keeps a second sweep's prefix (hb728v5) out of
+        # the default sweep's page.
         parts = line.split("|")
-        if len(parts) < 5 or not parts[1].startswith("hb_"):
+        if len(parts) < 5 or not parts[1].startswith(f"{JOB_PREFIX}_"):
             continue
         try:
             jobid = int(parts[0])
@@ -400,16 +403,33 @@ def agent_started(trial: Path) -> datetime | None:
     """When the agent's container work began, which is when the image build ended.
 
     The trial's own config.json is written when harbor CREATES the trial, before the
-    environment is up, so it dates the start of the build and not its end. The first file
-    harbor writes under agent/ lands within a fraction of a second of agent_setup starting
-    -- measured at 0.15s against a finished trial -- so the earliest mtime there is the
-    boundary.
+    environment is up, so it dates the start of the build and not its end. What marks the
+    end is agent/, which harbor populates as agent_setup begins.
+
+    Both the directory and its entries are consulted, because neither alone is right for
+    every arm. claude-code and codex create agent/setup at the instant agent_setup starts
+    and never touch it again, so for them the earliest entry IS the boundary -- measured at
+    0.15s against a finished trial. terminus-2 creates no setup: its top level holds only
+    recording.cast, terminus_2.pane and trajectory.json, and it rewrites all three for as
+    long as the agent runs, so on a RUNNING trial their mtimes track the present and the
+    earliest entry dates the end of the agent phase rather than its start. Taking the
+    minimum over the entries alone therefore gave the build the whole run -- six minutes of
+    image build reported as two and a half hours. Finished trials never showed it, because
+    phase_spans reads their bounds from harbor's result.json instead.
+
+    A directory's mtime moves only when an entry is added or removed, so it stays at the
+    moment agent/ was first populated unless the agent adds another top-level entry later.
+    That makes this an upper bound rather than the exact instant, and one that degrades
+    gently: a late entry drags the directory forward, but never past that entry's own mtime,
+    which is what the old code would have returned anyway.
 
     Args:
         trial: a trial directory.
 
     Returns:
-        The earliest mtime under agent/, or None if it is absent or empty.
+        The earliest of agent/'s own mtime and the mtimes of its top-level entries, or None
+        if agent/ does not exist. An empty agent/ yields its own mtime, which is when harbor
+        created it -- the same moment trial_stage() starts calling the trial "agent running".
     """
     agent = trial / "agent"
     if not agent.is_dir():
@@ -418,6 +438,9 @@ def agent_started(trial: Path) -> datetime | None:
     # sessions/, skills/ and the agent's sqlite files, which on NFS across a whole sweep
     # took the page from seconds to minutes.
     stamps = [t for t in (mtime(p) for p in agent.iterdir()) if t is not None]
+    own = mtime(agent)
+    if own is not None:
+        stamps.append(own)
     return min(stamps) if stamps else None
 
 
@@ -594,7 +617,7 @@ def known_tasks() -> list[str]:
 def parse_job_name(name: str) -> tuple[str, str, int] | None:
     """Split a job name back into the task, agent and trial it was submitted for.
 
-    Names are `hb_<task>_<agent>_t<trial>` and task names contain underscores
+    Names are `<JOB_PREFIX>_<task>_<agent>_t<trial>` and task names contain underscores
     (`sosa2024_api`, `allen2p_minimal`), so the task is matched against the directories
     that actually exist rather than guessed from the separators.
 
@@ -605,7 +628,7 @@ def parse_job_name(name: str) -> tuple[str, str, int] | None:
         (task, agent, trial), or None when the name does not fit the pattern or names a
         task with no directory -- a job left over from a task since renamed or removed.
     """
-    match = re.fullmatch(r"hb_(.+)_t(\d+)", name)
+    match = re.fullmatch(rf"{re.escape(JOB_PREFIX)}_(.+)_t(\d+)", name)
     if match is None:
         return None
     body, trial = match.group(1), int(match.group(2))
@@ -643,7 +666,7 @@ def build_row(name: str, task: str, agent: str, trial: int,
     """Assemble one table row from a job's LSF record and its output tree.
 
     Args:
-        name: the job name, `hb_<task>_<agent>_t<trial>`.
+        name: the job name, `<JOB_PREFIX>_<task>_<agent>_t<trial>`.
         task, agent, trial: what that name decodes to.
         job: the job's bjobs row, or None if LSF has never heard of it.
         now: the moment the page is being rendered, for open-ended spans.
@@ -762,7 +785,7 @@ def job_rows(tasks: list[str], agents: list[str], trials: int) -> tuple[list[dic
     jobs, error = bjobs_rows()
     now = datetime.now().astimezone()
 
-    planned = [(f"hb_{task}_{agent}_t{trial}", task, agent, trial)
+    planned = [(f"{JOB_PREFIX}_{task}_{agent}_t{trial}", task, agent, trial)
                for task in tasks for agent in agents
                for trial in range(1, trials + 1)]
 
