@@ -162,9 +162,9 @@ def trial_passes_quality_filters(record, trial_idx, frame_idx, nfr):
 
 **What this does:** Trials are dropped if they have fewer than 5 retained frames, retained duration > 60 s, or any inter-frame gap > 10 s. Sessions with fewer than 2 surviving trials are dropped.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

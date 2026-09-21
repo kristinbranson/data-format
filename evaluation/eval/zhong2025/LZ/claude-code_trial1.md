@@ -144,7 +144,7 @@ if n_trial_frames < 2:
 
 **Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

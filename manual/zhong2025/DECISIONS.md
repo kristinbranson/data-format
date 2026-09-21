@@ -67,14 +67,16 @@ iii. A trial in the authors' sense runs from corridor entry through the grey spa
 
 ## 1-e. How are trials filtered based on quality controls?
 
-i. No quality filter is applied to trials. The only ones dropped are those left with no frames once the behavior is cut to the frames that were imaged.
+i. Trials longer than the 99th percentile of all trials in the dataset are dropped -- on the full data that cut is 239 frames and it drops 382 of 38,110 trials, leaving 37,728. Trials are also dropped if no frames were left once the behavior is cut to the frames that were imaged.
 
 ii. The trials that have frames, and the session check:
 ```python
-trials = [trial for trial in range(beh['ntrials']) if frames[trial].size]
+trials = [trial for trial in range(beh['ntrials'])
+          if 0 < frames[trial].size <= max_trial_length] 
+          # max_trial_length is set to 99th percentile of whole dataset
 ```
 
-iii. N/A
+iii. The really long trials are due to animal stop running during the experiment, which can result in really long trials.
 
 ## 2-a. What variables in the raw data is the final `neural` data derived from?
 

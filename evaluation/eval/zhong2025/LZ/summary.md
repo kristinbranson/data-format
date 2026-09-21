@@ -76,19 +76,16 @@
 
 ## Q 1-e. How are trials filtered based on quality controls?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | concerning | _(no note)_ |
 | claude-code / trial2 | concerning | _(no note)_ |
 | claude-code / trial3 | concerning | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
 | codex / trial3 | match | _(no note)_ |
 
-**Overall comment:** Filtering out extremely long "trials" where the animal is stationary is required; this was only implemented in the 3 codex trials.
+**Overall comment:** filtering out extremely long trials where the animal is stationary is required
 
 ---
 
