@@ -244,9 +244,9 @@ def load_spikes(sdir):
 
 **What this does:** No neuron-level QC filtering is applied; all clusters from pykilosort output are retained. (A separate `reduce_data.py` later subsamples to ≤500 neurons/session for memory.)
 
-**Rating:** concerning
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

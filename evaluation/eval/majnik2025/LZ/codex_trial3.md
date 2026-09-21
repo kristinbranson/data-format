@@ -369,7 +369,7 @@ motion_disc = motion_to_bins(motion_binned_norm, quantile_edges)
 
 **What this does:** (1) Behavior is aligned to imaging frame grid (via timestamp mapping with linear interpolation over missing frames). (2) 10-frame bin averaging. (3) Global min-max normalization across all included sessions. (4) Discretization into 5 quintile-based bins (`np.digitize` against [0.2, 0.4, 0.6, 0.8] quantile edges).
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

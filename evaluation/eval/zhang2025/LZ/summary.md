@@ -137,20 +137,16 @@
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
-
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | concerning | _(no note)_ |
-| claude-code / trial2 | concerning | _(no note)_ |
-| claude-code / trial3 | concerning | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | incorrect | _(no note)_ |
+| claude-code / trial2 | incorrect | _(no note)_ |
+| claude-code / trial3 | incorrect | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did.
+**Overall comment:** cluster-level QC filtering + brain region filter (no void)
 
 ---
 

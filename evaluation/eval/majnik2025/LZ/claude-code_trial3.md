@@ -382,9 +382,9 @@ me_discrete = discretize_motion_energy(me_binned, N_OUTPUT_BINS)
 
 **What this does:** Linearly interpolates motion energy to match the neural frame count, averages it in 10-frame bins, then discretizes per-session into 5 equal-percentile bins (quintiles) using `np.percentile` thresholds and `np.digitize`. Note: code does not explicitly normalize per session before discretizing (despite notes mentioning normalization).
 
-**Rating:** concerning
+**Rating:** match
 
-**Note:** missing normalization
+**Note:** _(no note)_
 
 ---
 

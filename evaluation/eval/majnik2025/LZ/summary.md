@@ -256,19 +256,16 @@
 
 ## Q 4-b. What processing is involved in computing `output` *Motion energy*?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | concerning | missing normalization |
-| claude-code / trial2 | concerning | missing normalization |
-| claude-code / trial3 | concerning | missing normalization |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** Claude agents skipped normalization steps; Codex agents used min-max normalization.
+**Overall comment:** Different choice for discretization across agents
 
 ---
 
