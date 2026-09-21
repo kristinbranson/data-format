@@ -368,7 +368,7 @@ output_one_hot, motion_classes, motion_edges = quintile_one_hot(motion_binned_no
 
 **What this does:** Aligned motion energy is averaged in 10-frame bins, min-max normalized to [0,1] within session, then discretized into 5 equal-percentile (quintile) bins computed per session, and one-hot encoded into 5 binary channels.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

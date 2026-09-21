@@ -238,9 +238,9 @@ neural_mask = np.array([np.any(trial) for trial in neural_trials], dtype=bool)
 
 **What this does:** Clusters with `label >= 1` are kept (well-isolated IBL units). All-zero neural-trial windows are subsequently excluded by `neural_mask`.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

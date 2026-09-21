@@ -225,9 +225,9 @@ else:
 
 **What this does:** No quality filtering of clusters is applied; metrics are loaded but not used to drop neurons. All clusters from all probes are kept (per task spec/reference code).
 
-**Rating:** concerning
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

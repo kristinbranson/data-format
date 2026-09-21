@@ -363,9 +363,9 @@ def discretize_motion_energy(all_me_trials, n_bins=N_OUTPUT_BINS):
 
 **What this does:** (1) Missing video frames are interpolated to match neural length (see 4-c); (2) ME is averaged into 10-frame bins (no normalization step); (3) all binned values across all sessions and trials are pooled and split into 5 equal-percentile (quintile) bins via `np.digitize`.
 
-**Rating:** concerning
+**Rating:** ok
 
-**Note:** missing normalization
+**Note:** _(no note)_
 
 ---
 

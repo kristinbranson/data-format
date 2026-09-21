@@ -220,9 +220,9 @@ spikes, clusters = load_spiking_data_current(session_path, probe_name=probe_name
 
 **What this does:** Each probe's clusters are filtered to `label >= 1` (well-isolated single units) and only spikes belonging to those clusters are retained, before probe merging and binning.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

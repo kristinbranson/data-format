@@ -223,9 +223,9 @@ def bin_spikes_fast(spike_times, spike_clusters, interval_begs, interval_ends, n
 
 **What this does:** No neuron-level QC is applied. All clusters from `spikes.clusters` are kept regardless of cluster label, refractory period violations, or amplitude. Cluster metrics are loaded but not used for filtering.
 
-**Rating:** concerning
+**Rating:** incorrect
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
