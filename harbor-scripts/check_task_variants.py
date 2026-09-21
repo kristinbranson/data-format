@@ -16,10 +16,11 @@ For every benchmark task this checks:
   3. The maximal and minimal variants grade against the same full-data reference
      statistics.
   4. Every agent file listed in tests/expected_files.json is named in that variant's prompt.
-  5. manual/<name>/convert_data.py, where the reference solution is developed, is identical
-     to the copies in the task directories. It drifted twice without being noticed, in both
-     directions: an improvement made in manual/ never reached the tasks, and changes made in
-     the tasks never came back.
+  5. manual/<name>/, where the reference solution is developed, matches the task: its
+     convert_data.py is identical to solution/convert_data.py, and its DECISIONS.md to
+     tests/reference_DECISIONS.md, the copy the judges grade against. Both drifted without
+     being noticed, in both directions: an improvement made in manual/ never reached the
+     tasks, and changes made in the tasks never came back.
   6. The generated files are up to date: minimal prompts regenerate from prompt_v5,
      minimal tasks' derived files from their parent (generate_minimal_task.py --check),
      and datalimit tasks from their minimal task (generate_datalimit_task.py
@@ -72,6 +73,11 @@ FULL_DATA_STATS = "tests/reference_stats_full.json"
 # first author, which for two tasks is not the task name.
 MANUAL_DIR = REPO_ROOT / "manual"
 MANUAL_NAME = {"map": "chen2024", "mouseland": "zhong2025"}
+# (file in manual/<name>/, the task's copy of it), which must be identical.
+MANUAL_FILES = [
+    ("convert_data.py", "solution/convert_data.py"),
+    ("DECISIONS.md", "tests/reference_DECISIONS.md"),
+]
 # Version of the minimal prompts currently in the minimal tasks.
 MINIMAL_PROMPT_VERSION = 2
 
@@ -130,12 +136,13 @@ def check_task(task: str) -> list[str]:
                 problems.append(f"{variant.name}: {name} is in expected_files.json but not in the prompt")
 
     # 5. the working copy the solution is developed in
-    manual = MANUAL_DIR / MANUAL_NAME.get(task, task) / "convert_data.py"
-    if not manual.is_file():
-        problems.append(f"{manual.relative_to(REPO_ROOT)} is missing")
-    elif not same(manual, parent / "solution/convert_data.py"):
-        problems.append(f"{manual.relative_to(REPO_ROOT)} differs from "
-                        f"{parent.name}/solution/convert_data.py")
+    for manual_rel, task_rel in MANUAL_FILES:
+        manual = MANUAL_DIR / MANUAL_NAME.get(task, task) / manual_rel
+        if not manual.is_file():
+            problems.append(f"{manual.relative_to(REPO_ROOT)} is missing")
+        elif not same(manual, parent / task_rel):
+            problems.append(f"{manual.relative_to(REPO_ROOT)} differs from "
+                            f"{parent.name}/{task_rel}")
 
     # 6. generated files are current (the generators print their own reports; keep quiet)
     with contextlib.redirect_stdout(io.StringIO()):
