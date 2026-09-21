@@ -142,7 +142,7 @@ neural = neural_group["data"][()].astype(np.float32, copy=False)
 
 **What this does:** Neural data is read directly from `processing/ophys/Deconvolved/plane0/data`. Only plane-0 deconvolved activity is used (no fluorescence or neuropil streams).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -175,7 +175,7 @@ if factor == 2:
 
 **Rating:** incorrect
 
-**Note:** Incorrect but the description in the paper/dataset is confusing
+**Note:** _(no note)_
 
 ---
 
@@ -194,7 +194,7 @@ roi_ids = roi_ids[iscell]
 
 **What this does:** Filters columns of the neural matrix using suite2p `iscell[:,0] > 0.5`, restricted to ROI ids referenced by the response matrix. The dF/F-vs-speed correlation interneuron exclusion mentioned in the paper is not implemented (documented as an archive limitation).
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

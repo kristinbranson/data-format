@@ -94,55 +94,46 @@
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
+**Overall comment:** all agents used the Deconvolved instead of raw data + postprocessing
 
 ---
 
 ## Q 2-b. How is the `neural` data processed?
 
+| Agent / trial | Rating | Note |
+|---|---|---|
+| claude-code / trial1 | ok | _(no note)_ |
+| claude-code / trial2 | ok | _(no note)_ |
+| claude-code / trial3 | ok | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | incorrect | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
+**Overall comment:** processing based on the paper's method is preferred; one solution did not handle the multi-plane data properly
 
+---
+
+## Q 2-c. How is the `neural` data filtered based on quality controls?
 
 | Agent / trial | Rating | Note |
 |---|---|---|
 | claude-code / trial1 | match | _(no note)_ |
 | claude-code / trial2 | match | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | ok | float16 is not necessary |
-| codex / trial2 | incorrect | Incorrect but the description in the paper/dataset is confusing |
-| codex / trial3 | match | _(no note)_ |
+| codex / trial1 | ok | _(no note)_ |
+| codex / trial2 | ok | _(no note)_ |
+| codex / trial3 | ok | _(no note)_ |
 
-**Overall comment:** _(no overall comment)_
-
----
-
-## Q 2-c. How is the `neural` data filtered based on quality controls?
-
-
-
-
-| Agent / trial | Rating | Note |
-|---|---|---|
-| claude-code / trial1 | better | additional filtering based on the paper implemented |
-| claude-code / trial2 | better | _(no note)_ |
-| claude-code / trial3 | better | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
-
-**Overall comment:** _(no overall comment)_
+**Overall comment:** iscell mask + interneuron exclusion
 
 ---
 

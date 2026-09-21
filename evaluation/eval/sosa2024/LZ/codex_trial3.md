@@ -154,7 +154,7 @@ for plane in planes:
 
 **What this does:** Reads `processing/ophys/Deconvolved/plane{N}/data` for each imaging plane.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -187,7 +187,7 @@ neural_trial = deconv[trial_slice][frame_mask].T.astype(np.float32, copy=False)
 
 **What this does:** For multi-plane sessions, concatenates per-plane deconvolved traces into the pooled accepted-ROI ordering. Per-trial neural data is sliced and transposed to `(n_neurons, n_timepoints)`. No further numerical processing is applied.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -209,7 +209,7 @@ plane_idx = plane_idx_all[accepted_idx]
 
 **What this does:** Uses suite2p's `iscell[:,0] == 1` flag to keep only curated accepted cells. No additional interneuron exclusion is performed.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 

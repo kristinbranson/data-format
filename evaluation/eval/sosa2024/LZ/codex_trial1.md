@@ -161,7 +161,7 @@ else:
 
 **What this does:** Neural activity is read from NWB `processing/ophys/Deconvolved` (deconvolved calcium events). For multi-plane sessions, the planes are reassembled into a single ROI matrix using `planeIdx`.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
@@ -187,7 +187,7 @@ neural_trial = deconvolved[start:stop].T
 
 **Rating:** ok
 
-**Note:** float16 is not necessary
+**Note:** _(no note)_
 
 ---
 
@@ -207,7 +207,7 @@ curated_idx = np.flatnonzero(iscell[:, 0] > 0.5)
 
 **What this does:** ROIs are filtered to those with `iscell[:,0] > 0.5` (Suite2p manual curation flag). No additional speed-correlation interneuron exclusion is applied.
 
-**Rating:** match
+**Rating:** ok
 
 **Note:** _(no note)_
 
