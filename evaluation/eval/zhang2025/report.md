@@ -30,7 +30,7 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 1-e | How are trials filtered based on quality controls? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🟡🔵🔵 | 🔵🟡🔵 🟡🟡🟢 | 🔴🔴🔴 🔴🔴🔴 |  |  |  |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🔵🔵🔵 🔵🔵🔵 | 🔴🔴🔴 🔴🔴🟡 | 🔴🔴🔴 🔴🔴🔴 | All solutions correctly implemented the merge + binning steps. |  |  |
-| 2-c | How is the `neural` data filtered based on quality controls? | 🔴🔴🔴 🟡🟡🟡 | 🔴🔴🔴 🟡🟡🟡 | 🟡🔴🔴 🟡🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". | `FILTER=3` |
+| 2-c | How is the `neural` data filtered based on quality controls? | 🔴🔴🔴 🟡🟡🟡 | 🔴🔴🔴 🟡🟡🟡 | 🟡🔴🔴 🟡🟢🟢 | 🔴🔴🔴 🟢🟢🟢 | The claude agents did not implement cluster-level QC filtering (`label >= 1`); the codex agents did. | The LLM judges rated the no-filter solutions as more "correct". | `FILTER=6` |
 | 2-d | How is the per-trial `neural` data aligned to the event described in the `instructions`? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-e | How is the `neural` data temporally binned/resampled? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟡 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 3-a | What variables in the raw data is `input` *time_from_stimulus_onset* derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟡🟢🔵 |  |  |  |

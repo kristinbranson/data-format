@@ -73,12 +73,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | concerning | match | concerning |
-| claude-code / trial2 | ok | concerning | match | match |
-| claude-code / trial3 | ok | concerning | match | incorrect |
-| codex / trial1 | ok | concerning | match | match |
-| codex / trial2 | ok | concerning | match | incorrect |
-| codex / trial3 | ok | concerning | match | match |
+| claude-code / trial1 | concerning | concerning | match | concerning |
+| claude-code / trial2 | concerning | concerning | match | match |
+| claude-code / trial3 | concerning | concerning | match | incorrect |
+| codex / trial1 | concerning | concerning | match | match |
+| codex / trial2 | concerning | concerning | match | incorrect |
+| codex / trial3 | concerning | concerning | match | match |
 
 ---
 
@@ -102,9 +102,9 @@
 | claude-code / trial1 | match | match | better | concerning |
 | claude-code / trial2 | match | match | concerning | incorrect |
 | claude-code / trial3 | match | match | better | incorrect |
-| codex / trial1 | ok | concerning | match | match |
-| codex / trial2 | ok | concerning | match | match |
-| codex / trial3 | ok | concerning | match | concerning |
+| codex / trial1 | concerning | concerning | match | match |
+| codex / trial2 | concerning | concerning | match | match |
+| codex / trial3 | concerning | concerning | match | concerning |
 
 **Overall comment:** Claude judge gave inconsistent ratings for the same solution.
 

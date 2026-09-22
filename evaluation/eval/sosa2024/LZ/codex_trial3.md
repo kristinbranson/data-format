@@ -154,7 +154,7 @@ for plane in planes:
 
 **What this does:** Reads `processing/ophys/Deconvolved/plane{N}/data` for each imaging plane.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -209,7 +209,7 @@ plane_idx = plane_idx_all[accepted_idx]
 
 **What this does:** Uses suite2p's `iscell[:,0] == 1` flag to keep only curated accepted cells. No additional interneuron exclusion is performed.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 

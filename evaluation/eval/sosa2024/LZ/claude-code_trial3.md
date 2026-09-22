@@ -201,7 +201,7 @@ else:
 
 **What this does:** Final neural data is taken from the NWB `processing/ophys/Deconvolved` group. Fluorescence and Neuropil are also loaded but only used for an interneuron-detection step.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 

@@ -166,7 +166,7 @@ deconv = np.concatenate(deconv_list, axis=1)
 
 **What this does:** Loads `processing/ophys/Deconvolved/<plane>/data` for each available plane and concatenates across planes along the ROI axis. Fluorescence and Neuropil are also loaded for downstream interneuron filtering.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 

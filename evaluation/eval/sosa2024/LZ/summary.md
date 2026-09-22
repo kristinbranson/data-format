@@ -96,12 +96,12 @@
 
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
 **Overall comment:** all agents used the Deconvolved instead of raw data + postprocessing
 
@@ -129,11 +129,11 @@
 | claude-code / trial1 | match | _(no note)_ |
 | claude-code / trial2 | match | _(no note)_ |
 | claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** iscell mask + interneuron exclusion
+**Overall comment:** Codex didn't not implement the interneuron filtering
 
 ---
 

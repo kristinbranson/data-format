@@ -160,7 +160,7 @@ neural_data = deconv_cells[final_cell_mask]
 
 **What this does:** Neural data uses the pre-computed `Deconvolved/plane{N}/data` arrays from NWB, concatenated across planes for multi-plane recordings.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 
