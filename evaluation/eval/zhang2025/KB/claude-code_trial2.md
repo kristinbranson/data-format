@@ -246,7 +246,7 @@ def load_spikes(sdir):
 
 **Rating:** incorrect
 
-**Note:** does not do qc filtering, subsamples data later for memory (!!)
+**Note:** _(no note)_
 
 ---
 

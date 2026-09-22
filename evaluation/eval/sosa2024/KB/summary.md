@@ -94,17 +94,14 @@
 
 ## Q 2-a. What variables in the raw data is the final `neural` data derived from?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | match | _(no note)_ |
-| claude-code / trial2 | match | _(no note)_ |
-| claude-code / trial3 | match | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
+| claude-code / trial2 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
+| claude-code / trial3 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
+| codex / trial1 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
+| codex / trial2 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
+| codex / trial3 | concerning | Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data |
 
 **Overall comment:** _(no overall comment)_
 
@@ -112,17 +109,14 @@
 
 ## Q 2-b. How is the `neural` data processed?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | incorrect | agent is confused about multiplane data, which has twice the frame rate |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | concerning | _(no note)_ |
+| claude-code / trial2 | concerning | _(no note)_ |
+| claude-code / trial3 | concerning | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
 
@@ -130,17 +124,14 @@
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | _(no note)_ |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | _(no note)_ |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
 

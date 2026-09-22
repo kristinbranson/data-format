@@ -244,9 +244,9 @@ dff_binned = bin_data(dff, bin_size)  # (n_neurons, n_bins)
 
 **What this does:** Bins dF/F by averaging consecutive groups of 10 frames, reducing the effective rate from 30 Hz to 3 Hz (333.3 ms bin size). Frames at the end that don't fill a bin are trimmed.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** agent is closer to the paper which says it averages 10 timepoints
+**Note:** _(no note)_
 
 ---
 

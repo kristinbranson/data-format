@@ -201,9 +201,9 @@ else:
 
 **What this does:** Final neural data is taken from the NWB `processing/ophys/Deconvolved` group. Fluorescence and Neuropil are also loaded but only used for an interneuron-detection step.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data
 
 ---
 
@@ -235,7 +235,7 @@ trial_neural[np.isnan(trial_neural)] = 0
 
 **What this does:** Multi-plane ROIs are concatenated. Deconvolved data is filtered to iscell-positive ROIs that are not flagged as interneurons. NaN entries in the per-trial slice are zeroed.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -275,7 +275,7 @@ final_neuron_mask[iscell_indices[non_interneuron]] = True
 
 **What this does:** Two filters are applied: (1) the NWB `iscell` mask, and (2) interneuron exclusion based on Pearson correlation of dF/F (computed locally) with speed greater than 0.5.
 
-**Rating:** ok
+**Rating:** match
 
 **Note:** _(no note)_
 

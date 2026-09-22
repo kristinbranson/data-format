@@ -166,17 +166,14 @@
 
 ## Q 2-e. How is the `neural` data temporally binned/resampled?
 
-
-
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | ok | agent is closer to the paper which says it averages 10 timepoints |
-| claude-code / trial2 | ok | _(no note)_ |
-| claude-code / trial3 | ok | agent is closer to the paper which says it averages 10 timepoints |
-| codex / trial1 | ok | agent is closer to the paper which says it averages 10 timepoints |
-| codex / trial2 | ok | agent is closer to the paper which says it averages 10 timepoints |
-| codex / trial3 | ok | agent is closer to the paper which says it averages 10 timepoints |
+| claude-code / trial1 | match | _(no note)_ |
+| claude-code / trial2 | match | _(no note)_ |
+| claude-code / trial3 | match | _(no note)_ |
+| codex / trial1 | match | _(no note)_ |
+| codex / trial2 | match | _(no note)_ |
+| codex / trial3 | match | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
 

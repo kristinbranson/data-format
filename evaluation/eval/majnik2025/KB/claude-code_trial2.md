@@ -242,7 +242,7 @@ dff_binned = bin_traces(dff, BIN_SIZE)
 
 **What this does:** dF/F (and motion energy) are averaged within non-overlapping 10-frame bins via reshape+mean, yielding a time bin size of 10/30 = 333.33 ms. Trailing frames that don't fill a full bin are trimmed.
 
-**Rating:** ok
+**Rating:** match
 
 **Note:** _(no note)_
 

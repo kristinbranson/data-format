@@ -166,9 +166,9 @@ deconv = np.concatenate(deconv_list, axis=1)
 
 **What this does:** Loads `processing/ophys/Deconvolved/<plane>/data` for each available plane and concatenates across planes along the ROI axis. Fluorescence and Neuropil are also loaded for downstream interneuron filtering.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data
 
 ---
 
@@ -200,7 +200,7 @@ neural_all = deconv[:, final_cell_mask].T
 
 **What this does:** Concatenates planes; computes a simplified dF/F (raw F minus 0.7*neuropil, normalized by median); marks ROIs whose dF/F correlates >0.5 with speed as putative interneurons and excludes them in addition to the iscell filter.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -222,7 +222,7 @@ final_cell_mask = cell_mask_concat & ~interneuron_mask
 
 **What this does:** Two-stage QC: (1) keep ROIs with `iscell[:,0]==1` (Suite2p curation), (2) further exclude ROIs flagged as interneurons by speed-dFF correlation > 0.5.
 
-**Rating:** ok
+**Rating:** match
 
 **Note:** _(no note)_
 

@@ -225,7 +225,7 @@ def bin_spikes_fast(spike_times, spike_clusters, interval_begs, interval_ends, n
 
 **Rating:** incorrect
 
-**Note:** no filtering
+**Note:** _(no note)_
 
 ---
 

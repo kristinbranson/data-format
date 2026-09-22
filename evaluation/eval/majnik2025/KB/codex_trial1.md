@@ -238,9 +238,9 @@ neural_binned = bin_array_mean(neural_processed, BIN_FRAMES)
 
 **What this does:** The 30 Hz processed neural trace is averaged in non-overlapping 10-frame windows, producing one sample every 333.33 ms (3 Hz). `time_bin_size` is recorded in metadata as `333.33`.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** agent is closer to the paper which says it averages 10 timepoints
+**Note:** _(no note)_
 
 ---
 

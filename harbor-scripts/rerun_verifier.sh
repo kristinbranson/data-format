@@ -10,7 +10,10 @@
 #   --codex-judge-only    Only rerun the Codex judge and update metrics.json
 #   --judges-only         Rerun both judges and update metrics.json
 #   --verifier-dir DIR    Use DIR as the verifier directory (default: newest
-#                         verifier_rerun_* if one exists, otherwise verifier/)
+#                         verifier_rerun_* if one exists, otherwise verifier/).
+#                         Judge-only modes only; DIR must exist. If DIR/snapshot
+#                         exists, it is mounted as /app in place of the trial's own
+#                         verifier/snapshot. Also --verifier-dir=DIR.
 #   --apikeys             Take judge credentials from ANTHROPIC_API_KEY and
 #                         OPENAI_API_KEY in <repo>/.env instead of the OAuth
 #                         credential files. REQUIRED on a batch node, where $HOME
@@ -106,6 +109,7 @@ while [[ "${1:-}" == --* ]]; do
         # One-word forms, for wrappers such as submit_rerun_verifier.sh that forward
         # options as single words.
         --task=*)            TASK_OVERRIDE="${1#*=}"; shift ;;
+        --verifier-dir=*)    VERIFIER_DIR_OVERRIDE="${1#*=}"; shift ;;
         --gpu-device)        GPU_DEVICE="$2"; shift 2 ;;
         --gpu-device=*)      GPU_DEVICE="${1#*=}"; shift ;;
         --podman)            CONTAINER_CMD="podman"; GPU_FLAG="--device nvidia.com/gpu=all"; shift ;;
@@ -500,6 +504,26 @@ read_judge_harness() {  # $1 = judge key
 CLAUDE_JUDGE_HARNESS=$(read_judge_harness claude)
 CODEX_JUDGE_HARNESS=$(read_judge_harness codex)
 echo "judge harnesses: claude=$CLAUDE_JUDGE_HARNESS codex=$CODEX_JUDGE_HARNESS"
+
+# The Codex CLI writes DECISIONS.md and llm_judge_eval.json into its workspace, /app,
+# instead of the judge directory it was started in. compute_reward.py reads only the judge
+# directory, so the verdict would be recorded as a failed judge; and /app here is the
+# snapshot of the agent files, so the verdict would also sit among them for the next judge
+# to read as if the agent had written it. Move both back. Only files created after the
+# marker are moved, so a genuine agent file of the same name stays where it is.
+# Mirrors relocate_stray_judge_output in tests/test.sh; change both together.
+JUDGE_START_MARKER=/logs/verifier/.judge_start
+touch "$JUDGE_START_MARKER"
+relocate_stray_judge_output() {   # $1 = output directory of the judge that just ran
+  local f
+  for f in llm_judge_eval.json DECISIONS.md; do
+    if [ -f "/app/$f" ] && [ "/app/$f" -nt "$JUDGE_START_MARKER" ]; then
+      mv "/app/$f" "$1/$f" 2>/dev/null \
+        && echo "relocated stray /app/$f -> $1/" \
+        || echo "WARNING: could not relocate /app/$f (is /app read-only?)"
+    fi
+  done
+}
 '
 
     if [ "$RUN_CLAUDE_JUDGE" = true ]; then
@@ -525,6 +549,7 @@ IS_SANDBOX=1 \
     --verbose \
   2>&1 | tee judge_log.txt || true
 
+relocate_stray_judge_output "$CLAUDE_DIR"
 cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CLAUDE_DIR/llm_judge_eval.json" \
@@ -569,6 +594,7 @@ codex exec "$(cat /tests/judge_instructions.md)" \
     --skip-git-repo-check \
   2>&1 | tee judge_log.txt || true
 
+relocate_stray_judge_output "$CODEX_DIR"
 cd /
 python3 /tests/compute_reward.py \
   --eval-json "$CODEX_DIR/llm_judge_eval.json" \

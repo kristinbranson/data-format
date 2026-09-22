@@ -116,15 +116,14 @@
 
 ## Q 2-c. How is the `neural` data filtered based on quality controls?
 
-
 | Agent / trial | Rating | Note |
 |---|---|---|
-| claude-code / trial1 | incorrect | no filtering |
-| claude-code / trial2 | incorrect | does not do qc filtering, subsamples data later for memory (!!) |
-| claude-code / trial3 | incorrect | no filtering |
-| codex / trial1 | match | _(no note)_ |
-| codex / trial2 | match | _(no note)_ |
-| codex / trial3 | match | _(no note)_ |
+| claude-code / trial1 | incorrect | _(no note)_ |
+| claude-code / trial2 | incorrect | _(no note)_ |
+| claude-code / trial3 | incorrect | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
 **Overall comment:** _(no overall comment)_
 

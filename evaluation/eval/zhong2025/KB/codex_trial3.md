@@ -150,9 +150,9 @@ for trial in range(int(beh["ntrials"])):
 
 **What this does:** No trials are dropped wholesale; instead each trial's frames are filtered to running-corridor frames only. Trials with zero qualifying frames raise an error rather than being silently skipped.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** this will drop frames in the middle of trials
 
 ---
 

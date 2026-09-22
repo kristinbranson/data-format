@@ -2,74 +2,11 @@
 
 ---
 
-## 1. Rerun the old agents on four tasks
+## 1. Moving jobs from staging area to git repo
+Migrate from `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-jobs-new`
+to `/groups/branson/home/bransonk/behavioranalysis/code/ScienceBenchmark/data-format/harbor-jobs`
 
-`map`, `hasnain2024`, `majnik2025` and `sosa2024`, **every variant** -- maximal, `_minimal`
-and, where one exists, `_datalimit`. Their existing trials were run against a prompt that
-no longer describes the task, so those trials measure a different question from the one
-the benchmark now asks, and re-scoring them cannot fix it: the agent saw different
-instructions.
-
-The other four need no rerun. `lee2025`, `zhang2025`, `mouseland` and `allen2p` changed
-only in typos and wording -- "positon", an unclosed backtick, "circle1, leaf2" for
-"circle, leaf" -- none of which alters what the agent is asked to produce.
-
-## 2. Run the maximal prompt on new terminus agents
-
-terminus-2 is harbor's own code, so its version is the harbor version and there is nothing to
-pin per task. Moving from 0.1.45 to 0.23.0 changes it by +633/-287 across four files
-(`terminus_2.py` 1939 -> 2101 lines). The fork never touched those files, so what ran before
-was plain upstream terminus of 2026-03-05.
-
-**The terminus sweep is running**, on `terminus-gpt` and `terminus-opus` with three trials
-each: the eight maximal tasks submitted 2026-09-19 (48 jobs), the eight `_minimal` tasks and
-the four `_api` tasks on 2026-09-20 (48 and 24). All 120 carry `config_20260919.json`, so
-they share the harbor 0.23.0 pin and the 800-turn cap, and all go to `gpu_l4_large`, which
-takes a whole node per job -- 92 were still queued when the last two went in.
-
-**The 0.23.0 fork is published.** `kristinbranson/harbor` now carries the branch
-`podman-v0.23.0` -- our six podman commits on top of upstream's v0.23.0 -- and the `v0.23.0`
-tag they sit on, so the fork shows which part is ours and which is upstream's. It went up from
-the clone at `/groups/branson/home/bransonk/codepacks/harbor-rebase`, which now tracks that
-branch, so a plain `git push` from there publishes anything added later.
-
-Open, none blocking:
-
-- **Offer the compose-detection fix upstream?** Harbor has to work out which "compose" program
-  it is driving, because the two differ: Docker Compose V2 has `cp` and `ls` subcommands and a
-  `--project-directory` flag, while podman-compose -- a separate Python program -- has none of
-  them. Harbor decided by running `podman compose up --help` and looking for `--detach`, which
-  both advertise. So on a host where `podman compose` is only a thin wrapper that hands off to
-  podman-compose, harbor concluded it had Compose V2 and then broke on the first subcommand
-  podman-compose does not have, reporting it as a missing Podman API socket -- which sent us
-  looking in the wrong place entirely. `21e76a50` asks `podman compose version` instead, where
-  the program names itself. The bug is upstream's, not ours, so it is worth offering to
-  harbor-framework; if they take it, we stop carrying the patch.
-- **Should `rerun_verifier.sh` call `harbor trials regrade`?** Re-scoring trials that have
-  already run is needed whenever the grading code changes, and there is nothing left to port:
-  harbor now ships its own command for it. Kai wrote `harbor trials reverify` for the fork in
-  `d7ac3b21` (2026-03-10), which re-ran the verifier on a finished trial and overwrote that
-  trial's `result.json`. Upstream reached the same capability independently four months later
-  -- Kobe Chen's `b3d5f5af`, 2026-07-21, PR #2358 -- and that one is in 0.23.0, so `harbor
-  trials regrade` is already on the branch we just pushed. It differs in never touching the
-  source trial: it writes a new one, and it also accepts a Hub trial UUID.
-
-  It would replace only half of what we do. `rerun_verifier.sh` builds its own
-  `hb__<task>-reverify` image and runs the verifier container directly, which is what lets it
-  do a judges-only rerun and hand rootless podman the CDI device name that trials stored on
-  `/groups` need. `merge_rerun_verifier.sh` then folds the result back into the original
-  trial, merging `metrics.json` key by key rather than replacing it. `regrade` covers the
-  first script's container work and not the second's merge, so the question is whether harbor
-  should own launching the verifier -- not whether it can take over the workflow.
-- **Every upload makes one call it knows will fail.** Copying files into a container has two
-  routes, `compose cp` and a tar stream for programs that lack it, and harbor records which
-  one the program supports in `supports_compose_cp`. Downloads check that flag before
-  choosing; uploads do not, so they always try `compose cp` first and fall back after it
-  fails. Under podman-compose, which has no `cp` at all, that failure is guaranteed on every
-  upload. It costs nothing but noise in the logs. A small fix, and a candidate for the same
-  pull request as the one above.
-
-### terminus job failures:
+## Record of terminus job failures:
 
 Killed the following jobs on 2026-09-20 because they were stuck. All eight are
 `terminus-opus`, and all eight failed the same way:
@@ -106,15 +43,24 @@ because four more ran to the 800-turn cap on a stuck terminal and were scored on
 `allen2p` t3, `hasnain2024` t1, `lee2025` t1 and `map` t1. `map` needed all three of its
 trials, having produced nothing usable at all.
 
-Each lands a new `raw/<timestamp>/` beside the old one, so the failed runs stay on disk, and
-each records `f6f9ded3` in its `lock.json` -- distinguishing them both from the pre-fix
-failures at `4f5222ad` and from the trials that started on `a5298c05` between the merge and
-the amend. They queue behind the rest of the sweep, so they will not start at once.
+Each landed a new `raw/<timestamp>/` beside the old one and recorded `f6f9ded3` in its
+`lock.json`, distinguishing it from the pre-fix failures at `4f5222ad`. With the
+`mouseland_minimal` trial killed by mistake (below), thirteen went in. They took three
+attempts to start -- a relative config path, then a Launchpad outage, both under "Confirmed
+in live trials" -- and ran on 2026-09-21. Every one produced its outputs:
 
-These are also the confirmation that the fix works in a live trial, which the sweep would not
-otherwise provide: every trial that has run on the fixed harbor so far is a `_minimal` or
-`_api` variant whose largest paste is about 14,000 characters, well under the threshold. The
-`map` trials pasted 36,729, 30,430 and 26,692 characters before, so they are the real test.
+| trial | first run | rerun, fixed harbor |
+|---|---|---|
+| `map` t1 / t2 / t3 | stuck: 0.18, killed, killed | **0.97 / 0.97 / 0.53** |
+| `sosa2024` t1 / t2 | both killed | **0.99 / 0.97** |
+| `allen2p` t2 / t3 | killed, stuck 0.25 | **0.42 / 0.43** |
+| `mouseland` t2 / t3 | both killed | **0.53 / 0.49** |
+| `hasnain2024` t1 | stuck 0.27 | **0.55** |
+| `lee2025` t1 | stuck 0.22 | **0.55** |
+| `zhang2025` t1 | killed | **0.52** |
+| `mouseland_minimal` gpt t1 | healthy, killed by mistake | **0.45** |
+
+So `map` terminus-opus went from no usable trial to three.
 
 **One healthy trial was killed by mistake.** `mouseland_minimal` / `terminus-gpt` t1, LSF
 154377223, killed 21:03 on 2026-09-20 by `watch_stuck_trials.sh`. It was not stuck: its pane
@@ -204,12 +150,21 @@ pane, got the pty stuck, and then spent every remaining turn polling a dead term
 hit the 800-turn cap -- so it ended by running out of turns rather than by hanging, and was
 verified and scored like an ordinary run:
 
-| trial | turns | terminal dead for | reward |
-|---|---|---|---|
-| `allen2p` terminus-opus t3 | 801 | 4h08m | 0.2474 |
-| `lee2025` terminus-opus t1 | 801 | 1h40m | 0.2236 |
-| `map` terminus-opus t1 | 801 | 1h16m | 0.1835 |
-| `hasnain2024` terminus-opus t1 | 801 | 1h11m | 0.2688 |
+| trial | turns | terminal dead for | reward | rerun |
+|---|---|---|---|---|
+| `allen2p` terminus-opus t3 | 801 | 4h08m | 0.2474 | 0.43 |
+| `lee2025` terminus-opus t1 | 801 | 1h40m | 0.2236 | 0.55 |
+| `map` terminus-opus t1 | 801 | 1h16m | 0.1835 | 0.97 |
+| `hasnain2024` terminus-opus t1 | 801 | 1h11m | 0.2688 | 0.55 |
+
+**All four are superseded and set aside, not collected.** The collect script takes anything
+with a `verifier/metrics.json`, and these have one, so left in place they would have been
+collected next to the reruns that replaced them, giving each arm a fourth trial scored on
+nothing. They were moved to `/groups/branson/home/bransonk/harbor-cluster-jobs-superseded/`,
+each keeping its sub-path -- for example
+`hb_allen2p_terminus-opus_t3/allen2p/terminus-2/2026-09-20__05-17-38_trial1` -- and the reruns
+were collected in their place. They are kept for the record of the failure, and are not a
+measurement.
 
 Their closing turns read `Wedged pty, no in-pane action available` and `Terminal unchanged
 for roughly 726 consecutive polls`. **None of them produced any output at all** -- every
@@ -235,28 +190,7 @@ exceeded 20,054 and so never reached it. So the
 by writing in smaller pieces, which is worth saying explicitly wherever the two arms are
 compared.
 
-### The judges move with the agents, deliberately
-
-`claude` and `codex` in that config are the judge pins as well as the agent pins -- the
-agent and the judge share `/root/.local/bin` in the trial container, so whichever installs
-last wins, and one entry per CLI makes "agent and judge run the same CLI" true by
-construction. Each task's `tests/versions.json` is generated from it and carries both the
-harness version and the model, which the judge scripts read inside the verifier container.
-
-So editing the config updates the judging as well: the trials are judged by
-`claude-opus-5` and `gpt-5.6-sol` rather than `claude-opus-4-6` and `gpt-5.4`. That is
-wanted -- the judges should be the current models too -- and it follows that `process`
-scores on these trials are not comparable to the existing ones, which were judged by the
-older pair.
-
-Nothing further is needed to make it happen; `apply_versions.py` rewrites all 48 generated
-files.
-
-**What a rerun measures.** Harness, model, judges and -- for the four tasks in section 1 --
-the prompt all move at once, so it answers "how do current agents do on the current
-benchmark" rather than isolating any one change.
-
-## 3. Podman image builds on the cluster
+## 2. Podman image builds on the cluster
 
 Every cluster job rebuilds the task image, five to seven minutes on these tasks, because
 `PODMAN_PRIVATE_STORAGE=true` gives each job its own graphroot. That is deliberate: a shared
@@ -293,47 +227,19 @@ graphroot on top. Build each task's image once into a shared location, and jobs 
 present, never write to it, and cannot corrupt each other: no per-job build, no
 corruption risk, and nothing for a timeout to interrupt.
 
-## 4. Python embedded in shell scripts
+## Known gaps, not yet scheduled
 
-`merge_rerun_verifier.sh` embeds 14 lines of Python in a heredoc; every other helper in
-`harbor-scripts/` is a script of its own. It is the last one: `rerun_verifier.sh`'s
-`--reuse-accuracy` check became `check_reuse_accuracy.py`.
-
-A heredoc cannot be unit tested, is opaque to `ruff` and an editor, survives `bash -n` while
-broken, and names `File "<stdin>", line 12` in a traceback, which locates nothing in a
-cluster log.
-
-## 5. Finish the `_api` variant
-
-`sosa2024_api` has run: six trials, every one scoring 1.00 on `outcome_all` where plain
-`sosa2024` managed 0.67 and 0.00. They are deliberately **not collected**, so that the whole
-`_api` set is collected in one pass. `allen2p_api`, `map_api` and `zhang2025_api` have since
-run on `claude` and `codex` as well, three trials each, finishing 2026-09-20; the terminus
-arms went in the same day and are still queued.
-
-Submitting is `--api --agents <arms>`. Naming the arms is what keeps a submission to the pair
-wanted: the submitter takes its default arms from the config's `tools` keys, which names
-four, so omitting them submits all four at once.
-
-Two of the three places that need to know about `_api` are done -- `submit_harbor_cluster.py`
-has the scope, and `trial_metrics.py` strips the suffix so a trial reads as dataset
-`sosa2024` in condition `api` rather than as a ninth dataset. What is left is
-`evaluation/eval/utils.py`:
-
-- **`PROMPT_LABEL` has no `api` entry, and that is a crash rather than a gap.**
-  `lesion_analysis.py` indexes it directly at lines 718 and 1235, so the first api arm added
-  to `ARM_COLUMNS` raises `KeyError`. Nothing reaches it today only because no api arm is
-  listed there yet.
-- `ARM_COLUMNS` and `AGENT_KEYS` need api arms once there are results to name them from, and
-  the label has to say what the condition IS -- that the agent was required to read the files
-  through the format's own library -- which no reader infers from "api".
-
-A naming wart to settle at the same time: the field is called `prompt` but now carries
-`datalimit` and `api`, neither of which is a property of the prompt. It reads as the
-condition. Renaming touches every consumer.
-
-## 6. Decisions waiting
-
+- **Two small fixes so a relative `--versions` path cannot silently sink a batch.** On
+  2026-09-21 thirteen resubmitted jobs each exited in under a second because the config was
+  given as `harbor-scripts/config_20260919.json`, and jobs start in the home directory, not
+  the repo. Nothing flagged it until the whole batch had waited in the queue and died.
+  - `submit_harbor_cluster.py:510` passes `--versions` through as typed. Resolving it --
+    `(args.versions or newest_versions_config()).resolve()` -- makes a relative path mean the
+    directory it was typed in. Another session edits and submits through this file too, so
+    tell it before changing.
+  - `run_harbor.sh:72-74` prints `looked for $SCRIPT_DIR/config_*.json` whichever check
+    failed, so when an explicit `--versions` is missing it names the fallback directory -- the
+    correct one -- and points away from the cause. It should name the path it tested.
 - **Push the fork commits?** Each `~/tb-science-*` clone now has three unpushed commits on
   `neurodata-reuse-<name>`, and those branches have open pull requests. The third carries the
   threaded conversion, the CPU fallback and the two session-handling fixes, which brings
@@ -353,8 +259,39 @@ condition. Renaming touches every consumer.
   search returns nothing without raising. The index is present in both datasets, so it should
   not fire, but a check would fail at the point of the mistake. It would have to go into the
   terminal-bench-science copy too, to keep that one file shared.
+- **Offer the compose-detection fix upstream?** Harbor has to work out which "compose" program
+  it is driving, because the two differ: Docker Compose V2 has `cp` and `ls` subcommands and a
+  `--project-directory` flag, while podman-compose -- a separate Python program -- has none of
+  them. Harbor decided by running `podman compose up --help` and looking for `--detach`, which
+  both advertise. So on a host where `podman compose` is only a thin wrapper that hands off to
+  podman-compose, harbor concluded it had Compose V2 and then broke on the first subcommand
+  podman-compose does not have, reporting it as a missing Podman API socket -- which sent us
+  looking in the wrong place entirely. `21e76a50` asks `podman compose version` instead, where
+  the program names itself. The bug is upstream's, not ours, so it is worth offering to
+  harbor-framework; if they take it, we stop carrying the patch.
+- **Should `rerun_verifier.sh` call `harbor trials regrade`?** Re-scoring trials that have
+  already run is needed whenever the grading code changes, and there is nothing left to port:
+  harbor now ships its own command for it. Kai wrote `harbor trials reverify` for the fork in
+  `d7ac3b21` (2026-03-10), which re-ran the verifier on a finished trial and overwrote that
+  trial's `result.json`. Upstream reached the same capability independently four months later
+  -- Kobe Chen's `b3d5f5af`, 2026-07-21, PR #2358 -- and that one is in 0.23.0, so `harbor
+  trials regrade` is already on the branch we just pushed. It differs in never touching the
+  source trial: it writes a new one, and it also accepts a Hub trial UUID.
 
-## 7. Known gaps, not yet scheduled
+  It would replace only half of what we do. `rerun_verifier.sh` builds its own
+  `hb__<task>-reverify` image and runs the verifier container directly, which is what lets it
+  do a judges-only rerun and hand rootless podman the CDI device name that trials stored on
+  `/groups` need. `merge_rerun_verifier.sh` then folds the result back into the original
+  trial, merging `metrics.json` key by key rather than replacing it. `regrade` covers the
+  first script's container work and not the second's merge, so the question is whether harbor
+  should own launching the verifier -- not whether it can take over the workflow.
+- **Every upload makes one call it knows will fail.** Copying files into a container has two
+  routes, `compose cp` and a tar stream for programs that lack it, and harbor records which
+  one the program supports in `supports_compose_cp`. Downloads check that flag before
+  choosing; uploads do not, so they always try `compose cp` first and fall back after it
+  fails. Under podman-compose, which has no `cp` at all, that failure is guaranteed on every
+  upload. It costs nothing but noise in the logs. A small fix, and a candidate for the same
+  pull request as the one above.
 
 - **The forks are behind on grading code.** `check_forks_match.py --worktree` reports
   `tests/test_outputs.py`, `write_reward_file.py` and `train_decoder.py` as differing: the
@@ -436,13 +373,45 @@ prompt on the pane:
   paste problem. Infrastructure: it will not recover. Kill it, and rerun it.
 - **idle prompt** -- the shell sits at an ordinary prompt while the agent issues nothing.
   Agent behaviour, and part of the measurement. gpt-5.4 did this on harbor 0.1.45, with no
-  turn cap, and the v4 arm kept and scored those trials; an LSF kill leaves no verifier and
-  no reward, so killing one drops a result the arm is meant to record.
+  turn cap, and the v4 arm kept and scored those trials. A bare LSF kill leaves no verifier
+  and no reward, so it drops a result the arm is meant to record -- but see "Stop a trial and
+  still score it" below.
 - **busy** -- a command is running and has printed nothing new, or the prompt has scrolled
-  out of view. Usually a long silent command; check the last turns before concluding.
+  out of view. It covers three quite different things, and the label cannot tell them apart:
+  - *a long silent command* -- leave it;
+  - *a command holding the terminal while the agent believes the shell is broken*, because
+    it sent its interrupt as `'C-c\n'`. terminus 0.1.45 turns a bare `'C-c'` into Ctrl-C but
+    types `'C-c\n'` literally, so the interrupt never lands; the agent's later commands are
+    type-ahead that runs once the command exits. Agent behaviour. gpt-5.4 did this on both
+    v5-sweep `map` trials, and both times it read as "shell only echoing input";
+  - *a command blocked on I/O* -- infrastructure. `mouseland` terminus-gpt t2 stalled reading
+    `/nrs` on `h06u24`, under 1 MB/s against ~650 MB/s from the workstation.
+
+  To tell them apart, check whether the command started before or after the last bare
+  `'C-c'` in `job.log`, then take two LSF CPU readings a minute apart with `bjobs -l`. CPU and
+  memory climbing means it is computing; both flat, alongside an ignored bare Ctrl-C, means
+  blocked. The checker does not yet flag the `'C-c\n'` case itself: a `'C-c'` followed by
+  text, sent after the pane stopped changing, is the signature to add.
 
 Checked against 14 known cases: all 10 stuck trials, the 2 idle v4 trials, and 2 healthy
 long-runners, one of them the trial killed by mistake.
+
+**Stop a trial and still score it.** For a trial worth stopping that should still be scored --
+an idle-prompt loop running up the bill, say -- snapshot the verifier first, then kill:
+
+1. pipe step [2/6] of `tests/test.sh` into the live container,
+   `podman exec -i <task>__<id>_main_1 bash -s`, on the job's host, with
+   `CONTAINERS_STORAGE_CONF`, `CONTAINERS_CONF` and `XDG_RUNTIME_DIR` pointed at
+   `/scratch/bransonk/podman-<lsfid>/`. `/logs/verifier` is bind-mounted, so this writes
+   `<trial>/verifier/snapshot/`;
+2. `bkill` the job;
+3. `submit_rerun_verifier.sh --apikeys <trial>`, from the checkout that ran the sweep;
+4. `merge_rerun_verifier.sh --jobdir <trial>`.
+
+The trial then records `CancelledError`, with its cost and time cut off at the kill. Two
+v5-sweep gpt trials were stopped this way, for cost: `hasnain2024` t2, idle for 9 h after
+writing its output ($199.78), and `map` t2, whose own `--sample` conversion ran 3 h on one
+session ($147.46).
 
 Stop it by pid. `pgrep -u $USER -f check_stuck_trials` also matches the shell running the
 pgrep, so confirm the pid with `ps -p <pid>` before `kill <pid>`, and after it. Never edit

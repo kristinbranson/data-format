@@ -256,9 +256,9 @@ neural_binned = bin_average_2d(neural, MOTION_BIN_SIZE_FRAMES)
 
 **What this does:** Neural data is averaged in non-overlapping 10-frame bins, downsampling from 30 Hz to 3 Hz (resulting in `time_bin_size = 1000.0 * 10 / 30 ≈ 333.33` ms).
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** agent is closer to the paper which says it averages 10 timepoints
+**Note:** _(no note)_
 
 ---
 

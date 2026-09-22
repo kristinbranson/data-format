@@ -70,7 +70,7 @@
 | claude-code / trial3 | ok | _(no note)_ |
 | codex / trial1 | ok | _(no note)_ |
 | codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| codex / trial3 | concerning | this will drop frames in the middle of trials |
 
 **Overall comment:** _(no overall comment)_
 

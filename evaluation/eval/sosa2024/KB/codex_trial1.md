@@ -161,9 +161,9 @@ else:
 
 **What this does:** Neural activity is read from NWB `processing/ophys/Deconvolved` (deconvolved calcium events). For multi-plane sessions, the planes are reassembled into a single ROI matrix using `planeIdx`.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data
 
 ---
 
@@ -185,7 +185,7 @@ neural_trial = deconvolved[start:stop].T
 
 **What this does:** Beyond reading the deconvolved values, the only processing is curated-ROI selection, multi-plane reassembly, dtype cast to `float16`, slicing by trial frame indices, and transposing to `(neurons, time)`.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -207,7 +207,7 @@ curated_idx = np.flatnonzero(iscell[:, 0] > 0.5)
 
 **What this does:** ROIs are filtered to those with `iscell[:,0] > 0.5` (Suite2p manual curation flag). No additional speed-correlation interneuron exclusion is applied.
 
-**Rating:** match
+**Rating:** concerning
 
 **Note:** _(no note)_
 

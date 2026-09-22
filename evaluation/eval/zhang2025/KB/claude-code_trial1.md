@@ -227,7 +227,7 @@ else:
 
 **Rating:** incorrect
 
-**Note:** no filtering
+**Note:** _(no note)_
 
 ---
 

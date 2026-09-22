@@ -251,9 +251,9 @@ neural_binned = average_nonoverlapping(neural_processed, BIN_FRAMES)
 
 **What this does:** Neural traces are averaged in non-overlapping 10-frame windows, reducing the 30 Hz rate to ~3 Hz (333.3 ms bin size). Frames not filling a complete 10-frame bin are truncated.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** agent is closer to the paper which says it averages 10 timepoints
+**Note:** _(no note)_
 
 ---
 

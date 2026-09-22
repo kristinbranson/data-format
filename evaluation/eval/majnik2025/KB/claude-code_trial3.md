@@ -266,9 +266,9 @@ return truncated.reshape(new_shape).mean(axis=-1)
 
 **What this does:** Averages every 10 consecutive 30 Hz frames into a single bin (~333.33 ms bin size, i.e. ~3 Hz).
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** agent is closer to the paper which says it averages 10 timepoints
+**Note:** _(no note)_
 
 ---
 

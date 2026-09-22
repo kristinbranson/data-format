@@ -160,9 +160,9 @@ neural_data = deconv_cells[final_cell_mask]
 
 **What this does:** Neural data uses the pre-computed `Deconvolved/plane{N}/data` arrays from NWB, concatenated across planes for multi-plane recordings.
 
-**Rating:** match
+**Rating:** concerning
 
-**Note:** _(no note)_
+**Note:** Deconvolved is stored, but not used by the paper. Instead, it has its own processing on the raw fluorescence data
 
 ---
 
@@ -194,7 +194,7 @@ for i in range(n_trials):
 
 **What this does:** Concatenates deconvolved data from multiple planes. The deconvolved values themselves are not further processed and are passed through as the final neural data; dF/F is computed only for downstream interneuron detection.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 
@@ -225,7 +225,7 @@ neural_data = deconv_cells[final_cell_mask]
 
 **What this does:** First filter is the suite2p `iscell` flag (column 0). Then a vectorized Pearson correlation between per-cell dF/F and speed identifies putative interneurons (corr > 0.5), which are excluded.
 
-**Rating:** ok
+**Rating:** match
 
 **Note:** _(no note)_
 
