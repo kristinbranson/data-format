@@ -123,9 +123,9 @@ def compute_trial_masks(beh: dict) -> list[np.ndarray]:
 
 **What this does:** Trials are split per session by iterating `ntrials` and selecting frames where `ft_trInd` equals the trial index AND the running-corridor mask holds; raises if any trial has zero retained frames.
 
-**Rating:** match
+**Rating:** ok
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

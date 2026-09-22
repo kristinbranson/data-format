@@ -116,9 +116,9 @@ for i in range(ntrials):
 
 **What this does:** Iterates `ntrials` trials per session. Each trial spans `[StartFr[i], StartFr[i+1])` (or to end of session for last trial), clamped to valid frame range. Trials with <2 frames are skipped.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

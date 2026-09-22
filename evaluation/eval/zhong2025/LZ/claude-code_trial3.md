@@ -116,9 +116,9 @@ for t in range(ntrials):
 
 **What this does:** Trials are split using per-trial `StartFr` and `EndFr` from the behavior dict, including both corridor and gray space frames. Trial windows are clipped to the available frames in spk and behavior arrays.
 
-**Rating:** ok
+**Rating:** concerning
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

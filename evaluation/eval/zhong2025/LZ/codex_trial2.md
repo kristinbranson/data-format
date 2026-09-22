@@ -117,9 +117,9 @@ for trial_idx in range(int(beh["ntrials"])):
 
 **What this does:** Trials are iterated using `beh["ntrials"]`. For each trial, the frame index range is `StartFr[trial_idx]:GrayFr[trial_idx]` (corridor-entry to gray-space entry, the texture segment).
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 

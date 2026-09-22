@@ -51,12 +51,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | ok | match | match |
-| claude-code / trial2 | ok | incorrect | match | incorrect |
-| claude-code / trial3 | ok | concerning | match | match |
+| claude-code / trial1 | match | ok | match | match |
+| claude-code / trial2 | concerning | incorrect | match | incorrect |
+| claude-code / trial3 | concerning | concerning | match | match |
 | codex / trial1 | match | match | match | match |
-| codex / trial2 | ok | ok | match | concerning |
-| codex / trial3 | match | ok | match | match |
+| codex / trial2 | match | ok | match | concerning |
+| codex / trial3 | ok | ok | match | match |
 
 **Overall comment:** _(no overall comment)_
 

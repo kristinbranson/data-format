@@ -117,9 +117,9 @@ for trial_idx in range(ntrials):
 
 **What this does:** Trials use `StartFr` (corridor entry) to `GrayFr` (grey-space entry) as the temporal window per trial; rounded to integer frame indices and used as slices into all per-frame arrays.
 
-**Rating:** ok
+**Rating:** match
 
-**Note:** _(no note)_---
+**Note:** _(no note)_
 
 ---
 
