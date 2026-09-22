@@ -59,7 +59,7 @@ def format_scatter(ratings, rater: str = "LZ", *, ax=None, seed: int = 64,
     offset = {"claude-code": -0.18, "codex": 0.18}
     rng = np.random.default_rng(seed)
 
-    ax = ax or plt.subplots(figsize=(6.5, 4))[1]
+    ax = ax or plt.subplots(figsize=(6, 4))[1]
     # Alternating bands: with 8 columns and two agents each, the dataset
     # boundaries are otherwise hard to see.
     for i in range(len(order)):

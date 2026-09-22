@@ -975,6 +975,23 @@ SUMMARY_CAPTION = (
     "failure rather than a gap. Green text highlights high agreement rates.")
 
 
+SUMMARY_COLUMNS = (*CATEGORIES, "End-to-end")
+
+
+def _summary_cell(counts: pd.DataFrame, dataset: str, column: str) -> str:
+    """Both agents' fractions stacked, each green when it clears the rate."""
+    parts = []
+    for agent, prompt in ARMS:
+        r = counts[(counts.dataset == dataset) & (counts.agent == agent)
+                   & (counts.prompt == prompt)].iloc[0]
+        passed, measured = r[column]
+        text = _frac(passed, measured)
+        if measured and passed / measured >= GREEN:
+            text = rf"\textcolor{{highGreen}}{{{text}}}"
+        parts.append(text)
+    return r"\makecell{" + r"\\".join(parts) + "}"
+
+
 def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
                   caption: str | None = SUMMARY_CAPTION,
                   label: str = "outcome_summary") -> str:
@@ -985,7 +1002,7 @@ def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
     trusting it.
     """
     counts = pass_counts(df)
-    columns = (*CATEGORIES, "End-to-end")
+    columns = SUMMARY_COLUMNS
     datasets = [d for d in DATASET_ORDER if d in set(counts.dataset)]
 
     if fmt == "markdown":
@@ -999,23 +1016,10 @@ def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
                              *[_frac(*r[c]) for c in columns]])
         return _markdown_table(["Dataset", "Agent", *columns], body)
 
-    def cell(dataset, column):
-        """Both agents' fractions stacked, each green when it clears the rate."""
-        parts = []
-        for agent, prompt in ARMS:
-            r = counts[(counts.dataset == dataset) & (counts.agent == agent)
-                       & (counts.prompt == prompt)].iloc[0]
-            passed, measured = r[column]
-            text = _frac(passed, measured)
-            if measured and passed / measured >= GREEN:
-                text = rf"\textcolor{{highGreen}}{{{text}}}"
-            parts.append(text)
-        return r"\makecell{" + r"\\".join(parts) + "}"
-
     body = []
     for ds in datasets:
         body.append(display_name(ds, latex=True))
-        body += [f"& {cell(ds, c)}" for c in columns]
+        body += [f"& {_summary_cell(counts, ds, c)}" for c in columns]
         body.append(r"\\")
 
     lines = [r"\begin{table}[b]", r"\centering", r"\small",
@@ -1029,6 +1033,64 @@ def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
              r"  \rowcolors{2}{}{rowgray}",
              r"\Body", r"\toprule",
              " & ".join(["Dataset", *columns]) + r" \\",
+             r"\midrule", *body, r"\bottomrule", r"\end{NiceTabular}"]
+    if caption:
+        lines += [r"\vspace{6pt}", r"\caption{" + caption + "}"]
+    if label:
+        lines.append(r"\label{" + label + "}")
+    lines.append(r"\end{table}")
+    return "\n".join(lines)
+
+
+def short_name(ds: str) -> str:
+    """A dataset's LaTeX name with a two-digit year: Hasnain2024 -> Hasnain24."""
+    name = display_name(ds, latex=True)
+    return name[:-4] + name[-2:] if name[-4:].isdigit() else name
+
+
+def summary_table_transposed(df: pd.DataFrame, *, fmt: str = "latex",
+                             caption: str | None = SUMMARY_CAPTION,
+                             label: str = "outcome_summary",
+                             short_names: bool = True) -> str:
+    """`summary_table` with datasets as columns and categories as rows.
+
+    Same cells, same caption and label, so the two are interchangeable in the
+    paper: this one is wider and shorter (four rows instead of eight). The
+    headers set the column widths, so `short_names` drops the century from the
+    year to keep the table inside the text width.
+    """
+    counts = pass_counts(df)
+    datasets = [d for d in DATASET_ORDER if d in set(counts.dataset)]
+    header = short_name if short_names else (lambda ds: display_name(ds, latex=True))
+
+    if fmt == "markdown":
+        body = []
+        for c in SUMMARY_COLUMNS:
+            for i, (agent, prompt) in enumerate(ARMS):
+                row = []
+                for ds in datasets:
+                    r = counts[(counts.dataset == ds) & (counts.agent == agent)
+                               & (counts.prompt == prompt)].iloc[0]
+                    row.append(_frac(*r[c]))
+                body.append([c if i == 0 else "",
+                             AGENT_SHORT[arm_label((agent, prompt))], *row])
+        return _markdown_table(["", "Agent", *map(display_name, datasets)], body)
+
+    body = []
+    for c in SUMMARY_COLUMNS:
+        body.append(c)
+        body += [f"& {_summary_cell(counts, ds, c)}" for ds in datasets]
+        body.append(r"\\")
+
+    lines = [r"\begin{table}[b]", r"\centering", r"\small",
+             r"\begin{NiceTabular}{l " + " ".join("c" * len(datasets)) + "}[",
+             r"  cell-space-top-limit = 1pt,",
+             r"  cell-space-bottom-limit = 1pt,",
+             r"  colortbl-like", r"]",
+             r"\CodeBefore",
+             r"  \rowcolors{2}{}{rowgray}",
+             r"\Body", r"\toprule",
+             " & ".join(["", *map(header, datasets)]) + r" \\",
              r"\midrule", *body, r"\bottomrule", r"\end{NiceTabular}"]
     if caption:
         lines += [r"\vspace{6pt}", r"\caption{" + caption + "}"]
