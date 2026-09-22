@@ -114,9 +114,9 @@
 | claude-code / trial1 | incorrect | incorrect | match | match |
 | claude-code / trial2 | incorrect | incorrect | match | match |
 | claude-code / trial3 | incorrect | incorrect | match | match |
-| codex / trial1 | ok | concerning | concerning | concerning |
-| codex / trial2 | ok | concerning | match | incorrect |
-| codex / trial3 | ok | concerning | concerning | concerning |
+| codex / trial1 | concerning | concerning | concerning | concerning |
+| codex / trial2 | concerning | concerning | match | incorrect |
+| codex / trial3 | concerning | concerning | concerning | concerning |
 
 **Overall comment:** The LLM judges rated the no-filter solutions as more "correct".
 

@@ -362,7 +362,7 @@ me_disc = discretize_me(me_t, bin_edges)
 
 **What this does:** Motion energy is bin-averaged over 10-frame bins (matching the neural binning), then concatenated across all sessions to compute 5 equal-percentile bin edges globally. Each per-trial motion-energy vector is then discretized into integer labels 0–4 via `np.digitize` against those global edges. No per-session normalization is applied.
 
-**Rating:** ok
+**Rating:** incorrect
 
 **Note:** _(no note)_
 

@@ -235,7 +235,7 @@ good_spike_times = np.asarray(spikes_times[spike_mask], dtype=np.float64)
 
 **What this does:** Clusters whose IBL-bundled `clusters.metrics.label >= 1` are kept ("well-isolated"); spikes from other clusters are dropped via a boolean mask indexed by cluster ID, then cluster IDs are remapped to a contiguous range.
 
-**Rating:** ok
+**Rating:** concerning
 
 **Note:** _(no note)_
 

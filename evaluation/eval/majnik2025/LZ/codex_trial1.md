@@ -356,7 +356,7 @@ output_trial = np.digitize(motion_norm_binned[start:stop], motion_edges[1:-1], r
 
 **What this does:** (1) Missing camera frames are inferred from interframe-interval timing-step accumulation and filled by linear interpolation. (2) Reconstructed motion is averaged in 10-frame bins. (3) All sessions' binned motion are pooled, min-max normalized globally, then discretized into 5 equal-percentile bins (Q1-Q5) using `np.digitize`.
 
-**Rating:** concerning
+**Rating:** ok
 
 **Note:** _(no note)_
 

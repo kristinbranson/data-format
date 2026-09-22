@@ -142,11 +142,11 @@
 | claude-code / trial1 | incorrect | _(no note)_ |
 | claude-code / trial2 | incorrect | _(no note)_ |
 | claude-code / trial3 | incorrect | _(no note)_ |
-| codex / trial1 | ok | _(no note)_ |
-| codex / trial2 | ok | _(no note)_ |
-| codex / trial3 | ok | _(no note)_ |
+| codex / trial1 | concerning | _(no note)_ |
+| codex / trial2 | concerning | _(no note)_ |
+| codex / trial3 | concerning | _(no note)_ |
 
-**Overall comment:** cluster-level QC filtering + brain region filter (no void)
+**Overall comment:** Claude didn't implement any fltering, Codex only used cluster QC label but not the brain region label (!= void)
 
 ---
 

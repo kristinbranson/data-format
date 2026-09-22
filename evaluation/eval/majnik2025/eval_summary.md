@@ -194,12 +194,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | incorrect | concerning | incorrect |
-| claude-code / trial2 | ok | incorrect | concerning | incorrect |
-| claude-code / trial3 | match | incorrect | incorrect | incorrect |
-| codex / trial1 | concerning | ok | better | ok |
+| claude-code / trial1 | incorrect | incorrect | concerning | incorrect |
+| claude-code / trial2 | incorrect | incorrect | concerning | incorrect |
+| claude-code / trial3 | incorrect | incorrect | incorrect | incorrect |
+| codex / trial1 | ok | ok | better | ok |
 | codex / trial2 | ok | ok | concerning | incorrect |
-| codex / trial3 | concerning | ok | better | incorrect |
+| codex / trial3 | ok | ok | better | incorrect |
 
 **Overall comment:** Judge ratings are inconsistent for the same solutions.
 
