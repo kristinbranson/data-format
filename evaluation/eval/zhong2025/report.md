@@ -26,7 +26,7 @@ Ratings are evaluator LZ's, including the few questions where a judge was found 
 | 1-b | How are the data split into subjects? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 1-c | How are the data split into sessions? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🔵🟢🟢 | 🟢🔵🟢 🟢🔵🔵 |  |  |  |
 | 1-d | Are the data correctly split into trials? | 🔵🔵🔵 🟢🔵🟢 | 🔵🔴🟡 🟢🔵🔵 | 🟡🔴🔴 🟡🟡🟡 | 🔴🔴🔴 🔴🔴🔴 | Large variation in how trial boundaries are defined; multiple solutions are acceptable. |  |  |
-| 1-e | How are trials filtered based on quality controls? | 🟡🟡🟡 🟢🟡🟢 | 🔵🔵🔵 🔵🔵🔵 | 🟢🟢🟢 🟡🟢🟡 | 🔴🔴🟡 🔴🔴🔴 | Filtering out extremely long "trials" where the animal is stationary is required. |  | `FILTER=4` |
+| 1-e | How are trials filtered based on quality controls? | 🟡🟡🟡 🟢🟡🟢 | 🔵🔵🔵 🔵🔵🟡 | 🟢🟢🟢 🟡🟢🟡 | 🔴🔴🟡 🔴🔴🔴 | Filtering out extremely long "trials" where the animal is stationary is required. |  | `FILTER=4` |
 | 2-a | What variables in the raw data is the final `neural` data derived from? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 |  |  |  |
 | 2-b | How is the `neural` data processed? | 🟢🟢🟢 🟢🟢🟢 | 🟢🟢🟢 🟢🟢🟢 | 🟡🟢🟡 🔴🟡🟢 | 🔴🔴🔴 🔴🔴🔴 | The neural data requires little processing beyond combining the imaging planes. The agents tend to store the data as float16, which is unnecessary. |  |  |
 | 2-c | How is the `neural` data filtered based on quality controls? | 🔵🟢🔵 🟡🟡🔴 | 🔵🟢🔵 🟡🟡🟡 | 🔴🟢🔴 🔴🔴🔴 | 🔴🟢🔴 🔴🔴🔴 | The codex agents used very aggressive selectivity-based filters; one trial even dropped V1 entirely, which is hard to justify. |  | `FILTER=3` |

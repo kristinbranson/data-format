@@ -111,12 +111,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | concerning | incorrect | match | match |
-| claude-code / trial2 | concerning | incorrect | match | match |
-| claude-code / trial3 | concerning | incorrect | match | match |
-| codex / trial1 | match | match | concerning | concerning |
-| codex / trial2 | match | match | match | incorrect |
-| codex / trial3 | match | match | concerning | concerning |
+| claude-code / trial1 | incorrect | incorrect | match | match |
+| claude-code / trial2 | incorrect | incorrect | match | match |
+| claude-code / trial3 | incorrect | incorrect | match | match |
+| codex / trial1 | ok | concerning | concerning | concerning |
+| codex / trial2 | ok | concerning | match | incorrect |
+| codex / trial3 | ok | concerning | concerning | concerning |
 
 **Overall comment:** The LLM judges rated the no-filter solutions as more "correct".
 

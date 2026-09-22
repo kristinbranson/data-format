@@ -73,12 +73,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | match | match | concerning |
-| claude-code / trial2 | ok | match | match | match |
-| claude-code / trial3 | ok | match | match | incorrect |
-| codex / trial1 | ok | match | match | match |
-| codex / trial2 | ok | match | match | incorrect |
-| codex / trial3 | ok | match | match | match |
+| claude-code / trial1 | ok | concerning | match | concerning |
+| claude-code / trial2 | ok | concerning | match | match |
+| claude-code / trial3 | ok | concerning | match | incorrect |
+| codex / trial1 | ok | concerning | match | match |
+| codex / trial2 | ok | concerning | match | incorrect |
+| codex / trial3 | ok | concerning | match | match |
 
 ---
 
@@ -86,12 +86,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | ok | ok | ok | concerning |
-| claude-code / trial2 | ok | ok | concerning | incorrect |
-| claude-code / trial3 | ok | ok | better | incorrect |
-| codex / trial1 | ok | match | match | ok |
-| codex / trial2 | incorrect | incorrect | concerning | incorrect |
-| codex / trial3 | ok | match | concerning | match |
+| claude-code / trial1 | ok | concerning | ok | concerning |
+| claude-code / trial2 | ok | concerning | concerning | incorrect |
+| claude-code / trial3 | ok | concerning | better | incorrect |
+| codex / trial1 | ok | concerning | match | ok |
+| codex / trial2 | incorrect | concerning | concerning | incorrect |
+| codex / trial3 | ok | concerning | concerning | match |
 
 ---
 
@@ -99,12 +99,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | ok | better | concerning |
-| claude-code / trial2 | match | ok | concerning | incorrect |
-| claude-code / trial3 | match | ok | better | incorrect |
-| codex / trial1 | ok | match | match | match |
-| codex / trial2 | ok | ok | match | match |
-| codex / trial3 | ok | match | match | concerning |
+| claude-code / trial1 | match | match | better | concerning |
+| claude-code / trial2 | match | match | concerning | incorrect |
+| claude-code / trial3 | match | match | better | incorrect |
+| codex / trial1 | ok | concerning | match | match |
+| codex / trial2 | ok | concerning | match | match |
+| codex / trial3 | ok | concerning | match | concerning |
 
 **Overall comment:** Claude judge gave inconsistent ratings for the same solution.
 

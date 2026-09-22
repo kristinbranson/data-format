@@ -127,12 +127,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | match | ok | better | incorrect |
-| claude-code / trial2 | match | ok | ok | incorrect |
-| claude-code / trial3 | match | ok | incorrect | incorrect |
-| codex / trial1 | match | ok | better | better |
-| codex / trial2 | match | ok | ok | incorrect |
-| codex / trial3 | match | ok | better | incorrect |
+| claude-code / trial1 | match | match | better | incorrect |
+| claude-code / trial2 | match | match | ok | incorrect |
+| claude-code / trial3 | match | match | incorrect | incorrect |
+| codex / trial1 | match | match | better | better |
+| codex / trial2 | match | match | ok | incorrect |
+| codex / trial3 | match | match | better | incorrect |
 
 **Overall comment:** LLM judge ratings are inconsistent, ranging from "better" to "incorrect" for the same binning strategy.
 
@@ -194,12 +194,12 @@
 
 | Agent / trial | LZ | KB | Claude judge | Codex judge |
 |---|---|---|---|---|
-| claude-code / trial1 | concerning | incorrect | concerning | incorrect |
-| claude-code / trial2 | concerning | incorrect | concerning | incorrect |
-| claude-code / trial3 | concerning | incorrect | incorrect | incorrect |
-| codex / trial1 | match | ok | better | ok |
-| codex / trial2 | match | ok | concerning | incorrect |
-| codex / trial3 | match | ok | better | incorrect |
+| claude-code / trial1 | ok | incorrect | concerning | incorrect |
+| claude-code / trial2 | ok | incorrect | concerning | incorrect |
+| claude-code / trial3 | match | incorrect | incorrect | incorrect |
+| codex / trial1 | concerning | ok | better | ok |
+| codex / trial2 | ok | ok | concerning | incorrect |
+| codex / trial3 | concerning | ok | better | incorrect |
 
 **Overall comment:** Judge ratings are inconsistent for the same solutions.
 

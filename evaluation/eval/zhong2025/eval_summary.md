@@ -71,7 +71,7 @@
 | claude-code / trial3 | concerning | ok | concerning | incorrect |
 | codex / trial1 | match | ok | concerning | concerning |
 | codex / trial2 | concerning | ok | match | match |
-| codex / trial3 | match | ok | match | match |
+| codex / trial3 | match | concerning | match | match |
 
 **Overall comment:** _(no overall comment)_
 
