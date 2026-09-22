@@ -58,6 +58,9 @@ CURATED_FIELDS = (
     "validation_balanced_accuracy",            # always present
     "validation_balanced_accuracy_reference",  # supervised only
     "validation_balanced_accuracy_ratio",      # supervised only
+    # The pass bar per reference output: mean - ACCURACY_NSTD*std of the
+    # reference's re-splits (test_outputs.accuracy_threshold). Supervised only.
+    "validation_balanced_accuracy_threshold",
     # Verifier-check fields (from test_outputs.py). Present whenever the
     # corresponding test reached the point of recording them; absent when
     # the test was skipped (e.g. for unsupervised datasets that have no
@@ -126,6 +129,9 @@ CURATED_PREFIXES = (
     # Per-variable class counts (and the reference variant), recorded by
     # test_data_stats. Consumers derive chance = 1 / output_nclasses_<var>.
     "output_nclasses_",
+    # The verifier's per-output decoder verdict against that threshold, keyed by
+    # the reference's variable name. False also for an output the agent never produced.
+    "decoder_accuracy_ok_",
 )
 
 

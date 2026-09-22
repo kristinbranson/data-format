@@ -118,8 +118,11 @@ print(f'datasets: {datasets}')
 print(f'agents: {agents}')
 print(f'prompts: {prompts}')
 
-print(f'\ndata keys for {datasets[0]} / {agents[0]} / {prompts[0]} / {trials[0]}:')
-for k,v in data[datasets[0]][agents[0]][prompts[0]][trials[0]].items():
+# Sample from the first paper arm: not every (agent, prompt) in the union exists
+# for every dataset (e.g. there is no allen2p/claude-code/api).
+sample_agent, sample_prompt = ARM_COLUMNS[0]
+print(f'\ndata keys for {datasets[0]} / {sample_agent} / {sample_prompt} / {trials[0]}:')
+for k,v in data[datasets[0]][sample_agent][sample_prompt][trials[0]].items():
     print(f'{k}: {v}')
     
 # Oracle summary statistics for one dataset, or None if it has none

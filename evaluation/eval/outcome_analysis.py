@@ -47,15 +47,11 @@ sys.path.append(str(ROOT / "template-harbor-task" / "tests"))
 import test_outputs as tests  # noqa: E402
 
 STATLIMITS = tests.STATLIMITS
-MIN_ACCURACY_FRAC = tests.MIN_ACCURACY_FRAC     # 0.95
 
-# What counts as matching the reference decoder in the summary table. Not
-# `MIN_ACCURACY_FRAC`: the decoder table marks every ratio below 0.90 in orange
-# or red and leaves the rest black, so scoring at 0.95 would count uncolored
-# cells as failures and the two tables would disagree on the page. 0.90 is also
-# what the published summary used. `ratio_color` is the single definition of
-# that boundary -- change it there and this follows.
-DECODER_MIN = 0.90
+# A decoder variable passes on the verifier's own rule, accuracy at least
+# mean - ACCURACY_NSTD*std of the reference's re-splits (`_decoder_flags`), not
+# the preprint's 0.90-of-reference. The decoder table colors by the same spread
+# (`decoder_color`), so its red cells are exactly the failures.
 
 
 # ---------- what the tables cover ----------
@@ -293,6 +289,7 @@ def scale_rows(df: pd.DataFrame, dataset: str):
 
 RATIO_PREFIX = "validation_balanced_accuracy_ratio."
 REF_PREFIX = "validation_balanced_accuracy_reference."
+THRESHOLD_PREFIX = "validation_balanced_accuracy_threshold."
 
 # Per-dataset row order, carried over from `metrics.ROW_ORDER` (metrics.py is a
 # jupytext notebook and cannot be imported). Roughly most to least decodable,
@@ -468,6 +465,12 @@ def decoder_rows(df: pd.DataFrame, dataset: str):
 def _decoder_flags(row, df: pd.DataFrame, dataset: str) -> list[bool]:
     """Pass/fail per reference output variable, skipping the unmeasured.
 
+    The verifier's rule: the agent's accuracy must reach the reference mean -
+    ACCURACY_NSTD*std over its re-splits, recorded per variable in
+    `validation_balanced_accuracy_threshold`. The agent's accuracy is taken as
+    ratio * reference accuracy, so a mispairing repaired by `_ratio_cell` is
+    graded on the repaired ratio rather than the matcher's wrong partner.
+
     A variable the agent produced no counterpart for counts as a failure rather
     than a gap, for the reason `_output_nclasses_match` gives.
     """
@@ -479,7 +482,10 @@ def _decoder_flags(row, df: pd.DataFrame, dataset: str) -> list[bool]:
         elif cell is MISPAIRED or cell is None:
             continue
         else:
-            out.append(bool(cell >= DECODER_MIN))
+            ref, bar = REF_PREFIX + var, THRESHOLD_PREFIX + var
+            if not (_has(row, ref) and _has(row, bar)):
+                continue
+            out.append(bool(cell * float(row[ref]) >= float(row[bar])))
     return out
 
 
@@ -553,14 +559,18 @@ def _is_symbol(v) -> bool:
         isinstance(v, float) and np.isnan(v))
 
 
-def _numeric_cell(v, *, latex: bool = True) -> str:
+def _numeric_cell(v, *, latex: bool = True, color=None) -> str:
     """One cell of a numeric column: formatted, colored, and centered if a mark.
+
+    `color` maps the cell value to a color name or None, defaulting to
+    `ratio_color`; the decoder table passes its own, since it colors by the
+    reference's spread, not the ratio.
 
     The numeric columns are right-aligned so the decimal points line up, which
     leaves a short mark ($\\times$, --) pinned to the right edge instead of
     under its header. `\\multicolumn{1}{c}` re-centers just those cells.
     """
-    text, color = _fmt_ratio(v, latex=latex), ratio_color(v)
+    text, color = _fmt_ratio(v, latex=latex), (color or ratio_color)(v)
     if color:
         text = rf"\textcolor{{{color}}}{{{text}}}" if latex else text
     return rf"\multicolumn{{1}}{{c}}{{{text}}}" if latex and _is_symbol(v) else text
@@ -858,6 +868,48 @@ DECODER_CAPTION = (
     "agent produced no counterpart for, which counts as a failure.")
 
 
+# Decoder cells are colored by how far the agent's accuracy falls below the
+# reference mean, in units of the reference's std over independent re-splits.
+# Red is the verifier's own failure line, so a red cell is exactly a failed
+# variable in the summary table; orange warns at the looser DECODER_WARN_NSTD
+# below, and blue mirrors red: accuracy more than ACCURACY_NSTD above the mean.
+DECODER_WARN_NSTD = 2.0
+
+
+def _reference_spread(dataset: str) -> dict[str, tuple[float, float]]:
+    """{variable: (mean, std)} of the reference's re-split accuracies, canonical names."""
+    stats = load_reference_stats(dataset, full=True) or {}
+    means = stats.get("validation_balanced_accuracy_mean") or {}
+    stds = stats.get("validation_balanced_accuracy_std") or {}
+    return {DECODER_VAR_ALIASES.get(k, k): (means[k], stds[k])
+            for k in means if k in stds}
+
+
+def decoder_color(ref, spread):
+    """The color rule for one decoder row, as a function of the cell's ratio.
+
+    `ref` is the reference accuracy the ratio is taken against, so ratio * ref
+    recovers the agent's accuracy; `spread` is that variable's (mean, std).
+    """
+    def color(v):
+        if v is UNMATCHED:
+            return "red"
+        if v is MISPAIRED or v is None or (isinstance(v, float) and np.isnan(v)):
+            return None
+        if ref is None or spread is None:
+            return None
+        mean, std = spread
+        below = mean - v * ref
+        if below > tests.ACCURACY_NSTD * std:
+            return "red"
+        if below > DECODER_WARN_NSTD * std:
+            return "orange"
+        if -below > tests.ACCURACY_NSTD * std:
+            return "blue"
+        return None
+    return color
+
+
 def decoder_table(df: pd.DataFrame, *, fmt: str = "latex",
                   caption: str | None = DECODER_CAPTION,
                   label: str = "decoder-supervised") -> str:
@@ -881,10 +933,12 @@ def decoder_table(df: pd.DataFrame, *, fmt: str = "latex",
 
     body = []
     for ds, rs in blocks:
+        spread = _reference_spread(ds)
         for i, (var, cells, ref, chance) in enumerate(rs):
             head = (rf"\multirow{{{len(rs)}}}{{*}}{{{display_name(ds, latex=True)}}}"
                     if i == 0 else "")
-            nums = [_numeric_cell(v) for v in cells]
+            color = decoder_color(ref, spread.get(var))
+            nums = [_numeric_cell(v, color=color) for v in cells]
             body.append(" & ".join([head, _escape(VAR_LABEL.get(var, var)), *nums,
                                     ref_cell(ref, chance)]) + r" \\")
         if ds != blocks[-1][0]:
@@ -908,9 +962,9 @@ SUMMARY_CAPTION = (
     "reference, within 10\\% for sessions, trials, neurons and median bin "
     "count and to within one subject, since a conversion should neither drop "
     "nor invent them (Table~\\ref{scale-supervised}). \\emph{Decoder} is the "
-    "fraction of decoder metrics for which validation accuracy reached at "
-    "least 90\\% of the reference, the threshold below which "
-    "Table~\\ref{decoder-supervised} colors a cell. \\emph{End-to-end} counts "
+    "fraction of decoder metrics for which validation accuracy reached the "
+    "reference's mean minus 4.5 standard deviations over independent re-splits "
+    "of the reference data (Table~\\ref{decoder-supervised}). \\emph{End-to-end} counts "
     "trials in which every statistic and decoder metric measured for that "
     "trial passed simultaneously; the checks are excluded, since they test "
     "whether the conversion is defined as the reference defines it rather than "

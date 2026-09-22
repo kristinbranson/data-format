@@ -84,6 +84,11 @@ TOTAL_ROWS = {"Total tokens", "Total time (min)"}
 def collect(job_dir=DEFAULT_JOB_DIR) -> list[dict]:
     """One dict per trial, straight from the run tree."""
     found = trials.discover_trials(str(job_dir))
+    # The paper's runs only: an arm folder with a `-config_<date>` suffix is a later
+    # sweep (new models or prompt v5), and the `<task>_api` tasks exist only there.
+    found = [t for t in found
+             if "-config" not in Path(t).parent.name
+             and not Path(t).parents[1].name.endswith("_api")]
     if not found:
         sys.exit(f"No trials found under {job_dir}")
     return [trials.build_row(t) for t in found]

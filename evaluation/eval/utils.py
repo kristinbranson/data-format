@@ -218,6 +218,7 @@ _ALIASED_TOP_LEVEL_PREFIXES = (
     "output_nclasses_",
     "output_range_error_",
     "output_fraction_error_",
+    "decoder_accuracy_ok_",
 )
 
 
