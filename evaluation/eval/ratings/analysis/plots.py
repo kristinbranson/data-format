@@ -227,11 +227,11 @@ def _grouping(df, group, order, labels, colors):
 
 
 def _grouped_bars(ax, x, counts, order, labels, colors, *, span=0.8,
-                  annotate=True):
+                  annotate=True, fmt=str):
     """One bar per group at each x, evenly spread over `span`.
 
     With two groups and the default span this is the +/- width/2 layout the
-    agent figures have always used.
+    agent figures have always used. `fmt` turns a bar's height into its label.
     """
     width = span / len(order)
     starts = (np.arange(len(order)) - (len(order) - 1) / 2) * width
@@ -240,7 +240,7 @@ def _grouped_bars(ax, x, counts, order, labels, colors, *, span=0.8,
                color=colors.get(g), alpha=0.8)
         if annotate:
             for i, n in enumerate(counts[g]):
-                ax.text(i + dx, n, str(n), ha="center", va="bottom", fontsize=8)
+                ax.text(i + dx, n, fmt(n), ha="center", va="bottom", fontsize=8)
 
 
 def rating_levels(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
@@ -279,30 +279,51 @@ def question_spread(df: pd.DataFrame, rater: str = "LZ") -> pd.Series:
     return (g.min() - g.max()).dropna()
 
 
+def spread_counts(df: pd.DataFrame, rater: str = "LZ", *, levels=SPREAD_LEVELS,
+                  group: str = "agent", order=None, labels=None) -> pd.DataFrame:
+    """Number of questions at each per-question spread, one column per group.
+
+    The `total` row is every question with a spread, including any beyond
+    `levels`, so it is the denominator `spread_bars` divides by.
+    """
+    order, labels, _ = _grouping(df, group, order, labels, None)
+    out = {}
+    for g in order:
+        spread = question_spread(df[df[group] == g], rater)
+        out[labels.get(g, g)] = [int((spread == lv).sum()) for lv in levels] + [len(spread)]
+    return pd.DataFrame(out, index=pd.Index([*levels, "total"], name="spread"))
+
+
 def spread_bars(df: pd.DataFrame, rater: str = "LZ", *, ax=None,
                 levels=SPREAD_LEVELS, group: str = "agent", order=None,
-                labels=None, colors=None):
+                labels=None, colors=None, proportion: bool = True):
     """Per-question spread (worst trial minus best), the groups side by side.
 
     0 means all three trials of that group were rated the same; -3 means one
     trial was three levels worse than another. Same denominator for every group
     — each question is counted once per group — so the bars are directly
-    comparable and the counts are on them.
+    comparable. `proportion` plots shares of that group's questions (n in the
+    legend) rather than counts; `spread_counts` has the counts behind it.
     """
     order, labels, colors = _grouping(df, group, order, labels, colors)
-    counts = {}
+    table = spread_counts(df, rater, levels=levels, group=group, order=order,
+                          labels=labels)
+    counts, legend = {}, {}
     for g in order:
-        spread = question_spread(df[df[group] == g], rater)
-        counts[g] = np.array([int((spread == lv).sum()) for lv in levels])
+        col = table[labels.get(g, g)]
+        n = col["total"]
+        counts[g] = (col[levels] / n).to_numpy() if proportion else col[levels].to_numpy()
+        legend[g] = f"{labels.get(g, g)} (n = {n})" if proportion else labels.get(g, g)
 
     x = np.arange(len(levels))
-    ax = ax or plt.subplots(figsize=(5.5, 4))[1]
-    _grouped_bars(ax, x, counts, order, labels, colors)
+    ax = ax or plt.subplots(figsize=(5, 4))[1]
+    _grouped_bars(ax, x, counts, order, legend, colors, span=0.5,
+                  fmt=(lambda v: f"{v:.2f}") if proportion else str)
 
     ax.set_xticks(x)
     ax.set_xticklabels([str(lv) for lv in levels])
     ax.set_xlabel(f"Per-question spread, min $-$ max ({rater})")
-    ax.set_ylabel("Number of Questions")
+    ax.set_ylabel("Proportion of Questions" if proportion else "Number of Questions")
     ax.legend()
     ax.figure.tight_layout()
     return ax.figure, ax
