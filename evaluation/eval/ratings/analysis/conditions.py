@@ -605,6 +605,67 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
     return ax
 
 
+# ---------- outcome against process, trial by trial ----------
+
+FAMILY_COLOR = {"Claude": "#E67E00", "GPT": "#08306B"}
+
+
+def model_family(condition: str) -> str:
+    """"Claude" for the Claude Code / Terminus-Opus conditions, "GPT" for the rest."""
+    return "Claude" if condition.startswith(("claude-code", "terminus-opus")) else "GPT"
+
+
+def paired_scores(outcome: pd.DataFrame, process: pd.DataFrame) -> pd.DataFrame:
+    """One row per trial scored both ways: `outcome` (`score`) and `process`
+    (`frac_ok`), matched on dataset, condition and trial, plus its `family`.
+    A trial missing either score (a failed run has no outcome) is dropped."""
+    keys = ["dataset", "condition", "trial"]
+    pairs = outcome[keys + ["score"]].merge(process[keys + ["frac_ok"]], on=keys)
+    pairs = pairs.rename(columns={"score": "outcome", "frac_ok": "process"})
+    return pairs.assign(family=pairs.condition.map(model_family))
+
+
+def score_scatter(pairs: pd.DataFrame, *, by: str | None = None, order=None,
+                  ncols: int = 4, color_by: str | None = "family",
+                  panel_size: float = 2.6):
+    """Process score (x) against outcome score (y), one point per trial.
+
+    One panel, or one per value of `by` (in `order`), each titled with n and
+    Pearson r. Points are colored by `color_by` (FAMILY_COLOR), or gray if None.
+    Returns `(fig, axes)`.
+    """
+    groups = [(None, pairs)] if by is None else [
+        (g, pairs[pairs[by] == g]) for g in (order or sorted(pairs[by].unique()))]
+    ncols = min(ncols, len(groups))
+    nrows = -(-len(groups) // ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(panel_size * ncols + 0.4,
+                                                    panel_size * nrows + 0.3),
+                             sharex=True, sharey=True, squeeze=False)
+    for ax, (name, sub) in zip(axes.flat, groups):
+        colors = (sub[color_by].map(FAMILY_COLOR) if color_by else "0.4")
+        ax.scatter(sub.process, sub.outcome, s=14, c=colors, alpha=0.6,
+                   edgecolors="none")
+        r = sub[["process", "outcome"]].corr().iloc[0, 1] if len(sub) > 2 else np.nan
+        head = f"{name}  " if name is not None else ""
+        ax.set_title(f"{head}n = {len(sub)}, r = {r:.2f}", fontsize=9)
+        ax.set_xlim(0, 1.03)
+        ax.set_ylim(0, 1.03)
+    for ax in axes.flat[len(groups):]:
+        ax.set_visible(False)
+    for ax in axes[-1]:
+        ax.set_xlabel("Process score")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Outcome score")
+    fig.tight_layout()
+    if color_by and by != color_by:
+        # Above the panels, so it never sits on a panel's points.
+        handles = [plt.Line2D([], [], ls="", marker="o", color=c, label=f)
+                   for f, c in FAMILY_COLOR.items()]
+        fig.legend(handles=handles, frameon=False, fontsize=8, ncol=len(handles),
+                   loc="lower center", bbox_to_anchor=(0.5, 1.0))
+    return fig, axes
+
+
 def stand_in(scores: pd.DataFrame, target: str, source: str) -> pd.DataFrame:
     """Fill `target`'s missing datasets with `source`'s trials, relabeled as `target`.
 
