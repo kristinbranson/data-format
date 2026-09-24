@@ -562,12 +562,13 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
                box_stat: str | None, ylim, labels: dict,
                title: str | None = None, tick_fontsize: float = 8,
                positions=None, width: float = 0.6, alpha: float = 0.45,
-               edge: str = "0.45", edge_lw: float = 1.0):
+               edge: str = "0.45", edge_lw: float = 1.0, colors: dict | None = None):
     """One box per condition on `ax`, `mean ± spread` written under each.
 
     Shared by `condition_scatter` and `condition_boxes`, so a box means the
-    same thing in both.
+    same thing in both. `colors` overrides `CONDITION_COLOR` per condition.
     """
+    colors = {**CONDITION_COLOR, **(colors or {})}
     data = [scores[scores.condition == c][value].to_numpy() for c in conditions]
     positions = list(positions or range(1, len(conditions) + 1))
     bp = ax.boxplot(data, positions=positions, widths=width, patch_artist=True,
@@ -578,7 +579,7 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
     # on the patch fades the edge with the fill, and a half-transparent edge
     # over a half-transparent face is what Illustrator draws as a seam.
     for patch, condition in zip(bp["boxes"], conditions):
-        patch.set(facecolor=to_rgba(CONDITION_COLOR[condition], alpha),
+        patch.set(facecolor=to_rgba(colors[condition], alpha),
                   edgecolor=edge, lw=edge_lw)
     for key in ("whiskers", "caps"):
         for line in bp[key]:
@@ -604,6 +605,19 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
     return ax
 
 
+def stand_in(scores: pd.DataFrame, target: str, source: str) -> pd.DataFrame:
+    """Fill `target`'s missing datasets with `source`'s trials, relabeled as `target`.
+
+    For a condition that was only re-run where it differs from `source` -- the v5
+    prompt only on the datasets whose prompts changed -- so that it covers every
+    dataset. On the filled datasets the two conditions are the same trials, and any
+    comparison between them is 0 there by construction.
+    """
+    have = set(scores.loc[scores.condition == target, "dataset"])
+    fill = scores[(scores.condition == source) & ~scores.dataset.isin(have)]
+    return pd.concat([scores, fill.assign(condition=target)], ignore_index=True)
+
+
 def condition_test(scores: pd.DataFrame, a: str, b: str, *,
                    value: str = "frac_ok", n_iter: int = 20000,
                    seed: int = 0) -> dict:
@@ -616,10 +630,10 @@ def condition_test(scores: pd.DataFrame, a: str, b: str, *,
     observed arrangement is counted in, so p is never 0 and bottoms out at
     `1 / (n_iter + 1)`.
 
-    Returns the p value, the number of datasets, the mean gap, and `wins`, the
-    datasets on which `a` came out ahead — worth reading alongside p, since the
-    null's spread is run-to-run noise and a large gap on a few datasets can
-    clear it while the rest disagree.
+    Returns the p value, the number of datasets, the mean gap, and `wins` /
+    `losses`, the datasets on which `a` / `b` came out ahead (a tie counts as
+    neither) — worth reading alongside p, since the null's spread is run-to-run
+    noise and a large gap on a few datasets can clear it while the rest disagree.
     """
     rng = np.random.default_rng(seed)
     sub = scores[scores.condition.isin((a, b))]
@@ -634,7 +648,7 @@ def condition_test(scores: pd.DataFrame, a: str, b: str, *,
         gaps.append(va.mean() - vb.mean())
 
     if not blocks:
-        return {"n_datasets": 0, "wins": 0, "delta": float("nan"),
+        return {"n_datasets": 0, "wins": 0, "losses": 0, "delta": float("nan"),
                 "p": float("nan")}
 
     draws = np.zeros(n_iter)
@@ -648,11 +662,35 @@ def condition_test(scores: pd.DataFrame, a: str, b: str, *,
     obs = float(np.mean(gaps))
     hits = int((np.abs(draws) >= abs(obs) - 1e-12).sum())
     return {"n_datasets": len(blocks), "wins": int(sum(g > 0 for g in gaps)),
+            "losses": int(sum(g < 0 for g in gaps)),
             "delta": obs, "p": (hits + 1) / (n_iter + 1)}
 
 
+# (threshold, stars): p below the threshold earns the stars; the first match wins.
+SIG_LEVELS = ((0.001, "***"), (0.01, "**"), (0.05, "*"))
+
+
+def significance_stars(p: float) -> str:
+    return next((s for t, s in SIG_LEVELS if p < t), "")
+
+
 def format_p(p: float) -> str:
-    return "p n/a" if p != p else ("p < 0.001" if p < 0.001 else f"p = {p:.3f}")
+    """`p = 0.026 *`: the value, then one star per significance level it clears."""
+    if p != p:
+        return "p n/a"
+    text = "p < 0.001" if p < 0.001 else f"p = {p:.3f}"
+    stars = significance_stars(p)
+    return f"{text} {stars}" if stars else text
+
+
+def _bar_label(row: dict, at: dict, show_datasets: bool) -> str:
+    """A bar's text: `k/n, p = ...`, k being the datasets on which the right-hand
+    condition of the pair scored higher, so the count reads left to right like the axis."""
+    text = format_p(row["p"])
+    if not show_datasets or not row["n_datasets"]:
+        return text
+    right_higher = row["losses"] if at[row["b"]] > at[row["a"]] else row["wins"]
+    return f"{right_higher}/{row['n_datasets']}, {text}"
 
 
 def _bar_levels(spans, *, pad: float = 0.1) -> list[int]:
@@ -677,16 +715,17 @@ def _bar_levels(spans, *, pad: float = 0.1) -> list[int]:
 def _sig_bars(ax, bars, *, base: float, step: float, fontsize: float = 7):
     """Horizontal bars with a p value over them, above the axes.
 
-    `bars` is a list of `(x0, x1, level, label)`. y is in axes coordinates, so
-    the bars sit above the data instead of stretching the y axis to fit them.
+    `bars` is a list of `(x0, x1, level, label, bold)`. y is in axes coordinates,
+    so the bars sit above the data instead of stretching the y axis to fit them.
     """
-    for lo, hi, level, label in bars:
+    for lo, hi, level, label, bold in bars:
         y = base + step * level
         ax.plot([lo, lo, hi, hi], [y - step * 0.18, y, y, y - step * 0.18],
                 transform=ax.get_xaxis_transform(), color="0.35", lw=0.9,
                 clip_on=False, zorder=6)
         ax.text((lo + hi) / 2, y + step * 0.06, label, ha="center", va="bottom",
                 transform=ax.get_xaxis_transform(), fontsize=fontsize,
+                fontweight="bold" if bold else "normal",
                 color="0.25", clip_on=False, zorder=6)
 
 
@@ -694,23 +733,33 @@ def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
                     ylim=(0, 1.02), figsize=None, labels=None, gap: float = 0.9,
                     width: float = 0.5, spacing: float = 0.8,
                     alpha: float = 0.75, edge: str = "0.45",
-                    row_height: float = 2.75,
+                    row_height: float = 2.75, colors: dict | None = None,
+                    connect: bool = False, connect_color="0.2",
+                    ceiling: float | None = None, show_datasets: bool = True,
                     tests=(), n_iter: int = 20000, seed: int = 0):
     """Every condition's pooled box, one row per evaluation.
 
     `condition_scatter`'s right-hand panel for every condition at once, with
     the datasets pooled. `panels` is a list of `(ylabel, scores, value)`, one
-    row each; the same columns in every row, so a column is one condition
-    scored two ways. `groups` is the x order, as blocks separated by `gap`, and
+    row each, optionally with a fourth item overriding `ylim` for that row; the
+    same columns in every row, so a column is one condition scored two ways. `groups` is the x order, as blocks separated by `gap`, and
     labels leave the maximal prompt unmarked for a caption to explain.
 
     `tests` is a list of `(a, b)` to compare; each draws a bar over its two
     columns carrying `condition_test`'s p value, computed per row and left
     uncorrected.
 
+    `colors` overrides `CONDITION_COLOR` for this figure only. `connect` draws a
+    line in `connect_color` through the conditions' mean scores within each
+    group, to show the trend across the group's steps; pass a list to give each
+    group its own color. `ceiling` draws a light gray dashed line at that score.
+    `show_datasets` adds `k/n` to each bar's p value: the datasets, of the n both
+    conditions cover, on which the right-hand condition scored higher.
+
     Returns `(fig, axes)`; the p values are on `fig.stats`, one frame per row.
     """
-    have = {c for _l, s, _v in panels for c in set(s["condition"])}
+    panels = [(*p, ylim) if len(p) == 3 else tuple(p) for p in panels]
+    have = {c for _l, s, _v, _y in panels for c in set(s["condition"])}
     groups = [[c for c in g if c in have] for g in groups]
     groups = [g for g in groups if g]
     conditions = [c for g in groups for c in g]
@@ -744,12 +793,21 @@ def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
     axes = axes[:, 0]
 
     stats = []
-    for ax, (ylabel, scores, value) in zip(axes, panels):
+    for ax, (ylabel, scores, value, row_ylim) in zip(axes, panels):
         _box_panel(ax, scores, conditions, value=value, box_stat=box_stat,
-                   ylim=ylim, labels=labels, positions=positions, width=width,
-                   alpha=alpha, edge=edge)
+                   ylim=row_ylim, labels=labels, positions=positions, width=width,
+                   alpha=alpha, edge=edge, colors=colors)
+        if ceiling is not None:
+            ax.axhline(ceiling, color="0.75", ls="--", lw=0.9, zorder=0)
+        if connect:
+            line_colors = ([connect_color] * len(groups) if isinstance(connect_color, str)
+                           else list(connect_color))
+            for group, line_color in zip(groups, line_colors):
+                means = [scores.loc[scores.condition == c, value].mean() for c in group]
+                ax.plot([at[c] for c in group], means, color=line_color, lw=1.6,
+                        marker="o", ms=4.5, mec="white", mew=0.8, zorder=4)
         ax.set_ylabel(ylabel)
-        ax.set_ylim(*ylim)
+        ax.set_ylim(*row_ylim)
         ax.set_xlim(positions[0] - 0.75 * spacing, positions[-1] + 0.75 * spacing)
         ax.tick_params(axis="x", length=0)
 
@@ -759,7 +817,9 @@ def condition_boxes(panels, *, groups=CONDITION_GROUPS, box_stat: str = "se",
                 for a, b in tests]
         stats.append(pd.DataFrame(rows))
         if rows:
-            _sig_bars(ax, [(lo, hi, lv, format_p(r["p"]))
+            # Bold where the raw p clears the 0.05 line.
+            _sig_bars(ax, [(lo, hi, lv, _bar_label(r, at, show_datasets),
+                            r["p"] < SIG_LEVELS[-1][0])
                            for (lo, hi), lv, r in zip(spans, levels, rows)],
                       base=base, step=step)
 

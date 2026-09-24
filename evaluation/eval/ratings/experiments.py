@@ -54,6 +54,11 @@ AGENT_ALIAS = {"claude": "claude-code"}
 # mirrors into eval/. The tree also holds terminus-gpt and terminus-opus.
 EVAL_AGENTS = {"claude-code", "codex"}
 
+# The judges the analysis reads: the July (config_20260728) judges, in
+# verifier/judge/<judge>/. The September judges' verdicts sit beside them in
+# <judge>-config_20260919/ and are skipped unless asked for (judges=None).
+EVAL_JUDGES = ("claude", "codex")
+
 MODES = {"supervised": "judge", "unsupervised": "judge_unsupervised"}
 
 # `debug` is a throwaway task; `oracle` runs the reference solution itself, so a
@@ -71,7 +76,11 @@ MINIMAL_SUFFIX = "_minimal"
 # A <task>_datalimit run is the minimal prompt on the 50 GB subset of the dataset, so it
 # is a third variant rather than a ninth dataset. Same split as trial_metrics.py.
 DATALIMIT_SUFFIX = "_datalimit"
-PROMPTS = ("full", "minimal", "datalimit")
+# A <task>_api run is the full prompt plus an order to read the data through the format's
+# own library (pynwb, allensdk, ONE). Same task and data, so a variant, not a dataset --
+# the split trial_metrics.py makes too.
+API_SUFFIX = "_api"
+PROMPTS = ("full", "minimal", "datalimit", "api")
 
 JUDGE_FILE = "llm_judge_eval.json"
 
@@ -134,6 +143,47 @@ CONDITION_GROUPS = (
     ("codex/full", "terminus-gpt/full", "codex/minimal"),
 )
 
+# The paper's agents (Opus 4.6 / GPT-5.4) re-run on the revised v5 full prompt. Only
+# the five tasks whose prompts changed substantively were re-run (map, hasnain2024,
+# majnik2025, sosa2024, mouseland), so these conditions cover 5 of the 8 datasets.
+# Not in CONDITIONS, so the defaults stay the paper's six; pass them in explicitly.
+PROMPT_V5 = "-config_20260728-prompt_v5"
+V5_CONDITIONS = tuple((a + PROMPT_V5, "full") for a in
+                      ("claude-code", "terminus-opus", "codex", "terminus-gpt"))
+# Each harness reads as one hue, darkening original -> v5 prompt -> new model (below).
+for _agent, _hue in (("claude-code", "#A63603"), ("terminus-opus", "#007A58"),
+                     ("codex", "#08519C"), ("terminus-gpt", "#A85B8A")):
+    _key = condition_key(_agent + PROMPT_V5, "full")
+    CONDITION_COLOR[_key] = _hue
+    CONDITION_LABEL[_key] = CONDITION_SHORT[_key] = f"{AGENT_LABEL[_agent]} (v5 max prompt)"
+
+# The September sweep: new models (Opus 5 / GPT-5.6) in all four harnesses, on the v5
+# max prompt, all 8 datasets. Judged by the same July judges as every other condition
+# (verifier/judge/<judge>/); their own judges' verdicts sit in <judge>-config_20260919/.
+NEW_MODELS = "-config_20260919"
+NEW_MODEL_CONDITIONS = tuple((a + NEW_MODELS, "full") for a in
+                             ("claude-code", "terminus-opus", "codex", "terminus-gpt"))
+MODEL_NAME = {"claude-code": ("Opus 4.6", "Opus 5"), "terminus-opus": ("Opus 4.6", "Opus 5"),
+              "codex": ("GPT-5.4", "GPT-5.6"), "terminus-gpt": ("GPT-5.4", "GPT-5.6")}
+for _agent, _hue in (("claude-code", "#7F2704"), ("terminus-opus", "#00553D"),
+                     ("codex", "#08306B"), ("terminus-gpt", "#7A3E64")):
+    _key = condition_key(_agent + NEW_MODELS, "full")
+    CONDITION_COLOR[_key] = _hue           # the darkest shade of the harness's hue
+    CONDITION_LABEL[_key] = CONDITION_SHORT[_key] = (
+        f"{AGENT_LABEL[_agent]} ({MODEL_NAME[_agent][1]})")
+
+# The same new-model agents on the <task>_api variant: the v5 max prompt plus an order
+# to read the data through the format's own library. Only allen2p, map, sosa2024 and
+# zhang2025 have one, so these conditions cover 4 of the 8 datasets.
+API_CONDITIONS = tuple((a + NEW_MODELS, "api") for a in
+                       ("claude-code", "terminus-opus", "codex", "terminus-gpt"))
+for _agent, _hue in (("claude-code", "#FD8D3C"), ("terminus-opus", "#41AB5D"),
+                     ("codex", "#4292C6"), ("terminus-gpt", "#C994C7")):
+    _key = condition_key(_agent + NEW_MODELS, "api")
+    CONDITION_COLOR[_key] = _hue           # a lighter tint of the new model's color
+    CONDITION_LABEL[_key] = CONDITION_SHORT[_key] = (
+        f"{AGENT_LABEL[_agent]} ({MODEL_NAME[_agent][1]}, API)")
+
 
 def split_task(task: str) -> tuple[str, str]:
     """Task folder name -> (our dataset name, prompt variant)."""
@@ -141,6 +191,8 @@ def split_task(task: str) -> tuple[str, str]:
         base, prompt = task[:-len(DATALIMIT_SUFFIX)], "datalimit"
     elif task.endswith(MINIMAL_SUFFIX):
         base, prompt = task[:-len(MINIMAL_SUFFIX)], "minimal"
+    elif task.endswith(API_SUFFIX):
+        base, prompt = task[:-len(API_SUFFIX)], "api"
     else:
         base, prompt = task, "full"
     return DATASET_ALIAS.get(base, base), prompt
@@ -178,6 +230,7 @@ def discover_runs(*, datasets: list[str] | None = None,
                   prompts: tuple[str, ...] = PROMPTS,
                   modes: tuple[str, ...] = ("supervised",),
                   max_trial: int | None = MAX_TRIAL,
+                  judges: tuple[str, ...] | None = EVAL_JUDGES,
                   root: Path = EXPERIMENTS_DIR) -> tuple[list[JudgeRun], dict]:
     """Walk the experiment tree -> (runs, skipped).
 
@@ -236,6 +289,8 @@ def discover_runs(*, datasets: list[str] | None = None,
                         continue
                     for judge_dir in sorted(judge_root.iterdir()):
                         if not judge_dir.is_dir():
+                            continue
+                        if judges is not None and judge_dir.name not in judges:
                             continue
                         if not (judge_dir / JUDGE_FILE).exists():
                             continue
