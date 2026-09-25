@@ -605,6 +605,34 @@ def _box_panel(ax, scores: pd.DataFrame, conditions, *, value: str,
     return ax
 
 
+# ---------- the rating grid for runs no human rated ----------
+
+def condition_nested(tidy: pd.DataFrame, conditions, rater: str = "combined", *,
+                     trials=(1, 2, 3)) -> dict:
+    """The nested `{dataset: {main: {sub: question}}}` the rating grid draws
+    (`summary_table`), built from a `load_condition_ratings` frame.
+
+    One slot per (condition, trial), in that order -- the grid's two groups of
+    three, so pass two conditions. Each slot's agent is its harness name with
+    the config suffix dropped (`codex-config_20260919` -> `codex`), which is
+    what the grid's per-agent End-to-End averages look up. A slot with no
+    rating is NaN.
+    """
+    cols = ["dataset", "main", "sub", "title", "qid"]
+    value = tidy.set_index(["dataset", "qid", "condition", "trial"])[rater]
+    slots = [(c, t) for c in conditions for t in trials]
+    agents = [c.split("/")[0].partition("-config")[0] for c, _t in slots]
+    nested: dict = {}
+    for ds, main, sub, title, qid in tidy[cols].drop_duplicates().itertuples(index=False):
+        nested.setdefault(ds, {}).setdefault(main, {})[sub] = {
+            "title": title, "agents": agents,
+            "trials": np.array([t for _c, t in slots], dtype=int),
+            rater: np.array([value.get((ds, qid, c, t), np.nan) for c, t in slots],
+                            dtype=float),
+        }
+    return nested
+
+
 # ---------- outcome against process, trial by trial ----------
 
 FAMILY_COLOR = {"Claude": "#E67E00", "GPT": "#08306B"}

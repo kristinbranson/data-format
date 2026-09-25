@@ -27,7 +27,8 @@ DEFAULT_EXCLUDE_SUBTYPES = ("Thresholding",)
 RATER_TITLE = {"LZ": "LZ", "KB": "KB",
                "claude": "Claude judge", "codex": "Codex judge",
                "claude_unsup": "Claude judge (unsupervised)",
-               "codex_unsup": "Codex judge (unsupervised)"}
+               "codex_unsup": "Codex judge (unsupervised)",
+               "combined": "combined supervised judges"}
 
 LEGEND_ENTRIES = [(-2, "incorrect"), (-1, "concerning"), (0, "ok"),
                   (1, "match"), (2, "better")]
@@ -56,7 +57,9 @@ def summary_table(ratings: Ratings, rater: str = "LZ", *,
     figure is drawn rather than defaulted here; `uniform_variables()` finds the
     candidates.
     """
-    data = ratings.nested
+    # A Ratings, or the same nested dict built another way
+    # (conditions.condition_nested for runs no human rated).
+    data = ratings if isinstance(ratings, dict) else ratings.nested
     if datasets is None:
         datasets = [ds for ds in DATASET_ORDER if ds in data]
         datasets += [ds for ds in data if ds not in DATASET_ORDER]

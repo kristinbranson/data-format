@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from utils import (AGENT_SHORT, ARM_AGENT, ARM_COLUMNS, DECODER_VAR_ALIASES,
+from utils import (AGENT_KEYS, AGENT_SHORT, ARM_AGENT, ARM_COLUMNS, DECODER_VAR_ALIASES,
                    TASK_DISPLAY_NAME, load_reference_stats,
                    load_trial_metrics, trial_metrics_df)
 
@@ -86,7 +86,9 @@ def display_name(ds: str, *, latex: bool = False) -> str:
 
 
 def arm_label(arm) -> str:
-    return ARM_AGENT[tuple(arm)]
+    """The arm's agent name, e.g. "Claude Code Opus 5" -- by agent key for arms
+    outside the paper's six (the September sweep's `<agent>-config_20260919`)."""
+    return ARM_AGENT.get(tuple(arm)) or AGENT_KEYS[arm[0]]
 
 
 def load(*, arms=ARMS, trials=TRIALS, eval_dir: Path = EVAL_DIR) -> pd.DataFrame:
@@ -274,13 +276,14 @@ def scale_fields(dataset: str):
             for label, field in SCALE_FIELDS]
 
 
-def scale_rows(df: pd.DataFrame, dataset: str):
+def scale_rows(df: pd.DataFrame, dataset: str, *, arms=ARMS):
     """[(label, starred, [cell ratios], reference absolute), ...]."""
     ref = load_reference_stats(dataset) or {}
     out = []
     for label, field, starred in scale_fields(dataset):
         vals = _cells(df, dataset,
-                      lambda r, f=field: r[f + "_ratio"] if _has(r, f + "_ratio") else None)
+                      lambda r, f=field: r[f + "_ratio"] if _has(r, f + "_ratio") else None,
+                      arms=arms)
         out.append((label, starred, vals, ref.get(field)))
     return out
 
@@ -444,7 +447,7 @@ def _ratio_cell(row, col, var):
     return float(row[col]) if _has(row, col) else None
 
 
-def decoder_rows(df: pd.DataFrame, dataset: str):
+def decoder_rows(df: pd.DataFrame, dataset: str, *, arms=ARMS):
     """[(variable, [cell ratios], reference accuracy, chance), ...].
 
     Chance is `1 / output_nclasses_reference_<var>` -- the reference's own class
@@ -454,7 +457,8 @@ def decoder_rows(df: pd.DataFrame, dataset: str):
     out = []
     for var in decoder_variables(df, dataset):
         col = RATIO_PREFIX + var
-        vals = _cells(df, dataset, lambda r, c=col, v=var: _ratio_cell(r, c, v))
+        vals = _cells(df, dataset, lambda r, c=col, v=var: _ratio_cell(r, c, v),
+                      arms=arms)
         n_classes = _reference_scalar(df, dataset, f"output_nclasses_reference_{var}")
         out.append((var, vals,
                     _reference_scalar(df, dataset, REF_PREFIX + var),
@@ -520,7 +524,23 @@ def trial_flags(row, df: pd.DataFrame, dataset: str) -> dict[str, list[bool]]:
             "Decoder": _decoder_flags(row, df, dataset)}
 
 
-def pass_counts(df: pd.DataFrame, *, arms=ARMS) -> pd.DataFrame:
+def failed_flags(row, df: pd.DataFrame, dataset: str) -> dict[str, list[bool]]:
+    """`trial_flags` for a trial the agent failed outright (no converted data):
+    every metric the dataset measures counts as a failure instead of dropping out.
+
+    A check counts if it applies to the dataset at all, i.e. some trial of the
+    dataset recorded it -- so Allen2P's Inputs, which never applies, stays out.
+    """
+    sub = df[df.dataset == dataset]
+    applies = {lbl for _, r in sub.iterrows()
+               for lbl, v in check_flags(r).items() if v is not None}
+    checks = [bool(v) for lbl, v in check_flags(row).items() if lbl in applies]
+    n_stats = sum(not starred for _label, _f, starred in scale_fields(dataset))
+    return {"Checks": checks, "Statistics": [False] * n_stats,
+            "Decoder": [False] * len(decoder_variables(df, dataset))}
+
+
+def pass_counts(df: pd.DataFrame, *, arms=ARMS, failed=()) -> pd.DataFrame:
     """Per (dataset, arm): passed / measured in each category, plus end-to-end.
 
     End-to-end is per trial, not per metric: a trial counts only when every
@@ -528,7 +548,11 @@ def pass_counts(df: pd.DataFrame, *, arms=ARMS) -> pd.DataFrame:
     published column, which also excluded the Checks category -- Sosa2024/Claude
     reads 2/3 there despite its own Checks cell recording a missing README in
     two of the three trials.
+
+    `failed` lists (dataset, agent, prompt, trial) runs the agent failed outright;
+    they count as failing everything (`failed_flags`) rather than dropping out.
     """
+    failed = set(failed)
     rows = []
     for dataset in [d for d in DATASET_ORDER if d in set(df.dataset)]:
         for agent, prompt in arms:
@@ -537,7 +561,9 @@ def pass_counts(df: pd.DataFrame, *, arms=ARMS) -> pd.DataFrame:
             sub = df[(df.dataset == dataset) & (df.agent == agent)
                      & (df.prompt == prompt)]
             for _, row in sub.iterrows():
-                flags = trial_flags(row, df, dataset)
+                key = (dataset, agent, prompt, int(row["trial"]))
+                flags = (failed_flags(row, df, dataset) if key in failed
+                         else trial_flags(row, df, dataset))
                 for c in CATEGORIES:
                     totals[c] += flags[c]
                 measured = [f for c in E2E_CATEGORIES for f in flags[c]]
@@ -643,15 +669,15 @@ CHECK_FAIL = r"\ckfail"
 CHECK_NA = r"\ckna"
 
 
-def _arm_header(trailing: str = "") -> list[str]:
+def _arm_header(trailing: str = "", *, arms=ARMS) -> list[str]:
     """The two-row `Claude Code | Codex` header shared by the three supplements."""
     spans = " & ".join(rf"\multicolumn{{{len(TRIALS)}}}{{c}}{{{arm_label(a)}}}"
-                       for a in ARMS)
+                       for a in arms)
     rules, at = [], 3
-    for _arm in ARMS:
+    for _arm in arms:
         rules.append(rf"\cmidrule(lr){{{at}-{at + len(TRIALS) - 1}}}")
         at += len(TRIALS)
-    trials = " & ".join(f"T{t}" for _arm in ARMS for t in TRIALS)
+    trials = " & ".join(f"T{t}" for _arm in arms for t in TRIALS)
     return [f" & & {spans}" + (f" & {trailing}" if trailing else "") + r" \\",
             " ".join(rules)]
 
@@ -736,15 +762,21 @@ CHECKS_CAPTION = (
 
 def checks_table(df: pd.DataFrame, *, fmt: str = "latex",
                  caption: str | None = CHECKS_CAPTION,
-                 label: str = "tab:checks-supervised") -> str:
-    """One row per (dataset, check), one mark per (agent, trial)."""
+                 label: str = "tab:checks-supervised", arms=ARMS,
+                 notes: dict = CHECK_NOTES) -> str:
+    """One row per (dataset, check), one mark per (agent, trial).
+
+    `notes` maps (dataset, check) to the footnote marker that cell carries; the
+    default ones describe the paper's two arms, so pass `{}` for other arms.
+    """
     def rows(ds):
-        return [(lbl, _cells(df, ds, lambda r, f=fn: f(r))) for lbl, fn in CHECKS]
+        return [(lbl, _cells(df, ds, lambda r, f=fn: f(r), arms=arms))
+                for lbl, fn in CHECKS]
 
     def note(ds, lbl, *, latex=True):
         """The dataset's name, carrying any footnote marker for this check."""
         name = display_name(ds, latex=latex)
-        marker = CHECK_NOTES.get((ds, lbl), "")
+        marker = notes.get((ds, lbl), "")
         if not marker:
             return name
         if not latex:
@@ -758,7 +790,7 @@ def checks_table(df: pd.DataFrame, *, fmt: str = "latex",
                 for ds, rs in blocks for i, (lbl, cells) in enumerate(rs)]
         return _markdown_table(
             ["Dataset", "Check",
-             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in ARMS for t in TRIALS]],
+             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in arms for t in TRIALS]],
             body)
 
     # Datasets down the page, checks across it, and one cell per (dataset,
@@ -773,13 +805,13 @@ def checks_table(df: pd.DataFrame, *, fmt: str = "latex",
 
     body = []
     for ds in present:
-        for a, arm in enumerate(ARMS):
-            head = (rf"\multirow{{{len(ARMS)}}}{{*}}{{{display_name(ds, latex=True)}}}"
+        for a, arm in enumerate(arms):
+            head = (rf"\multirow{{{len(arms)}}}{{*}}{{{display_name(ds, latex=True)}}}"
                     if a == 0 else "")
             cells = [head, AGENT_SHORT[arm_label(arm)]]
             for lbl, _fn in CHECKS:
                 trials = marks[(ds, lbl)][a * len(TRIALS):(a + 1) * len(TRIALS)]
-                marker = CHECK_NOTES.get((ds, lbl), "")
+                marker = notes.get((ds, lbl), "")
                 cells.append("".join(trials)
                              + (f"$^{{{marker}}}$" if marker else ""))
             body.append(" & ".join(cells) + r" \\")
@@ -818,9 +850,9 @@ SCALE_CAPTION = (
 
 def scale_table(df: pd.DataFrame, *, fmt: str = "latex",
                 caption: str | None = SCALE_CAPTION,
-                label: str = "scale-supervised") -> str:
+                label: str = "scale-supervised", arms=ARMS) -> str:
     """One row per (dataset, scale metric): six ratios and the reference value."""
-    blocks = _blocks(df, lambda ds: scale_rows(df, ds))
+    blocks = _blocks(df, lambda ds: scale_rows(df, ds, arms=arms))
     fields = {label_: field for label_, field in SCALE_FIELDS}
 
     if fmt == "markdown":
@@ -831,7 +863,7 @@ def scale_table(df: pd.DataFrame, *, fmt: str = "latex",
                 for i, (lbl, star, cells, ref) in enumerate(rs)]
         return _markdown_table(
             ["Dataset", "Metric",
-             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in ARMS for t in TRIALS],
+             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in arms for t in TRIALS],
              "Reference"], body)
 
     body = []
@@ -846,10 +878,10 @@ def scale_table(df: pd.DataFrame, *, fmt: str = "latex",
             body.append(r"\midrule")
 
     return _latex_table(
-        "l l " + " ".join("r" * len(TRIALS) for _a in ARMS) + " c",
-        [*_arm_header("Reference"),
+        "l l " + " ".join("r" * len(TRIALS) for _a in arms) + " c",
+        [*_arm_header("Reference", arms=arms),
          " & ".join(["Dataset", "Metric",
-                     *[f"T{t}" for _a in ARMS for t in TRIALS], ""]) + r" \\"],
+                     *[f"T{t}" for _a in arms for t in TRIALS], ""]) + r" \\"],
         body, caption=caption, label=label)
 
 
@@ -912,9 +944,9 @@ def decoder_color(ref, spread):
 
 def decoder_table(df: pd.DataFrame, *, fmt: str = "latex",
                   caption: str | None = DECODER_CAPTION,
-                  label: str = "decoder-supervised") -> str:
+                  label: str = "decoder-supervised", arms=ARMS) -> str:
     """One row per (dataset, output variable): six ratios, reference and chance."""
-    blocks = _blocks(df, lambda ds: decoder_rows(df, ds))
+    blocks = _blocks(df, lambda ds: decoder_rows(df, ds, arms=arms))
 
     def ref_cell(ref, chance):
         if ref is None:
@@ -928,7 +960,7 @@ def decoder_table(df: pd.DataFrame, *, fmt: str = "latex",
                 for i, (var, cells, ref, chance) in enumerate(rs)]
         return _markdown_table(
             ["Dataset", "Variable",
-             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in ARMS for t in TRIALS],
+             *[f"{AGENT_SHORT[arm_label(a)]} T{t}" for a in arms for t in TRIALS],
              "Reference (chance)"], body)
 
     body = []
@@ -945,10 +977,10 @@ def decoder_table(df: pd.DataFrame, *, fmt: str = "latex",
             body.append(r"\midrule")
 
     return _latex_table(
-        "l l " + " ".join("r" * len(TRIALS) for _a in ARMS) + " c",
-        [*_arm_header("Reference"),
+        "l l " + " ".join("r" * len(TRIALS) for _a in arms) + " c",
+        [*_arm_header("Reference", arms=arms),
          " & ".join(["Dataset", "Variable",
-                     *[f"T{t}" for _a in ARMS for t in TRIALS], "(Chance)"]) + r" \\"],
+                     *[f"T{t}" for _a in arms for t in TRIALS], "(Chance)"]) + r" \\"],
         body, caption=caption, label=label)
 
 
@@ -978,10 +1010,10 @@ SUMMARY_CAPTION = (
 SUMMARY_COLUMNS = (*CATEGORIES, "End-to-end")
 
 
-def _summary_cell(counts: pd.DataFrame, dataset: str, column: str) -> str:
+def _summary_cell(counts: pd.DataFrame, dataset: str, column: str, *, arms=ARMS) -> str:
     """Both agents' fractions stacked, each green when it clears the rate."""
     parts = []
-    for agent, prompt in ARMS:
+    for agent, prompt in arms:
         r = counts[(counts.dataset == dataset) & (counts.agent == agent)
                    & (counts.prompt == prompt)].iloc[0]
         passed, measured = r[column]
@@ -994,21 +1026,21 @@ def _summary_cell(counts: pd.DataFrame, dataset: str, column: str) -> str:
 
 def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
                   caption: str | None = SUMMARY_CAPTION,
-                  label: str = "outcome_summary") -> str:
+                  label: str = "outcome_summary", arms=ARMS, failed=()) -> str:
     """The main table: one row per dataset, one line per agent inside each cell.
 
     Every number is a count over the other three tables, so this cannot say
     anything they do not; `outcome_analysis.ipynb` asserts that rather than
     trusting it.
     """
-    counts = pass_counts(df)
+    counts = pass_counts(df, arms=arms, failed=failed)
     columns = SUMMARY_COLUMNS
     datasets = [d for d in DATASET_ORDER if d in set(counts.dataset)]
 
     if fmt == "markdown":
         body = []
         for ds in datasets:
-            for i, (agent, prompt) in enumerate(ARMS):
+            for i, (agent, prompt) in enumerate(arms):
                 r = counts[(counts.dataset == ds) & (counts.agent == agent)
                            & (counts.prompt == prompt)].iloc[0]
                 body.append([display_name(ds) if i == 0 else "",
@@ -1019,7 +1051,7 @@ def summary_table(df: pd.DataFrame, *, fmt: str = "latex",
     body = []
     for ds in datasets:
         body.append(display_name(ds, latex=True))
-        body += [f"& {_summary_cell(counts, ds, c)}" for c in columns]
+        body += [f"& {_summary_cell(counts, ds, c, arms=arms)}" for c in columns]
         body.append(r"\\")
 
     lines = [r"\begin{table}[b]", r"\centering", r"\small",
@@ -1051,7 +1083,7 @@ def short_name(ds: str) -> str:
 def summary_table_transposed(df: pd.DataFrame, *, fmt: str = "latex",
                              caption: str | None = SUMMARY_CAPTION,
                              label: str = "outcome_summary",
-                             short_names: bool = True) -> str:
+                             short_names: bool = True, arms=ARMS, failed=()) -> str:
     """`summary_table` with datasets as columns and categories as rows.
 
     Same cells, same caption and label, so the two are interchangeable in the
@@ -1059,14 +1091,14 @@ def summary_table_transposed(df: pd.DataFrame, *, fmt: str = "latex",
     headers set the column widths, so `short_names` drops the century from the
     year to keep the table inside the text width.
     """
-    counts = pass_counts(df)
+    counts = pass_counts(df, arms=arms, failed=failed)
     datasets = [d for d in DATASET_ORDER if d in set(counts.dataset)]
     header = short_name if short_names else (lambda ds: display_name(ds, latex=True))
 
     if fmt == "markdown":
         body = []
         for c in SUMMARY_COLUMNS:
-            for i, (agent, prompt) in enumerate(ARMS):
+            for i, (agent, prompt) in enumerate(arms):
                 row = []
                 for ds in datasets:
                     r = counts[(counts.dataset == ds) & (counts.agent == agent)
@@ -1079,7 +1111,7 @@ def summary_table_transposed(df: pd.DataFrame, *, fmt: str = "latex",
     body = []
     for c in SUMMARY_COLUMNS:
         body.append(c)
-        body += [f"& {_summary_cell(counts, ds, c)}" for ds in datasets]
+        body += [f"& {_summary_cell(counts, ds, c, arms=arms)}" for ds in datasets]
         body.append(r"\\")
 
     lines = [r"\begin{table}[b]", r"\centering", r"\small",
